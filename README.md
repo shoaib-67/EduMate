@@ -1,1 +1,1 @@
-# EduMate
+## EduMate

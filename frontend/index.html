@@ -15,34 +15,18 @@
       rel="stylesheet"
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
-    <script>
-      tailwind.config = {
-        theme: {
-          extend: {
-            fontFamily: {
-              display: ["Playfair Display", "serif"],
-              body: ["Manrope", "sans-serif"],
-            },
-            colors: {
-              ink: "#1c1a18",
-              muted: "#5a544b",
-              copper: "#c5672b",
-            },
-          },
-        },
-      };
-    </script>
+    <script src="tailwind.config.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
   </head>
   <body
-    class="min-h-screen font-body text-ink bg-[radial-gradient(circle_at_top_left,_#f7efe5,_#f2e4d2_35%,_#efe6dc_60%,_#e6d9c8)] flex items-center justify-center relative overflow-x-hidden"
+    class="min-h-screen font-body text-ink bg-[radial-gradient(circle_at_top_left,_#f7efe5,_#f2e4d2_35%,_#efe6dc_60%,_#e6d9c8)] flex items-center justify-center relative overflow-x-hidden px-4 sm:px-6 lg:px-8 py-14 sm:py-20"
   >
     <main
-      class="relative z-10 w-[min(1080px,92vw)] grid gap-12 lg:grid-cols-2 items-center py-20"
+      class="relative z-10 w-full max-w-[1080px] grid gap-10 lg:gap-12 lg:grid-cols-2 items-start lg:items-center"
     >
-      <section class="grid gap-5">
+      <section class="grid gap-5 text-center lg:text-left">
         <div
-          class="h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 text-white grid place-items-center text-3xl font-display shadow-[0_24px_60px_rgba(28,26,24,0.18)]"
+          class="hidden lg:grid h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 text-white place-items-center text-3xl font-display shadow-[0_24px_60px_rgba(28,26,24,0.18)]"
         >
           E
         </div>
@@ -56,7 +40,7 @@
           Sign in to continue your guided admission prep, mock tests, and progress
           tracking.
         </p>
-        <div class="flex flex-wrap gap-6">
+        <div class="flex flex-wrap gap-6 justify-center lg:justify-start">
           <div class="grid gap-1">
             <span class="text-lg font-semibold">120+</span>
             <span class="text-xs uppercase tracking-[0.18em] text-muted">
@@ -79,10 +63,10 @@
       </section>
 
       <section
-        class="bg-white/80 backdrop-blur border border-amber-100 rounded-3xl p-8 shadow-[0_24px_60px_rgba(28,26,24,0.18)] grid gap-6"
+        class="bg-white/80 backdrop-blur border border-amber-100 rounded-3xl p-6 sm:p-8 shadow-[0_24px_60px_rgba(28,26,24,0.18)] grid gap-6"
         aria-label="Login form"
       >
-        <header class="grid gap-1">
+        <header class="grid gap-1 text-center lg:text-left">
           <h2 class="font-display text-2xl">Welcome back</h2>
           <p class="text-muted">Use your EduMate account to keep your progress synced.</p>
         </header>
@@ -139,17 +123,11 @@
           >
             Sign in
           </button>
-          <button
-            class="rounded-2xl border border-amber-200 px-4 py-3 text-sm font-semibold text-ink"
-            type="button"
-          >
-            <i class="fa-brands fa-google mr-2"></i>Sign in with Google
-          </button>
         </form>
 
         <footer class="flex items-center gap-2 text-sm text-muted">
           <span>New to EduMate?</span>
-          <a class="text-copper font-semibold" href="#">Create an account</a>
+          <a class="text-copper font-semibold" href="signup.html">Create an account</a>
         </footer>
       </section>
     </main>

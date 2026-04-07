@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create Account - EduMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <script src="tailwind.config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body
+    class="min-h-screen font-body text-ink bg-[radial-gradient(circle_at_top_left,_#f7efe5,_#f2e4d2_35%,_#efe6dc_60%,_#e6d9c8)] flex items-center justify-center relative overflow-x-hidden px-4 sm:px-6 lg:px-8 py-14 sm:py-20"
+  >
+    <main class="relative z-10 w-full max-w-[1080px] grid gap-10 lg:gap-12 lg:grid-cols-2 items-start lg:items-center">
+      <section class="grid gap-5 text-center lg:text-left">
+        <div
+          class="hidden lg:grid h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 text-white place-items-center text-3xl font-display shadow-[0_24px_60px_rgba(28,26,24,0.18)]"
+        >
+          E
+        </div>
+        <p class="uppercase tracking-[0.2em] text-xs font-semibold text-copper">
+          University Admission Hub
+        </p>
+        <h1 class="font-display text-[clamp(38px,5vw,64px)] leading-tight m-0">
+          Start your EduMate journey
+        </h1>
+        <p class="text-base leading-7 text-muted max-w-md">
+          Create an account to access mock tests, study materials, and performance
+          tracking in one place.
+        </p>
+        <div class="flex flex-wrap gap-6 justify-center lg:justify-start">
+          <div class="grid gap-1">
+            <span class="text-lg font-semibold">Daily</span>
+            <span class="text-xs uppercase tracking-[0.18em] text-muted">
+              <i class="fa-solid fa-bolt mr-2"></i>Practice Plans
+            </span>
+          </div>
+          <div class="grid gap-1">
+            <span class="text-lg font-semibold">Smart</span>
+            <span class="text-xs uppercase tracking-[0.18em] text-muted">
+              <i class="fa-solid fa-layer-group mr-2"></i>Study Paths
+            </span>
+          </div>
+          <div class="grid gap-1">
+            <span class="text-lg font-semibold">Live</span>
+            <span class="text-xs uppercase tracking-[0.18em] text-muted">
+              <i class="fa-solid fa-people-group mr-2"></i>Community
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section
+        class="bg-white/80 backdrop-blur border border-amber-100 rounded-3xl p-6 sm:p-8 shadow-[0_24px_60px_rgba(28,26,24,0.18)] grid gap-6"
+        aria-label="Create account form"
+      >
+        <header class="grid gap-1 text-center lg:text-left">
+          <h2 class="font-display text-2xl">Create your account</h2>
+          <p class="text-muted">Get started in less than a minute.</p>
+        </header>
+
+        <form class="grid gap-4" id="signupForm">
+          <div class="grid gap-2 text-sm text-muted">
+            <span>Full name</span>
+            <input
+              class="w-full rounded-xl border border-amber-200 px-4 py-3 text-sm text-ink focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20"
+              type="text"
+              name="fullName"
+              placeholder="Your name"
+              required
+            />
+          </div>
+
+          <div class="grid gap-2 text-sm text-muted">
+            <span>Email</span>
+            <input
+              class="w-full rounded-xl border border-amber-200 px-4 py-3 text-sm text-ink focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20"
+              type="email"
+              name="email"
+              placeholder="you@email.com"
+              required
+            />
+          </div>
+
+          <div class="grid gap-2 text-sm text-muted">
+            <span>Phone</span>
+            <input
+              class="w-full rounded-xl border border-amber-200 px-4 py-3 text-sm text-ink focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20"
+              type="tel"
+              name="phone"
+              placeholder="+880 1234 567 890"
+              required
+            />
+          </div>
+
+          <div class="grid gap-2 text-sm text-muted">
+            <span>Create password</span>
+            <div class="flex items-center gap-2">
+              <input
+                class="w-full rounded-xl border border-amber-200 px-4 py-3 text-sm text-ink focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20"
+                type="password"
+                name="password"
+                placeholder="Use 8+ characters"
+                minlength="8"
+                required
+              />
+              <button
+                type="button"
+                class="rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-ink"
+                id="toggleSignupPassword"
+              >
+                Show
+              </button>
+            </div>
+          </div>
+
+          <label class="flex items-start gap-2 text-sm text-muted">
+            <input class="mt-1 accent-copper" type="checkbox" required />
+            <span>
+              I agree to the
+              <a class="text-copper font-semibold" href="#">terms</a>
+              and
+              <a class="text-copper font-semibold" href="#">privacy policy</a>.
+            </span>
+          </label>
+
+          <button
+            class="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(197,103,43,0.25)]"
+            type="submit"
+          >
+            Create account
+          </button>
+        </form>
+
+        <footer class="flex items-center gap-2 text-sm text-muted">
+          <span>Already have an account?</span>
+          <a class="text-copper font-semibold" href="index.html">Sign in</a>
+        </footer>
+      </section>
+    </main>
+
+    <script src="script.js"></script>
+  </body>
+</html>

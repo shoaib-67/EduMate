@@ -2,6 +2,8 @@
 
 EduMate is a web-based educational platform designed to help students prepare for university admission tests through a centralized system of study resources, admission guidance, and online mock exams.
 
+Live site:
+
 ## Motivation
 
 Students preparing for admission tests often face scattered learning resources, unstructured preparation plans, and limited opportunities for realistic self-assessment. EduMate addresses these problems by combining learning content, mock test practice, performance tracking, and guided admission support in one platform.

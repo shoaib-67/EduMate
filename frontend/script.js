@@ -25,7 +25,7 @@ if (loginForm) {
   loginForm.addEventListener("submit", (event) => {
     event.preventDefault();
     // Placeholder for real auth flow.
-    alert("Login submitted. Wire this to your backend.");
+    window.location.href = "student.html";
   });
 }
 

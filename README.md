@@ -67,6 +67,7 @@ The platform supports students, instructors, and administrators with role-specif
 
 - Preparing for university admission tests
 - Need mock tests, study materials, and progress tracking
+- Access course and subject management tools
 
 ### Teachers / Instructors
 

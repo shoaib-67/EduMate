@@ -66,12 +66,16 @@
         class="bg-white/80 backdrop-blur border border-amber-100 rounded-3xl p-6 sm:p-8 shadow-[0_24px_60px_rgba(28,26,24,0.18)] grid gap-6"
         aria-label="Login form"
       >
-        <header class="grid gap-1 text-center lg:text-left">
+        <header class="grid gap-2 text-center lg:text-left">
           <h2 class="font-display text-2xl">Welcome back</h2>
           <p class="text-muted">Use your EduMate account to keep your progress synced.</p>
+          <div class="flex flex-wrap items-center gap-2 text-xs uppercase tracking-[0.2em] text-muted justify-center lg:justify-start">
+            <span class="text-ink/70">Sign in as</span>
+            <a class="text-copper font-semibold" href="student.html">Student</a>
+          </div>
         </header>
 
-        <form class="grid gap-4" id="loginForm">
+        <form class="grid gap-4" id="loginForm" action="student.html">
           <div class="rounded-2xl border border-amber-200 bg-amber-50/80 px-4 py-3 text-sm text-ink">
             <p class="font-semibold">Demo login</p>
             <p>Email: demo@edumate.com</p>
@@ -117,23 +121,20 @@
             <a class="text-copper font-semibold" href="#">Forgot password?</a>
           </div>
 
-          <button
-            class="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(197,103,43,0.25)]"
-            type="submit"
-          >
-            Sign in
-          </button>
+          <div class="flex flex-wrap items-center gap-3">
+            <button
+              class="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(197,103,43,0.25)]"
+              type="submit"
+            >
+              Sign in
+            </button>
+          </div>
         </form>
 
         <footer class="grid gap-3 text-sm text-muted">
           <div class="flex items-center gap-2">
             <span>New to EduMate?</span>
             <a class="text-copper font-semibold" href="signup.html">Create an account</a>
-          </div>
-          <div class="flex flex-wrap items-center gap-3 text-xs uppercase tracking-[0.2em] text-muted">
-            <span class="text-ink/70">Dashboards</span>
-            <a class="text-copper font-semibold" href="instructor.html">Instructor</a>
-            <a class="text-copper font-semibold" href="admin.html">Admin</a>
           </div>
         </footer>
       </section>

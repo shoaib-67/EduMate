@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Admin Console - EduMate</title>
+    <title>Student Dashboard - EduMate</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -31,16 +31,16 @@
           </div>
           <div>
             <p class="uppercase tracking-[0.2em] text-xs font-semibold text-copper">
-              Admin Command Center
+              Student Dashboard
             </p>
-            <h1 class="font-display text-3xl sm:text-4xl">System overview</h1>
+            <h1 class="font-display text-3xl sm:text-4xl">Welcome back, Ayesha</h1>
           </div>
         </div>
         <div class="flex items-center gap-3">
           <button
             class="rounded-2xl border border-amber-200 bg-white/80 px-4 py-2 text-sm font-semibold text-ink shadow-[0_12px_30px_rgba(28,26,24,0.12)]"
           >
-            <i class="fa-regular fa-circle-question mr-2"></i>Support
+            <i class="fa-regular fa-bell mr-2"></i>Updates
           </button>
           <a
             class="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 px-4 py-2 text-sm font-semibold text-white"
@@ -51,77 +51,78 @@
         </div>
       </header>
 
-      <section class="mt-10 grid gap-6 lg:grid-cols-4">
+      <section class="mt-10 grid gap-6 lg:grid-cols-3">
         <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-5 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
+          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
         >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">Total users</p>
-          <p class="mt-4 text-3xl font-semibold">2,140</p>
-          <p class="mt-2 text-xs text-copper font-semibold">+120 this month</p>
+          <p class="text-xs uppercase tracking-[0.18em] text-muted">Mock tests completed</p>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-3xl font-semibold">8</span>
+            <span class="text-xs text-copper font-semibold">+2 this week</span>
+          </div>
+          <p class="mt-3 text-sm text-muted">Keep your streak alive with daily practice.</p>
         </div>
         <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-5 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
+          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
         >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">Active exams</p>
-          <p class="mt-4 text-3xl font-semibold">38</p>
-          <p class="mt-2 text-xs text-copper font-semibold">4 in review</p>
+          <p class="text-xs uppercase tracking-[0.18em] text-muted">Average score</p>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-3xl font-semibold">76%</span>
+            <span class="text-xs text-copper font-semibold">+5% trend</span>
+          </div>
+          <p class="mt-3 text-sm text-muted">You are trending up in science and math.</p>
         </div>
         <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-5 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
+          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
         >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">Revenue</p>
-          <p class="mt-4 text-3xl font-semibold">$18.4K</p>
-          <p class="mt-2 text-xs text-copper font-semibold">+9% MoM</p>
-        </div>
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-5 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">System health</p>
-          <p class="mt-4 text-3xl font-semibold">99.2%</p>
-          <p class="mt-2 text-xs text-copper font-semibold">Uptime</p>
+          <p class="text-xs uppercase tracking-[0.18em] text-muted">Study time</p>
+          <div class="mt-4 flex items-center justify-between">
+            <span class="text-3xl font-semibold">12h</span>
+            <span class="text-xs text-copper font-semibold">This week</span>
+          </div>
+          <p class="mt-3 text-sm text-muted">45 min more to reach your goal.</p>
         </div>
       </section>
 
-      <section class="mt-10 grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
+      <section class="mt-10 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
         <div
           class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
         >
-          <div class="flex items-center justify-between">
-            <h2 class="font-display text-2xl">User management</h2>
-            <button class="text-sm font-semibold text-copper">View all</button>
+          <div class="flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <h2 class="font-display text-2xl">My courses</h2>
+              <p class="text-sm text-muted">Track lessons, assignments, and progress.</p>
+            </div>
+            <button class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-ink">
+              Manage courses
+            </button>
           </div>
           <div class="mt-6 grid gap-4">
             <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <div class="flex items-center justify-between">
+              <div class="flex items-start justify-between">
                 <div>
-                  <p class="text-sm font-semibold">Instructor approvals</p>
-                  <p class="text-xs text-muted">7 pending requests</p>
+                  <p class="text-sm font-semibold">Engineering Admission Sprint</p>
+                  <p class="text-xs text-muted">8 of 12 modules complete</p>
                 </div>
-                <button class="rounded-xl bg-amber-50 px-3 py-1 text-xs font-semibold text-ink">
-                  Review
-                </button>
+                <span class="text-xs font-semibold text-copper">67%</span>
               </div>
             </div>
             <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <div class="flex items-center justify-between">
+              <div class="flex items-start justify-between">
                 <div>
-                  <p class="text-sm font-semibold">Student verifications</p>
-                  <p class="text-xs text-muted">18 flagged profiles</p>
+                  <p class="text-sm font-semibold">Medical MCQ Vault</p>
+                  <p class="text-xs text-muted">5 of 9 modules complete</p>
                 </div>
-                <button class="rounded-xl bg-amber-50 px-3 py-1 text-xs font-semibold text-ink">
-                  Resolve
-                </button>
+                <span class="text-xs font-semibold text-copper">56%</span>
               </div>
             </div>
             <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <div class="flex items-center justify-between">
+              <div class="flex items-start justify-between">
                 <div>
-                  <p class="text-sm font-semibold">Access role updates</p>
-                  <p class="text-xs text-muted">5 pending changes</p>
+                  <p class="text-sm font-semibold">Interview Coaching</p>
+                  <p class="text-xs text-muted">2 of 5 sessions completed</p>
                 </div>
-                <button class="rounded-xl bg-amber-50 px-3 py-1 text-xs font-semibold text-ink">
-                  Assign
-                </button>
+                <span class="text-xs font-semibold text-copper">40%</span>
               </div>
             </div>
           </div>
@@ -130,20 +131,20 @@
         <div
           class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
         >
-          <h2 class="font-display text-2xl">Quick controls</h2>
-          <p class="text-sm text-muted">Maintain platform operations.</p>
+          <h2 class="font-display text-2xl">Quick actions</h2>
+          <p class="text-sm text-muted">Jump into your next learning step.</p>
           <div class="mt-6 grid gap-3">
             <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-shield-halved mr-2"></i>Security audit
+              <i class="fa-solid fa-pen-to-square mr-2"></i>Start mock test
             </button>
             <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-rectangle-list mr-2"></i>Exam approvals
+              <i class="fa-solid fa-book-open mr-2"></i>Open study notes
             </button>
             <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-bullhorn mr-2"></i>Global announcement
+              <i class="fa-solid fa-comments mr-2"></i>Join discussion
             </button>
             <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-sack-dollar mr-2"></i>Billing overview
+              <i class="fa-solid fa-calendar-check mr-2"></i>Admission guidance
             </button>
           </div>
         </div>
@@ -154,21 +155,21 @@
           class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
         >
           <div class="flex items-center justify-between">
-            <h2 class="font-display text-2xl">Content governance</h2>
-            <button class="text-sm font-semibold text-copper">Manage</button>
+            <h2 class="font-display text-2xl">Upcoming exams</h2>
+            <button class="text-sm font-semibold text-copper">View routine</button>
           </div>
           <div class="mt-6 grid gap-4">
             <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Mock test audits</p>
-              <p class="text-xs text-muted">12 flagged for review</p>
+              <p class="text-sm font-semibold">Mock Test - Physics</p>
+              <p class="text-xs text-muted">Saturday, 9:00 AM</p>
             </div>
             <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Study materials</p>
-              <p class="text-xs text-muted">8 uploads pending approval</p>
+              <p class="text-sm font-semibold">Chemistry Drill - MCQ Set 4</p>
+              <p class="text-xs text-muted">Monday, 7:30 PM</p>
             </div>
             <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Community moderation</p>
-              <p class="text-xs text-muted">3 discussion threads escalated</p>
+              <p class="text-sm font-semibold">Admission Interview Prep</p>
+              <p class="text-xs text-muted">Wednesday, 5:00 PM</p>
             </div>
           </div>
         </div>
@@ -177,21 +178,21 @@
           class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
         >
           <div class="flex items-center justify-between">
-            <h2 class="font-display text-2xl">System activity</h2>
-            <button class="text-sm font-semibold text-copper">View logs</button>
+            <h2 class="font-display text-2xl">Performance snapshot</h2>
+            <button class="text-sm font-semibold text-copper">See analytics</button>
           </div>
           <div class="mt-6 grid gap-4">
             <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Notification engine</p>
-              <p class="text-xs text-muted">Email queue cleared 20 mins ago</p>
+              <p class="text-sm font-semibold">Top subject</p>
+              <p class="text-xs text-muted">Biology - 84% average</p>
             </div>
             <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Payment gateway</p>
-              <p class="text-xs text-muted">All transactions synced</p>
+              <p class="text-sm font-semibold">Needs focus</p>
+              <p class="text-xs text-muted">Math - practice 3 more tests</p>
             </div>
             <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Database health</p>
-              <p class="text-xs text-muted">No replication lag detected</p>
+              <p class="text-sm font-semibold">Goal tracker</p>
+              <p class="text-xs text-muted">12 of 18 weekly tasks completed</p>
             </div>
           </div>
         </div>
@@ -200,25 +201,25 @@
       <section class="mt-10 rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]">
         <div class="flex flex-wrap items-center justify-between gap-4">
           <div>
-            <h2 class="font-display text-2xl">Operational alerts</h2>
-            <p class="text-sm text-muted">Resolve outstanding platform actions.</p>
+            <h2 class="font-display text-2xl">Resources and support</h2>
+            <p class="text-sm text-muted">Stay connected with instructors and guidance.</p>
           </div>
           <button class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-ink">
-            Export summary
+            Contact support
           </button>
         </div>
         <div class="mt-6 grid gap-4 lg:grid-cols-3">
           <div class="rounded-2xl border border-amber-100 bg-white p-4">
-            <p class="text-sm font-semibold">High-priority tickets</p>
-            <p class="text-xs text-muted">4 open - assign support staff</p>
+            <p class="text-sm font-semibold">Study materials</p>
+            <p class="text-xs text-muted">Browse notes and video lessons</p>
           </div>
           <div class="rounded-2xl border border-amber-100 bg-white p-4">
-            <p class="text-sm font-semibold">Infrastructure updates</p>
-            <p class="text-xs text-muted">2 patches scheduled tonight</p>
+            <p class="text-sm font-semibold">Discussion board</p>
+            <p class="text-xs text-muted">Ask questions and share insights</p>
           </div>
           <div class="rounded-2xl border border-amber-100 bg-white p-4">
-            <p class="text-sm font-semibold">Compliance checks</p>
-            <p class="text-xs text-muted">Run the monthly audit</p>
+            <p class="text-sm font-semibold">Payment status</p>
+            <p class="text-xs text-muted">Premium access active until June 30</p>
           </div>
         </div>
       </section>

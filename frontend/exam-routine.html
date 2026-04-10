@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exam Routine - EduMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+    />
+    <script src="tailwind.config.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body
+    class="min-h-screen font-body text-ink bg-[radial-gradient(circle_at_top_left,_#f7efe5,_#f2e4d2_35%,_#efe6dc_60%,_#e6d9c8)] relative overflow-x-hidden"
+  >
+    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
+      <header class="flex flex-wrap items-center justify-between gap-6">
+        <div class="flex items-center gap-4">
+          <div
+            class="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 text-white grid place-items-center text-2xl font-display shadow-[0_16px_36px_rgba(28,26,24,0.18)]"
+          >
+            E
+          </div>
+          <div>
+            <p class="uppercase tracking-[0.2em] text-xs font-semibold text-copper">
+              Exam Routine
+            </p>
+            <h1 class="font-display text-3xl sm:text-4xl">Stay ahead of every test</h1>
+          </div>
+        </div>
+        <div class="flex items-center gap-3">
+          <a
+            class="rounded-2xl border border-amber-200 bg-white/80 px-4 py-2 text-sm font-semibold text-ink shadow-[0_12px_30px_rgba(28,26,24,0.12)]"
+            href="student.html"
+          >
+            Back to dashboard
+          </a>
+        </div>
+      </header>
+
+      <section class="mt-10 grid gap-6 lg:grid-cols-3">
+        <div
+          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
+        >
+          <p class="text-xs uppercase tracking-[0.18em] text-muted">Next exam</p>
+          <div class="mt-4">
+            <p class="text-2xl font-semibold">Physics Mock</p>
+            <p class="text-xs text-muted">Saturday, 9:00 AM</p>
+          </div>
+          <p class="mt-3 text-sm text-muted">Prepare with the timed MCQ set.</p>
+        </div>
+        <div
+          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
+        >
+          <p class="text-xs uppercase tracking-[0.18em] text-muted">This week</p>
+          <div class="mt-4">
+            <p class="text-2xl font-semibold">3 exams</p>
+            <p class="text-xs text-muted">2 mocks, 1 interview prep</p>
+          </div>
+          <p class="mt-3 text-sm text-muted">Balance practice and revision time.</p>
+        </div>
+        <div
+          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
+        >
+          <p class="text-xs uppercase tracking-[0.18em] text-muted">Focus area</p>
+          <div class="mt-4">
+            <p class="text-2xl font-semibold">Chemistry</p>
+            <p class="text-xs text-muted">2 topics to revise</p>
+          </div>
+          <p class="mt-3 text-sm text-muted">Review acids and salts chapter.</p>
+        </div>
+      </section>
+
+      <section class="mt-10 rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]">
+        <div>
+          <h2 class="font-display text-2xl">Upcoming schedule</h2>
+          <p class="text-sm text-muted">All scheduled tests and prep sessions.</p>
+        </div>
+        <div class="mt-6 grid gap-4">
+          <div class="rounded-2xl border border-amber-100 bg-white p-4">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-semibold">Physics Mock Test</p>
+                <p class="text-xs text-muted">Sat, 9:00 AM - 100 questions</p>
+              </div>
+              <span class="text-xs font-semibold text-copper">High</span>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-amber-100 bg-white p-4">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-semibold">Chemistry Drill</p>
+                <p class="text-xs text-muted">Mon, 7:30 PM - 40 questions</p>
+              </div>
+              <span class="text-xs font-semibold text-copper">Medium</span>
+            </div>
+          </div>
+          <div class="rounded-2xl border border-amber-100 bg-white p-4">
+            <div class="flex items-start justify-between">
+              <div>
+                <p class="text-sm font-semibold">Admission Interview Prep</p>
+                <p class="text-xs text-muted">Wed, 5:00 PM - 20 prompts</p>
+              </div>
+              <span class="text-xs font-semibold text-copper">Upcoming</span>
+            </div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </body>
+</html>

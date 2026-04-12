@@ -7,147 +7,280 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    />
-    <script src="tailwind.config.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --primary: #d9772b;
+        --primary-light: #fbe8d6;
+        --primary-dark: #9a4b25;
+        --amber: #e3a64d;
+        --amber-light: #fdeedb;
+        --blue: #2e6fb5;
+        --blue-light: #e4eef9;
+        --red: #d65a4a;
+        --red-light: #fde5e1;
+        --bg: #f4e7d7;
+        --surface: #fff8f1;
+        --border: #ead8c7;
+        --text: #2d2520;
+        --muted: #7a6a5c;
+        --radius: 14px;
+        --radius-sm: 10px;
+      }
+
+      body {
+        font-family: "Manrope", sans-serif;
+        background: radial-gradient(circle at top left, #f7efe5, #f2e4d2 35%, #efe6dc 60%, #e6d9c8);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      .layout { display: flex; min-height: 100vh; }
+
+      .sidebar {
+        width: 240px;
+        background: rgba(255, 248, 241, 0.9);
+        border-right: 1px solid var(--border);
+        padding: 1.5rem 1rem;
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0; left: 0;
+        height: 100vh;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+      }
+
+      .logo {
+        display: flex; align-items: center; gap: 10px;
+        padding: 0 0.5rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.25rem;
+      }
+      .logo-icon {
+        width: 34px; height: 34px; border-radius: 11px;
+        background: linear-gradient(135deg, #f2b15f, #c65b2c);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 10px 24px rgba(198, 91, 44, 0.25);
+      }
+      .logo-icon svg { width: 18px; height: 18px; fill: white; }
+      .logo-text { font-family: "Playfair Display", serif; font-size: 17px; font-weight: 700; color: var(--text); }
+      .logo-text span { color: var(--primary); }
+
+      .nav-section { margin-bottom: 1.5rem; }
+      .nav-label {
+        font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+        text-transform: uppercase; color: var(--muted);
+        padding: 0 0.75rem; margin-bottom: 6px;
+      }
+      .nav-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 9px 12px; border-radius: var(--radius-sm);
+        font-size: 14px; color: var(--muted);
+        cursor: pointer; transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+      .nav-item:hover { background: var(--bg); color: var(--text); }
+      .nav-item.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
+      .nav-item.active svg { stroke: var(--primary-dark); }
+
+      .main { margin-left: 240px; flex: 1; }
+
+      .topbar {
+        background: rgba(255, 248, 241, 0.92);
+        border-bottom: 1px solid var(--border);
+        padding: 0 2rem;
+        height: 60px;
+        display: flex; align-items: center; justify-content: space-between;
+        position: sticky; top: 0; z-index: 5;
+        backdrop-filter: blur(12px);
+      }
+      .topbar-title { font-family: "Playfair Display", serif; font-size: 16px; font-weight: 700; }
+      .topbar-right { display: flex; align-items: center; gap: 12px; }
+      .btn {
+        font-family: "Manrope", sans-serif; font-size: 13px; font-weight: 600;
+        padding: 8px 18px; border-radius: 10px; cursor: pointer;
+        transition: all 0.15s; white-space: nowrap; border: 1px solid var(--border);
+        background: rgba(255, 248, 241, 0.95); color: var(--text);
+        text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+      }
+      .btn:hover { background: var(--bg); }
+      .btn-primary { background: linear-gradient(135deg, #f2b15f, #c65b2c); border-color: transparent; color: white; }
+      .btn-primary:hover { background: linear-gradient(135deg, #eaa44f, #b45126); }
+
+      .content { padding: 2rem; }
+
+      .page-header { margin-bottom: 1.75rem; }
+      .page-header h1 { font-family: "Playfair Display", serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+      .page-header p { font-size: 14px; color: var(--muted); }
+
+      .split { display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 1.5rem; }
+      .panel {
+        background: rgba(255, 248, 241, 0.9);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: 0 18px 36px rgba(45, 37, 32, 0.08);
+      }
+      .panel h2 { font-family: "Playfair Display", serif; font-size: 18px; margin-bottom: 8px; }
+      .panel p { font-size: 13px; color: var(--muted); }
+
+      .benefits { display: grid; gap: 12px; margin-top: 1rem; }
+      .benefit {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 12px 14px;
+      }
+      .benefit h4 { font-size: 14px; margin-bottom: 4px; }
+      .benefit span { font-size: 12px; color: var(--muted); }
+
+      .form-group { display: grid; gap: 6px; margin-bottom: 12px; }
+      .form-group label { font-size: 12px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; }
+      .form-group input {
+        width: 100%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 10px;
+        padding: 10px 12px;
+        font-size: 14px;
+        color: var(--text);
+        outline: none;
+      }
+      .form-group input:focus { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(217, 119, 43, 0.12); }
+
+      .toggle-row { display: flex; gap: 8px; align-items: center; }
+      .toggle-btn {
+        border: 1px solid var(--border);
+        background: var(--primary-light);
+        color: var(--primary-dark);
+        border-radius: 10px;
+        padding: 8px 12px;
+        font-weight: 600;
+        cursor: pointer;
+      }
+
+      .form-footer {
+        margin-top: 12px;
+        font-size: 13px;
+        color: var(--muted);
+      }
+      .form-footer a { color: var(--primary-dark); font-weight: 600; text-decoration: none; }
+
+      @media (max-width: 1100px) {
+        .split { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 900px) {
+        .sidebar { display: none; }
+        .main { margin-left: 0; }
+      }
+      @media (max-width: 520px) {
+        .content { padding: 1rem; }
+      }
+    </style>
   </head>
-  <body
-    class="min-h-screen font-body text-ink bg-[radial-gradient(circle_at_top_left,_#f7efe5,_#f2e4d2_35%,_#efe6dc_60%,_#e6d9c8)] flex items-center justify-center relative overflow-x-hidden px-4 sm:px-6 lg:px-8 py-14 sm:py-20"
-  >
-    <main class="relative z-10 w-full max-w-[1080px] grid gap-10 lg:gap-12 lg:grid-cols-2 items-start lg:items-center">
-      <section class="grid gap-5 text-center lg:text-left">
-        <div
-          class="hidden lg:grid h-16 w-16 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 text-white place-items-center text-3xl font-display shadow-[0_24px_60px_rgba(28,26,24,0.18)]"
-        >
-          E
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <span class="logo-text">Edu<span>Mate</span></span>
         </div>
-        <p class="uppercase tracking-[0.2em] text-xs font-semibold text-copper">
-          University Admission Hub
-        </p>
-        <h1 class="font-display text-[clamp(38px,5vw,64px)] leading-tight m-0">
-          Start your EduMate journey
-        </h1>
-        <p class="text-base leading-7 text-muted max-w-md">
-          Create an account to access mock tests, study materials, and performance
-          tracking in one place.
-        </p>
-        <div class="flex flex-wrap gap-6 justify-center lg:justify-start">
-          <div class="grid gap-1">
-            <span class="text-lg font-semibold">Daily</span>
-            <span class="text-xs uppercase tracking-[0.18em] text-muted">
-              <i class="fa-solid fa-bolt mr-2"></i>Practice Plans
-            </span>
-          </div>
-          <div class="grid gap-1">
-            <span class="text-lg font-semibold">Smart</span>
-            <span class="text-xs uppercase tracking-[0.18em] text-muted">
-              <i class="fa-solid fa-layer-group mr-2"></i>Study Paths
-            </span>
-          </div>
-          <div class="grid gap-1">
-            <span class="text-lg font-semibold">Live</span>
-            <span class="text-xs uppercase tracking-[0.18em] text-muted">
-              <i class="fa-solid fa-people-group mr-2"></i>Community
-            </span>
+        <div class="nav-section">
+          <p class="nav-label">Get Started</p>
+          <a class="nav-item active" href="signup.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M16 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M12 7a4 4 0 11-8 0 4 4 0 018 0zM20 8v6m3-3h-6"/></svg>
+            Create Account
+          </a>
+          <a class="nav-item" href="index.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H3m6-6l-6 6 6 6m6-6h6"/></svg>
+            Sign In
+          </a>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <span class="topbar-title">Create Account</span>
+          <div class="topbar-right">
+            <a class="btn" href="index.html">Back to login</a>
           </div>
         </div>
-      </section>
 
-      <section
-        class="bg-white/80 backdrop-blur border border-amber-100 rounded-3xl p-6 sm:p-8 shadow-[0_24px_60px_rgba(28,26,24,0.18)] grid gap-6"
-        aria-label="Create account form"
-      >
-        <header class="grid gap-1 text-center lg:text-left">
-          <h2 class="font-display text-2xl">Create your account</h2>
-          <p class="text-muted">Get started in less than a minute.</p>
-        </header>
-
-        <form class="grid gap-4" id="signupForm">
-          <div class="grid gap-2 text-sm text-muted">
-            <span>Full name</span>
-            <input
-              class="w-full rounded-xl border border-amber-200 px-4 py-3 text-sm text-ink focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20"
-              type="text"
-              name="fullName"
-              placeholder="Your name"
-              required
-            />
+        <div class="content">
+          <div class="page-header">
+            <h1>Start your EduMate journey</h1>
+            <p>Create your account to access mock tests, study notes, and progress tracking.</p>
           </div>
 
-          <div class="grid gap-2 text-sm text-muted">
-            <span>Email</span>
-            <input
-              class="w-full rounded-xl border border-amber-200 px-4 py-3 text-sm text-ink focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20"
-              type="email"
-              name="email"
-              placeholder="you@email.com"
-              required
-            />
+          <div class="split">
+            <section class="panel">
+              <h2>Why join EduMate?</h2>
+              <p>Build a focused study plan with daily guidance and instant feedback.</p>
+              <div class="benefits">
+                <div class="benefit">
+                  <h4>Structured mock tests</h4>
+                  <span>Timed tests with detailed performance review.</span>
+                </div>
+                <div class="benefit">
+                  <h4>Weekly study paths</h4>
+                  <span>Curated tasks based on your target university.</span>
+                </div>
+                <div class="benefit">
+                  <h4>Community support</h4>
+                  <span>Access mentors, peers, and discussion rooms.</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <h2>Create your account</h2>
+              <p>It only takes a minute to get started.</p>
+              <form id="signupForm" style="margin-top:1rem">
+                <div class="form-group">
+                  <label for="fullName">Full name</label>
+                  <input id="fullName" name="fullName" type="text" placeholder="Your name" required />
+                </div>
+                <div class="form-group">
+                  <label for="email">Email</label>
+                  <input id="email" name="email" type="email" placeholder="you@email.com" required />
+                </div>
+                <div class="form-group">
+                  <label for="phone">Phone</label>
+                  <input id="phone" name="phone" type="tel" placeholder="+880 1234 567 890" required />
+                </div>
+                <div class="form-group">
+                  <label for="password">Create password</label>
+                  <div class="toggle-row">
+                    <input id="password" name="password" type="password" placeholder="Use 8+ characters" minlength="8" required />
+                    <button class="toggle-btn" type="button" id="toggleSignupPassword">Show</button>
+                  </div>
+                </div>
+                <label style="display:flex;gap:8px;font-size:13px;color:var(--muted);margin-bottom:12px">
+                  <input type="checkbox" required />
+                  <span>
+                    I agree to the <a href="#" style="color:var(--primary-dark);font-weight:600;text-decoration:none">terms</a>
+                    and <a href="#" style="color:var(--primary-dark);font-weight:600;text-decoration:none">privacy policy</a>.
+                  </span>
+                </label>
+                <button class="btn btn-primary" type="submit">Create account</button>
+              </form>
+              <div class="form-footer">
+                Already have an account? <a href="index.html">Sign in</a>
+              </div>
+            </section>
           </div>
-
-          <div class="grid gap-2 text-sm text-muted">
-            <span>Phone</span>
-            <input
-              class="w-full rounded-xl border border-amber-200 px-4 py-3 text-sm text-ink focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20"
-              type="tel"
-              name="phone"
-              placeholder="+880 1234 567 890"
-              required
-            />
-          </div>
-
-          <div class="grid gap-2 text-sm text-muted">
-            <span>Create password</span>
-            <div class="flex items-center gap-2">
-              <input
-                class="w-full rounded-xl border border-amber-200 px-4 py-3 text-sm text-ink focus:outline-none focus:border-copper focus:ring-2 focus:ring-copper/20"
-                type="password"
-                name="password"
-                placeholder="Use 8+ characters"
-                minlength="8"
-                required
-              />
-              <button
-                type="button"
-                class="rounded-xl bg-amber-100 px-4 py-2 text-sm font-semibold text-ink"
-                id="toggleSignupPassword"
-              >
-                Show
-              </button>
-            </div>
-          </div>
-
-          <label class="flex items-start gap-2 text-sm text-muted">
-            <input class="mt-1 accent-copper" type="checkbox" required />
-            <span>
-              I agree to the
-              <a class="text-copper font-semibold" href="#">terms</a>
-              and
-              <a class="text-copper font-semibold" href="#">privacy policy</a>.
-            </span>
-          </label>
-
-          <button
-            class="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 px-4 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:shadow-[0_16px_30px_rgba(197,103,43,0.25)]"
-            type="submit"
-          >
-            Create account
-          </button>
-        </form>
-
-        <footer class="flex items-center gap-2 text-sm text-muted">
-          <span>Already have an account?</span>
-          <a class="text-copper font-semibold" href="index.html">Sign in</a>
-        </footer>
-      </section>
-    </main>
+        </div>
+      </div>
+    </div>
 
     <script src="script.js"></script>
   </body>

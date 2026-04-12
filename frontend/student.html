@@ -7,231 +7,378 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    />
-    <script src="tailwind.config.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --primary: #d9772b;
+        --primary-light: #fbe8d6;
+        --primary-dark: #9a4b25;
+        --amber: #e3a64d;
+        --amber-light: #fdeedb;
+        --blue: #2e6fb5;
+        --blue-light: #e4eef9;
+        --red: #d65a4a;
+        --red-light: #fde5e1;
+        --bg: #f4e7d7;
+        --surface: #fff8f1;
+        --border: #ead8c7;
+        --text: #2d2520;
+        --muted: #7a6a5c;
+        --radius: 14px;
+        --radius-sm: 10px;
+      }
+
+      body {
+        font-family: "Manrope", sans-serif;
+        background: radial-gradient(circle at top left, #f7efe5, #f2e4d2 35%, #efe6dc 60%, #e6d9c8);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      .layout { display: flex; min-height: 100vh; }
+
+      .sidebar {
+        width: 240px;
+        background: rgba(255, 248, 241, 0.9);
+        border-right: 1px solid var(--border);
+        padding: 1.5rem 1rem;
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0; left: 0;
+        height: 100vh;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+      }
+
+      .logo {
+        display: flex; align-items: center; gap: 10px;
+        padding: 0 0.5rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.25rem;
+      }
+      .logo-icon {
+        width: 34px; height: 34px; border-radius: 11px;
+        background: linear-gradient(135deg, #f2b15f, #c65b2c);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 10px 24px rgba(198, 91, 44, 0.25);
+      }
+      .logo-icon svg { width: 18px; height: 18px; fill: white; }
+      .logo-text { font-family: "Playfair Display", serif; font-size: 17px; font-weight: 700; color: var(--text); }
+      .logo-text span { color: var(--primary); }
+
+      .nav-section { margin-bottom: 1.5rem; }
+      .nav-label {
+        font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+        text-transform: uppercase; color: var(--muted);
+        padding: 0 0.75rem; margin-bottom: 6px;
+      }
+      .nav-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 9px 12px; border-radius: var(--radius-sm);
+        font-size: 14px; color: var(--muted);
+        cursor: pointer; transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+      .nav-item:hover { background: var(--bg); color: var(--text); }
+      .nav-item.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
+      .nav-item.active svg { stroke: var(--primary-dark); }
+
+      .main { margin-left: 240px; flex: 1; }
+
+      .topbar {
+        background: rgba(255, 248, 241, 0.92);
+        border-bottom: 1px solid var(--border);
+        padding: 0 2rem;
+        height: 60px;
+        display: flex; align-items: center; justify-content: space-between;
+        position: sticky; top: 0; z-index: 5;
+        backdrop-filter: blur(12px);
+      }
+      .topbar-title { font-family: "Playfair Display", serif; font-size: 16px; font-weight: 700; }
+      .topbar-right { display: flex; align-items: center; gap: 12px; }
+      .avatar {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: var(--primary-light); color: var(--primary-dark);
+        font-size: 12px; font-weight: 600;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(217, 119, 43, 0.2);
+      }
+      .notif-btn {
+        width: 34px; height: 34px; border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; position: relative;
+      }
+      .notif-btn svg { width: 16px; height: 16px; stroke: var(--muted); }
+      .notif-dot {
+        position: absolute; top: 6px; right: 6px;
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--primary); border: 1.5px solid white;
+      }
+
+      .content { padding: 2rem; }
+
+      .page-header { margin-bottom: 1.75rem; }
+      .page-header h1 { font-family: "Playfair Display", serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+      .page-header p { font-size: 14px; color: var(--muted); }
+
+      .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+      .stat-card {
+        background: rgba(255, 248, 241, 0.9);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        box-shadow: 0 16px 36px rgba(45, 37, 32, 0.08);
+      }
+      .stat-card .s-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .stat-card .s-val { font-family: "Playfair Display", serif; font-size: 24px; font-weight: 700; }
+      .stat-card .s-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+      .stat-card.highlight { background: linear-gradient(135deg, #f2b15f, #c65b2c); border-color: transparent; }
+      .stat-card.highlight .s-label, .stat-card.highlight .s-val, .stat-card.highlight .s-sub { color: white; }
+
+      .panel-grid { display: grid; gap: 1.25rem; grid-template-columns: repeat(2, 1fr); }
+      .panel {
+        background: rgba(255, 248, 241, 0.9);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.5rem;
+        box-shadow: 0 18px 36px rgba(45, 37, 32, 0.08);
+      }
+      .panel h2 { font-family: "Playfair Display", serif; font-size: 18px; margin-bottom: 4px; }
+      .panel p { font-size: 13px; color: var(--muted); }
+
+      .list { display: grid; gap: 12px; margin-top: 1rem; }
+      .list-item {
+        border: 1px solid var(--border);
+        background: var(--surface);
+        border-radius: 12px;
+        padding: 12px 14px;
+        display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
+      }
+      .list-item h4 { font-size: 14px; margin-bottom: 4px; }
+      .list-item span { font-size: 12px; color: var(--muted); }
+
+      .btn {
+        font-family: "Manrope", sans-serif; font-size: 13px; font-weight: 600;
+        padding: 8px 18px; border-radius: 10px; cursor: pointer;
+        transition: all 0.15s; white-space: nowrap; border: 1px solid var(--border);
+        background: rgba(255, 248, 241, 0.95); color: var(--text);
+        text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+      }
+      .btn:hover { background: var(--bg); }
+      .btn-primary { background: linear-gradient(135deg, #f2b15f, #c65b2c); border-color: transparent; color: white; }
+      .btn-primary:hover { background: linear-gradient(135deg, #eaa44f, #b45126); }
+      .btn-light { background: var(--primary-light); border-color: var(--primary-light); color: var(--primary-dark); }
+
+      .chip {
+        font-size: 11px; padding: 4px 8px; border-radius: 999px;
+        background: var(--primary-light); color: var(--primary-dark); font-weight: 600;
+      }
+
+      .quick-actions { display: grid; gap: 10px; margin-top: 1rem; }
+
+      @media (max-width: 1100px) {
+        .stat-row { grid-template-columns: repeat(2, 1fr); }
+        .panel-grid { grid-template-columns: 1fr; }
+      }
+      @media (max-width: 900px) {
+        .sidebar { display: none; }
+        .main { margin-left: 0; }
+      }
+      @media (max-width: 520px) {
+        .content { padding: 1rem; }
+        .stat-row { grid-template-columns: 1fr; }
+      }
+    </style>
   </head>
-  <body
-    class="min-h-screen font-body text-ink bg-[radial-gradient(circle_at_top_left,_#f7efe5,_#f2e4d2_35%,_#efe6dc_60%,_#e6d9c8)] relative overflow-x-hidden"
-  >
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
-      <header class="flex flex-wrap items-center justify-between gap-6">
-        <div class="flex items-center gap-4">
-          <div
-            class="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 text-white grid place-items-center text-2xl font-display shadow-[0_16px_36px_rgba(28,26,24,0.18)]"
-          >
-            E
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           </div>
-          <div>
-            <p class="uppercase tracking-[0.2em] text-xs font-semibold text-copper">
-              Student Dashboard
-            </p>
-            <h1 class="font-display text-3xl sm:text-4xl">Welcome back, Ayesha</h1>
-          </div>
+          <span class="logo-text">Edu<span>Mate</span></span>
         </div>
-        <div class="flex items-center gap-3">
-          <button
-            class="rounded-2xl border border-amber-200 bg-white/80 px-4 py-2 text-sm font-semibold text-ink shadow-[0_12px_30px_rgba(28,26,24,0.12)]"
-          >
-            <i class="fa-regular fa-bell mr-2"></i>Updates
-          </button>
-          <a
-            class="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 px-4 py-2 text-sm font-semibold text-white"
-            href="index.html"
-          >
-            Sign out
+        <div class="nav-section">
+          <p class="nav-label">Student</p>
+          <a class="nav-item active" href="student.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Dashboard
+          </a>
+          <a class="nav-item" href="mock-test.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            Mock Tests
+          </a>
+          <a class="nav-item" href="courses.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            Courses
+          </a>
+          <a class="nav-item" href="performance.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Performance
+          </a>
+          <a class="nav-item" href="discussion.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            Discussion
+          </a>
+          <a class="nav-item" href="exam-routine.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Exam Routine
           </a>
         </div>
-      </header>
+      </aside>
 
-      <section class="mt-10 grid gap-6 lg:grid-cols-3">
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">Mock tests completed</p>
-          <div class="mt-4 flex items-center justify-between">
-            <span class="text-3xl font-semibold">8</span>
-            <span class="text-xs text-copper font-semibold">+2 this week</span>
-          </div>
-          <p class="mt-3 text-sm text-muted">Keep your streak alive with daily practice.</p>
-        </div>
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">Average score</p>
-          <div class="mt-4 flex items-center justify-between">
-            <span class="text-3xl font-semibold">76%</span>
-            <span class="text-xs text-copper font-semibold">+5% trend</span>
-          </div>
-          <p class="mt-3 text-sm text-muted">You are trending up in science and math.</p>
-        </div>
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">Study time</p>
-          <div class="mt-4 flex items-center justify-between">
-            <span class="text-3xl font-semibold">12h</span>
-            <span class="text-xs text-copper font-semibold">This week</span>
-          </div>
-          <p class="mt-3 text-sm text-muted">45 min more to reach your goal.</p>
-        </div>
-      </section>
-
-      <section class="mt-10 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h2 class="font-display text-2xl">My courses</h2>
-              <p class="text-sm text-muted">Track lessons, assignments, and progress.</p>
+      <div class="main">
+        <div class="topbar">
+          <span class="topbar-title">Student Dashboard</span>
+          <div class="topbar-right">
+            <div class="notif-btn">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              <div class="notif-dot"></div>
             </div>
-            <button class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-ink">
-              Manage courses
-            </button>
+            <div class="avatar">SH</div>
           </div>
-          <div class="mt-6 grid gap-4">
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <div class="flex items-start justify-between">
-                <div>
-                  <p class="text-sm font-semibold">Engineering Admission Sprint</p>
-                  <p class="text-xs text-muted">8 of 12 modules complete</p>
+        </div>
+
+        <div class="content">
+          <div class="page-header">
+            <h1>Welcome back, Ayesha</h1>
+            <p>Keep your momentum steady and focus on the next big exam.</p>
+          </div>
+
+          <div class="stat-row">
+            <div class="stat-card highlight">
+              <p class="s-label">Mock Tests</p>
+              <p class="s-val">8 Completed</p>
+              <p class="s-sub">2 this week</p>
+            </div>
+            <div class="stat-card">
+              <p class="s-label">Average Score</p>
+              <p class="s-val" style="color:var(--primary)">76%</p>
+              <p class="s-sub">Up 5% trend</p>
+            </div>
+            <div class="stat-card">
+              <p class="s-label">Study Hours</p>
+              <p class="s-val">12h</p>
+              <p class="s-sub">Goal: 15h</p>
+            </div>
+            <div class="stat-card">
+              <p class="s-label">Next Mock</p>
+              <p class="s-val">Physics</p>
+              <p class="s-sub">Saturday 9:00 AM</p>
+            </div>
+          </div>
+
+          <div class="panel-grid">
+            <section class="panel">
+              <h2>Upcoming exams</h2>
+              <p>Stay prepared for the tests scheduled this week.</p>
+              <div class="list">
+                <div class="list-item">
+                  <div>
+                    <h4>Physics Mock Test</h4>
+                    <span>Saturday, 9:00 AM - 100 questions</span>
+                  </div>
+                  <span class="chip">High</span>
                 </div>
-                <span class="text-xs font-semibold text-copper">67%</span>
-              </div>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <div class="flex items-start justify-between">
-                <div>
-                  <p class="text-sm font-semibold">Medical MCQ Vault</p>
-                  <p class="text-xs text-muted">5 of 9 modules complete</p>
+                <div class="list-item">
+                  <div>
+                    <h4>Chemistry Drill</h4>
+                    <span>Monday, 7:30 PM - 40 questions</span>
+                  </div>
+                  <span class="chip">Medium</span>
                 </div>
-                <span class="text-xs font-semibold text-copper">56%</span>
-              </div>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <div class="flex items-start justify-between">
-                <div>
-                  <p class="text-sm font-semibold">Interview Coaching</p>
-                  <p class="text-xs text-muted">2 of 5 sessions completed</p>
+                <div class="list-item">
+                  <div>
+                    <h4>Interview Prep</h4>
+                    <span>Wednesday, 5:00 PM - 20 prompts</span>
+                  </div>
+                  <span class="chip">Upcoming</span>
                 </div>
-                <span class="text-xs font-semibold text-copper">40%</span>
               </div>
-            </div>
-          </div>
-        </div>
+            </section>
 
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <h2 class="font-display text-2xl">Quick actions</h2>
-          <p class="text-sm text-muted">Jump into your next learning step.</p>
-          <div class="mt-6 grid gap-3">
-            <a
-              class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink"
-              href="mock-test.html"
-            >
-              <i class="fa-solid fa-pen-to-square mr-2"></i>Start mock test
-            </a>
-            <a
-              class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink"
-              href="exam-routine.html"
-            >
-              <i class="fa-solid fa-calendar-check mr-2"></i>Exam routine
-            </a>
-            <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-book-open mr-2"></i>Open study notes
-            </button>
-            <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-comments mr-2"></i>Join discussion
-            </button>
-            <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-compass mr-2"></i>Admission guidance
-            </button>
+            <section class="panel">
+              <h2>Quick actions</h2>
+              <p>Jump back into practice with one click.</p>
+              <div class="quick-actions">
+                <a class="btn btn-primary" href="mock-test.html">Start a mock test</a>
+                <a class="btn btn-light" href="exam-routine.html">View exam routine</a>
+                <button class="btn" type="button">Open study notes</button>
+                <button class="btn" type="button">Join discussion</button>
+              </div>
+            </section>
           </div>
-        </div>
-      </section>
 
-      <section class="mt-10 grid gap-6 lg:grid-cols-2">
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <div class="flex items-center justify-between">
-            <h2 class="font-display text-2xl">Upcoming exams</h2>
-            <span class="text-sm font-semibold text-muted">This week</span>
-          </div>
-          <div class="mt-6 grid gap-4">
-            <a class="rounded-2xl border border-amber-100 bg-white p-4 block" href="mock-test.html">
-              <p class="text-sm font-semibold">Mock Test - Physics</p>
-              <p class="text-xs text-muted">Saturday, 9:00 AM</p>
-            </a>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Chemistry Drill - MCQ Set 4</p>
-              <p class="text-xs text-muted">Monday, 7:30 PM</p>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Admission Interview Prep</p>
-              <p class="text-xs text-muted">Wednesday, 5:00 PM</p>
-            </div>
-          </div>
-        </div>
+          <div class="panel-grid" style="margin-top:1.25rem">
+            <section class="panel">
+              <h2>Course progress</h2>
+              <p>Track your active admission programs.</p>
+              <div class="list">
+                <div class="list-item">
+                  <div>
+                    <h4>Engineering Admission Sprint</h4>
+                    <span>8 of 12 modules complete</span>
+                  </div>
+                  <span class="chip">67%</span>
+                </div>
+                <div class="list-item">
+                  <div>
+                    <h4>Medical MCQ Vault</h4>
+                    <span>5 of 9 modules complete</span>
+                  </div>
+                  <span class="chip">56%</span>
+                </div>
+                <div class="list-item">
+                  <div>
+                    <h4>Interview Coaching</h4>
+                    <span>2 of 5 sessions completed</span>
+                  </div>
+                  <span class="chip">40%</span>
+                </div>
+              </div>
+            </section>
 
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <div class="flex items-center justify-between">
-            <h2 class="font-display text-2xl">Performance snapshot</h2>
-            <button class="text-sm font-semibold text-copper">See analytics</button>
-          </div>
-          <div class="mt-6 grid gap-4">
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Top subject</p>
-              <p class="text-xs text-muted">Biology - 84% average</p>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Needs focus</p>
-              <p class="text-xs text-muted">Math - practice 3 more tests</p>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Goal tracker</p>
-              <p class="text-xs text-muted">12 of 18 weekly tasks completed</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      <section class="mt-10 rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 class="font-display text-2xl">Resources and support</h2>
-            <p class="text-sm text-muted">Stay connected with instructors and guidance.</p>
-          </div>
-          <button class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-ink">
-            Contact support
-          </button>
-        </div>
-        <div class="mt-6 grid gap-4 lg:grid-cols-3">
-          <div class="rounded-2xl border border-amber-100 bg-white p-4">
-            <p class="text-sm font-semibold">Study materials</p>
-            <p class="text-xs text-muted">Browse notes and video lessons</p>
-          </div>
-          <div class="rounded-2xl border border-amber-100 bg-white p-4">
-            <p class="text-sm font-semibold">Discussion board</p>
-            <p class="text-xs text-muted">Ask questions and share insights</p>
-          </div>
-          <div class="rounded-2xl border border-amber-100 bg-white p-4">
-            <p class="text-sm font-semibold">Payment status</p>
-            <p class="text-xs text-muted">Premium access active until June 30</p>
+            <section class="panel">
+              <h2>Performance snapshot</h2>
+              <p>See what is improving and what needs focus.</p>
+              <div class="list">
+                <div class="list-item">
+                  <div>
+                    <h4>Top subject</h4>
+                    <span>Biology - 84% average</span>
+                  </div>
+                  <span class="chip">Strong</span>
+                </div>
+                <div class="list-item">
+                  <div>
+                    <h4>Needs focus</h4>
+                    <span>Math - 3 more mocks needed</span>
+                  </div>
+                  <span class="chip">Priority</span>
+                </div>
+                <div class="list-item">
+                  <div>
+                    <h4>Recent streak</h4>
+                    <span>4 days of continuous practice</span>
+                  </div>
+                  <span class="chip">On track</span>
+                </div>
+              </div>
+            </section>
           </div>
         </div>
-      </section>
+      </div>
     </div>
   </body>
 </html>

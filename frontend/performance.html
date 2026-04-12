@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Exam Routine - EduMate</title>
+    <title>Performance - EduMate</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -171,8 +171,20 @@
         font-size: 11px; padding: 4px 8px; border-radius: 999px;
         background: var(--primary-light); color: var(--primary-dark); font-weight: 600;
       }
-      .chip.amber { background: var(--amber-light); color: #8a541b; }
       .chip.blue { background: var(--blue-light); color: #1c578f; }
+      .chip.amber { background: var(--amber-light); color: #8a541b; }
+      .chip.red { background: var(--red-light); color: #a23e31; }
+
+      .bar {
+        height: 10px;
+        background: var(--bg);
+        border-radius: 999px;
+        overflow: hidden;
+      }
+      .bar > div {
+        height: 100%;
+        border-radius: 999px;
+      }
 
       @media (max-width: 1100px) {
         .stat-row { grid-template-columns: repeat(2, 1fr); }
@@ -211,7 +223,7 @@
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
             Courses
           </a>
-          <a class="nav-item" href="performance.html">
+          <a class="nav-item active" href="performance.html">
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             Performance
           </a>
@@ -219,7 +231,7 @@
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
             Discussion
           </a>
-          <a class="nav-item active" href="exam-routine.html">
+          <a class="nav-item" href="exam-routine.html">
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             Exam Routine
           </a>
@@ -228,7 +240,7 @@
 
       <div class="main">
         <div class="topbar">
-          <span class="topbar-title">Exam Routine</span>
+          <span class="topbar-title">Performance</span>
           <div class="topbar-right">
             <div class="notif-btn">
               <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
@@ -240,86 +252,153 @@
 
         <div class="content">
           <div class="page-header">
-            <h1>Upcoming routine</h1>
-            <p>Plan your week and stay ready for each test.</p>
+            <h1>Performance</h1>
+            <p>Monitor your score trends and practice efficiency.</p>
           </div>
 
           <div class="stat-row">
             <div class="stat-card highlight">
-              <p class="s-label">Next Exam</p>
-              <p class="s-val">Physics Mock</p>
-              <p class="s-sub">Saturday 9:00 AM</p>
+              <p class="s-label">Average Score</p>
+              <p class="s-val">74%</p>
+              <p class="s-sub">Up 6% in 30 days</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">This Week</p>
-              <p class="s-val">3 Exams</p>
-              <p class="s-sub">2 mocks, 1 interview prep</p>
+              <p class="s-label">Best Score</p>
+              <p class="s-val">92%</p>
+              <p class="s-sub">Math Practice #4</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">Focus Area</p>
-              <p class="s-val">Chemistry</p>
-              <p class="s-sub">2 topics to revise</p>
+              <p class="s-label">Mock Tests</p>
+              <p class="s-val">12</p>
+              <p class="s-sub">3 this month</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">Prep Hours</p>
-              <p class="s-val">6h</p>
-              <p class="s-sub">Goal: 8h</p>
+              <p class="s-label">Accuracy</p>
+              <p class="s-val">81%</p>
+              <p class="s-sub">Physics is strongest</p>
             </div>
           </div>
 
           <div class="panel-grid">
             <section class="panel">
-              <h2>Upcoming schedule</h2>
-              <p>All scheduled tests and prep sessions.</p>
+              <h2>Subject accuracy</h2>
+              <p>Correct answer rate by subject.</p>
               <div class="list">
                 <div class="list-item">
                   <div>
-                    <h4>Physics Mock Test</h4>
-                    <span>Sat, 9:00 AM - 100 questions</span>
+                    <h4>Physics</h4>
+                    <span>Strongest subject</span>
                   </div>
-                  <span class="chip">High</span>
+                  <div style="width:45%">
+                    <div class="bar"><div style="width:84%;background:var(--primary)"></div></div>
+                    <span style="font-size:12px;color:var(--muted)">84%</span>
+                  </div>
                 </div>
                 <div class="list-item">
                   <div>
-                    <h4>Chemistry Drill</h4>
-                    <span>Mon, 7:30 PM - 40 questions</span>
+                    <h4>Chemistry</h4>
+                    <span>Steady progress</span>
                   </div>
-                  <span class="chip amber">Medium</span>
+                  <div style="width:45%">
+                    <div class="bar"><div style="width:72%;background:var(--amber)"></div></div>
+                    <span style="font-size:12px;color:var(--muted)">72%</span>
+                  </div>
                 </div>
                 <div class="list-item">
                   <div>
-                    <h4>Admission Interview Prep</h4>
-                    <span>Wed, 5:00 PM - 20 prompts</span>
+                    <h4>Math</h4>
+                    <span>Needs more practice</span>
                   </div>
-                  <span class="chip blue">Upcoming</span>
+                  <div style="width:45%">
+                    <div class="bar"><div style="width:63%;background:var(--red)"></div></div>
+                    <span style="font-size:12px;color:var(--muted)">63%</span>
+                  </div>
                 </div>
               </div>
             </section>
 
             <section class="panel">
-              <h2>Revision focus</h2>
-              <p>Suggested topics to revise this week.</p>
+              <h2>Recent tests</h2>
+              <p>Latest mock test outcomes.</p>
               <div class="list">
                 <div class="list-item">
                   <div>
-                    <h4>Acids and salts</h4>
-                    <span>Complete 2 practice sheets</span>
+                    <h4>Full Admission Mock - Set 11</h4>
+                    <span>Score 78% - Rank 42 of 210</span>
                   </div>
-                  <span class="chip">Priority</span>
+                  <span class="chip">Strong</span>
                 </div>
                 <div class="list-item">
                   <div>
-                    <h4>Motion and vectors</h4>
-                    <span>Review formulas and speed drills</span>
+                    <h4>Physics Speed Drill</h4>
+                    <span>Score 82% - 4 incorrect</span>
                   </div>
-                  <span class="chip">Core</span>
+                  <span class="chip blue">Improve</span>
                 </div>
                 <div class="list-item">
                   <div>
-                    <h4>Algebra recap</h4>
-                    <span>30 minutes daily practice</span>
+                    <h4>Chemistry MCQ Marathon</h4>
+                    <span>Score 74% - 12 incorrect</span>
                   </div>
-                  <span class="chip">Routine</span>
+                  <span class="chip amber">Focus</span>
+                </div>
+              </div>
+            </section>
+          </div>
+
+          <div class="panel-grid" style="margin-top:1.25rem">
+            <section class="panel">
+              <h2>Time management</h2>
+              <p>Average pace compared to ideal time.</p>
+              <div class="list">
+                <div class="list-item">
+                  <div>
+                    <h4>Section completion</h4>
+                    <span>Average time per question</span>
+                  </div>
+                  <span class="chip">1.2 min</span>
+                </div>
+                <div class="list-item">
+                  <div>
+                    <h4>Skipped questions</h4>
+                    <span>Return and review rate</span>
+                  </div>
+                  <span class="chip amber">8%</span>
+                </div>
+                <div class="list-item">
+                  <div>
+                    <h4>Focus score</h4>
+                    <span>Based on pause activity</span>
+                  </div>
+                  <span class="chip blue">76%</span>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel">
+              <h2>Next actions</h2>
+              <p>Personalized suggestions for the week.</p>
+              <div class="list">
+                <div class="list-item">
+                  <div>
+                    <h4>Math revision</h4>
+                    <span>Complete 2 practice sets</span>
+                  </div>
+                  <span class="chip red">Priority</span>
+                </div>
+                <div class="list-item">
+                  <div>
+                    <h4>Physics recap</h4>
+                    <span>Review optics notes</span>
+                  </div>
+                  <span class="chip">Plan</span>
+                </div>
+                <div class="list-item">
+                  <div>
+                    <h4>Take a full mock</h4>
+                    <span>Schedule for Friday evening</span>
+                  </div>
+                  <span class="chip blue">Schedule</span>
                 </div>
               </div>
             </section>

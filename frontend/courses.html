@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Exam Routine - EduMate</title>
+    <title>Courses - EduMate</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -145,38 +145,65 @@
       .stat-card.highlight { background: linear-gradient(135deg, #f2b15f, #c65b2c); border-color: transparent; }
       .stat-card.highlight .s-label, .stat-card.highlight .s-val, .stat-card.highlight .s-sub { color: white; }
 
-      .panel-grid { display: grid; gap: 1.25rem; grid-template-columns: repeat(2, 1fr); }
-      .panel {
-        background: rgba(255, 248, 241, 0.9);
+      .filters { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+      .filter-btn {
+        padding: 7px 16px; border-radius: 20px; font-size: 13px; font-family: "Manrope", sans-serif;
+        border: 1px solid var(--border); background: rgba(255, 248, 241, 0.9);
+        color: var(--muted); cursor: pointer; transition: all 0.15s;
+      }
+      .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+      .filter-btn.active { background: var(--primary); border-color: var(--primary); color: white; font-weight: 600; }
+      .search-box {
+        margin-left: auto;
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(255, 248, 241, 0.95); border: 1px solid var(--border);
+        border-radius: 10px; padding: 7px 12px;
+      }
+      .search-box svg { width: 14px; height: 14px; stroke: var(--muted); flex-shrink: 0; }
+      .search-box input {
+        border: none; outline: none; font-family: "Manrope", sans-serif;
+        font-size: 13px; color: var(--text); background: transparent; width: 180px;
+      }
+
+      .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
+      .course-card {
+        background: rgba(255, 248, 241, 0.95);
         border: 1px solid var(--border);
         border-radius: var(--radius);
-        padding: 1.5rem;
-        box-shadow: 0 18px 36px rgba(45, 37, 32, 0.08);
+        padding: 1.25rem;
+        display: flex; flex-direction: column; gap: 10px;
+        box-shadow: 0 18px 40px rgba(45, 37, 32, 0.08);
       }
-      .panel h2 { font-family: "Playfair Display", serif; font-size: 18px; margin-bottom: 4px; }
-      .panel p { font-size: 13px; color: var(--muted); }
-
-      .list { display: grid; gap: 12px; margin-top: 1rem; }
-      .list-item {
-        border: 1px solid var(--border);
-        background: var(--surface);
-        border-radius: 12px;
-        padding: 12px 14px;
-        display: flex; align-items: flex-start; justify-content: space-between; gap: 12px;
-      }
-      .list-item h4 { font-size: 14px; margin-bottom: 4px; }
-      .list-item span { font-size: 12px; color: var(--muted); }
+      .course-card h3 { font-size: 16px; }
+      .course-card p { font-size: 13px; color: var(--muted); line-height: 1.5; }
 
       .chip {
         font-size: 11px; padding: 4px 8px; border-radius: 999px;
         background: var(--primary-light); color: var(--primary-dark); font-weight: 600;
       }
-      .chip.amber { background: var(--amber-light); color: #8a541b; }
       .chip.blue { background: var(--blue-light); color: #1c578f; }
+      .chip.amber { background: var(--amber-light); color: #8a541b; }
+
+      .progress {
+        height: 6px; background: var(--bg); border-radius: 4px; overflow: hidden;
+      }
+      .progress-fill {
+        height: 100%; background: var(--primary); border-radius: 4px; width: 0;
+      }
+
+      .btn {
+        font-family: "Manrope", sans-serif; font-size: 13px; font-weight: 600;
+        padding: 8px 18px; border-radius: 10px; cursor: pointer;
+        transition: all 0.15s; white-space: nowrap; border: 1px solid var(--border);
+        background: rgba(255, 248, 241, 0.95); color: var(--text);
+        text-decoration: none; display: inline-flex; align-items: center; gap: 8px;
+      }
+      .btn:hover { background: var(--bg); }
+      .btn-primary { background: linear-gradient(135deg, #f2b15f, #c65b2c); border-color: transparent; color: white; }
+      .btn-primary:hover { background: linear-gradient(135deg, #eaa44f, #b45126); }
 
       @media (max-width: 1100px) {
         .stat-row { grid-template-columns: repeat(2, 1fr); }
-        .panel-grid { grid-template-columns: 1fr; }
       }
       @media (max-width: 900px) {
         .sidebar { display: none; }
@@ -207,7 +234,7 @@
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
             Mock Tests
           </a>
-          <a class="nav-item" href="courses.html">
+          <a class="nav-item active" href="courses.html">
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
             Courses
           </a>
@@ -219,7 +246,7 @@
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
             Discussion
           </a>
-          <a class="nav-item active" href="exam-routine.html">
+          <a class="nav-item" href="exam-routine.html">
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             Exam Routine
           </a>
@@ -228,7 +255,7 @@
 
       <div class="main">
         <div class="topbar">
-          <span class="topbar-title">Exam Routine</span>
+          <span class="topbar-title">Courses</span>
           <div class="topbar-right">
             <div class="notif-btn">
               <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
@@ -240,89 +267,115 @@
 
         <div class="content">
           <div class="page-header">
-            <h1>Upcoming routine</h1>
-            <p>Plan your week and stay ready for each test.</p>
+            <h1>Courses</h1>
+            <p>Organize your admission prep courses and track progress.</p>
           </div>
 
           <div class="stat-row">
             <div class="stat-card highlight">
-              <p class="s-label">Next Exam</p>
-              <p class="s-val">Physics Mock</p>
-              <p class="s-sub">Saturday 9:00 AM</p>
+              <p class="s-label">Active Courses</p>
+              <p class="s-val">4</p>
+              <p class="s-sub">2 new this month</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">This Week</p>
-              <p class="s-val">3 Exams</p>
-              <p class="s-sub">2 mocks, 1 interview prep</p>
+              <p class="s-label">Lessons Completed</p>
+              <p class="s-val">38</p>
+              <p class="s-sub">+6 this week</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">Focus Area</p>
-              <p class="s-val">Chemistry</p>
-              <p class="s-sub">2 topics to revise</p>
+              <p class="s-label">Average Progress</p>
+              <p class="s-val" style="color:var(--primary)">62%</p>
+              <p class="s-sub">On track</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">Prep Hours</p>
-              <p class="s-val">6h</p>
-              <p class="s-sub">Goal: 8h</p>
+              <p class="s-label">Assignments</p>
+              <p class="s-val">9 Due</p>
+              <p class="s-sub">Next due Friday</p>
             </div>
           </div>
 
-          <div class="panel-grid">
-            <section class="panel">
-              <h2>Upcoming schedule</h2>
-              <p>All scheduled tests and prep sessions.</p>
-              <div class="list">
-                <div class="list-item">
-                  <div>
-                    <h4>Physics Mock Test</h4>
-                    <span>Sat, 9:00 AM - 100 questions</span>
-                  </div>
-                  <span class="chip">High</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Chemistry Drill</h4>
-                    <span>Mon, 7:30 PM - 40 questions</span>
-                  </div>
-                  <span class="chip amber">Medium</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Admission Interview Prep</h4>
-                    <span>Wed, 5:00 PM - 20 prompts</span>
-                  </div>
-                  <span class="chip blue">Upcoming</span>
-                </div>
-              </div>
-            </section>
+          <div class="filters">
+            <button class="filter-btn active">All</button>
+            <button class="filter-btn">Engineering</button>
+            <button class="filter-btn">Medical</button>
+            <button class="filter-btn">Interview</button>
+            <div class="search-box">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" placeholder="Search courses..." />
+            </div>
+          </div>
 
-            <section class="panel">
-              <h2>Revision focus</h2>
-              <p>Suggested topics to revise this week.</p>
-              <div class="list">
-                <div class="list-item">
-                  <div>
-                    <h4>Acids and salts</h4>
-                    <span>Complete 2 practice sheets</span>
-                  </div>
-                  <span class="chip">Priority</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Motion and vectors</h4>
-                    <span>Review formulas and speed drills</span>
-                  </div>
-                  <span class="chip">Core</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Algebra recap</h4>
-                    <span>30 minutes daily practice</span>
-                  </div>
-                  <span class="chip">Routine</span>
-                </div>
+          <div class="grid">
+            <div class="course-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <h3>Engineering Admission Sprint</h3>
+                <span class="chip">Core</span>
               </div>
-            </section>
+              <p>Complete guided lessons for Physics, Chemistry, and Math.</p>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+                <span>8 of 12 modules</span>
+                <span>67%</span>
+              </div>
+              <div class="progress"><div class="progress-fill" style="width:67%"></div></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <span class="chip blue">Mock Tests</span>
+                <span class="chip amber">Assignments</span>
+              </div>
+              <a class="btn btn-primary" href="mock-test.html">Continue</a>
+            </div>
+
+            <div class="course-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <h3>Medical MCQ Vault</h3>
+                <span class="chip amber">Intense</span>
+              </div>
+              <p>High-yield biology and chemistry MCQ preparation track.</p>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+                <span>5 of 9 modules</span>
+                <span>56%</span>
+              </div>
+              <div class="progress"><div class="progress-fill" style="width:56%"></div></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <span class="chip">Daily Drills</span>
+                <span class="chip blue">Weekly Mock</span>
+              </div>
+              <a class="btn" href="mock-test.html">View syllabus</a>
+            </div>
+
+            <div class="course-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <h3>Interview Coaching</h3>
+                <span class="chip blue">Live</span>
+              </div>
+              <p>Practice prompts, personal statements, and confidence training.</p>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+                <span>2 of 5 sessions</span>
+                <span>40%</span>
+              </div>
+              <div class="progress"><div class="progress-fill" style="width:40%"></div></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <span class="chip">Coaching</span>
+                <span class="chip amber">Assignments</span>
+              </div>
+              <a class="btn" href="discussion.html">Join session</a>
+            </div>
+
+            <div class="course-card">
+              <div style="display:flex;align-items:center;justify-content:space-between;gap:8px">
+                <h3>General Knowledge Booster</h3>
+                <span class="chip">Elective</span>
+              </div>
+              <p>Short lectures on current affairs and aptitude skills.</p>
+              <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted)">
+                <span>3 of 7 modules</span>
+                <span>43%</span>
+              </div>
+              <div class="progress"><div class="progress-fill" style="width:43%"></div></div>
+              <div style="display:flex;gap:8px;flex-wrap:wrap">
+                <span class="chip blue">Weekly Quiz</span>
+              </div>
+              <a class="btn" href="mock-test.html">Resume</a>
+            </div>
           </div>
         </div>
       </div>

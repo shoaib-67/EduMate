@@ -7,211 +7,958 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@500;600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="icon" type="image/svg+xml" href="favicon.svg" />
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-    />
-    <script src="tailwind.config.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+      :root {
+        --primary: #d9772b;
+        --primary-light: #fbe8d6;
+        --primary-dark: #9a4b25;
+        --amber: #e3a64d;
+        --amber-light: #fdeedb;
+        --blue: #2e6fb5;
+        --blue-light: #e4eef9;
+        --red: #d65a4a;
+        --red-light: #fde5e1;
+        --bg: #f4e7d7;
+        --surface: #fff8f1;
+        --border: #ead8c7;
+        --text: #2d2520;
+        --muted: #7a6a5c;
+        --radius: 14px;
+        --radius-sm: 10px;
+      }
+
+      body {
+        font-family: "Manrope", sans-serif;
+        background: radial-gradient(circle at top left, #f7efe5, #f2e4d2 35%, #efe6dc 60%, #e6d9c8);
+        color: var(--text);
+        min-height: 100vh;
+      }
+
+      /* Layout */
+      .layout { display: flex; min-height: 100vh; }
+
+      .sidebar {
+        width: 240px;
+        background: rgba(255, 248, 241, 0.9);
+        border-right: 1px solid var(--border);
+        padding: 1.5rem 1rem;
+        display: flex;
+        flex-direction: column;
+        position: fixed;
+        top: 0; left: 0;
+        height: 100vh;
+        z-index: 10;
+        backdrop-filter: blur(12px);
+      }
+
+      .logo {
+        display: flex; align-items: center; gap: 10px;
+        padding: 0 0.5rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        margin-bottom: 1.25rem;
+      }
+      .logo-icon {
+        width: 34px; height: 34px; border-radius: 11px;
+        background: linear-gradient(135deg, #f2b15f, #c65b2c);
+        display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 10px 24px rgba(198, 91, 44, 0.25);
+      }
+      .logo-icon svg { width: 18px; height: 18px; fill: white; }
+      .logo-text { font-family: "Playfair Display", serif; font-size: 17px; font-weight: 700; color: var(--text); }
+      .logo-text span { color: var(--primary); }
+
+      .nav-section { margin-bottom: 1.5rem; }
+      .nav-label {
+        font-size: 10px; font-weight: 600; letter-spacing: 0.08em;
+        text-transform: uppercase; color: var(--muted);
+        padding: 0 0.75rem; margin-bottom: 6px;
+      }
+      .nav-item {
+        display: flex; align-items: center; gap: 10px;
+        padding: 9px 12px; border-radius: var(--radius-sm);
+        font-size: 14px; color: var(--muted);
+        cursor: pointer; transition: all 0.15s;
+        text-decoration: none;
+      }
+      .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+      .nav-item:hover { background: var(--bg); color: var(--text); }
+      .nav-item.active { background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
+      .nav-item.active svg { stroke: var(--primary-dark); }
+
+      .main { margin-left: 240px; flex: 1; }
+
+      .topbar {
+        background: rgba(255, 248, 241, 0.92);
+        border-bottom: 1px solid var(--border);
+        padding: 0 2rem;
+        height: 60px;
+        display: flex; align-items: center; justify-content: space-between;
+        position: sticky; top: 0; z-index: 5;
+        backdrop-filter: blur(12px);
+      }
+      .topbar-title { font-family: "Playfair Display", serif; font-size: 16px; font-weight: 700; }
+      .topbar-right { display: flex; align-items: center; gap: 12px; }
+      .avatar {
+        width: 34px; height: 34px; border-radius: 50%;
+        background: var(--primary-light); color: var(--primary-dark);
+        font-size: 12px; font-weight: 600;
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer;
+        box-shadow: 0 8px 18px rgba(217, 119, 43, 0.2);
+      }
+      .notif-btn {
+        width: 34px; height: 34px; border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--surface);
+        display: flex; align-items: center; justify-content: center;
+        cursor: pointer; position: relative;
+      }
+      .notif-btn svg { width: 16px; height: 16px; stroke: var(--muted); }
+      .notif-dot {
+        position: absolute; top: 6px; right: 6px;
+        width: 7px; height: 7px; border-radius: 50%;
+        background: var(--primary); border: 1.5px solid white;
+      }
+
+      .content { padding: 2rem; }
+
+      /* Page header */
+      .page-header { margin-bottom: 1.75rem; }
+      .page-header h1 { font-family: "Playfair Display", serif; font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+      .page-header p { font-size: 14px; color: var(--muted); }
+
+      /* Stats */
+      .stat-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 2rem; }
+      .stat-card {
+        background: rgba(255, 248, 241, 0.9);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        box-shadow: 0 16px 36px rgba(45, 37, 32, 0.08);
+      }
+      .stat-card .s-label { font-size: 12px; color: var(--muted); margin-bottom: 6px; letter-spacing: 0.06em; text-transform: uppercase; }
+      .stat-card .s-val { font-family: "Playfair Display", serif; font-size: 24px; font-weight: 700; }
+      .stat-card .s-sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+      .stat-card.highlight { background: linear-gradient(135deg, #f2b15f, #c65b2c); border-color: transparent; }
+      .stat-card.highlight .s-label, .stat-card.highlight .s-val, .stat-card.highlight .s-sub { color: white; }
+
+      /* Filters */
+      .filters { display: flex; gap: 8px; margin-bottom: 1.5rem; flex-wrap: wrap; align-items: center; }
+      .filter-btn {
+        padding: 7px 16px; border-radius: 20px; font-size: 13px; font-family: "Manrope", sans-serif;
+        border: 1px solid var(--border); background: rgba(255, 248, 241, 0.9);
+        color: var(--muted); cursor: pointer; transition: all 0.15s;
+      }
+      .filter-btn:hover { border-color: var(--primary); color: var(--primary); }
+      .filter-btn.active { background: var(--primary); border-color: var(--primary); color: white; font-weight: 600; }
+      .search-box {
+        margin-left: auto;
+        display: flex; align-items: center; gap: 8px;
+        background: rgba(255, 248, 241, 0.95); border: 1px solid var(--border);
+        border-radius: 10px; padding: 7px 12px;
+      }
+      .search-box svg { width: 14px; height: 14px; stroke: var(--muted); flex-shrink: 0; }
+      .search-box input {
+        border: none; outline: none; font-family: "Manrope", sans-serif;
+        font-size: 13px; color: var(--text); background: transparent; width: 180px;
+      }
+      .search-box input::placeholder { color: var(--muted); }
+
+      /* Tests grid */
+      .tests-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.25rem; }
+
+      .test-card {
+        background: rgba(255, 248, 241, 0.95);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1.25rem;
+        display: flex; flex-direction: column; gap: 12px;
+        transition: box-shadow 0.2s, transform 0.2s;
+        cursor: pointer;
+      }
+      .test-card:hover { box-shadow: 0 18px 40px rgba(45, 37, 32, 0.12); transform: translateY(-2px); }
+      .test-card.featured { border-left: 3px solid var(--primary); }
+
+      .tc-top { display: flex; align-items: flex-start; justify-content: space-between; }
+      .tc-badge {
+        font-size: 11px; font-weight: 600; padding: 3px 10px; border-radius: 20px;
+        display: inline-flex; align-items: center; gap: 4px;
+      }
+      .badge-green { background: var(--primary-light); color: var(--primary-dark); }
+      .badge-amber { background: var(--amber-light); color: #8a541b; }
+      .badge-blue  { background: var(--blue-light);  color: #1c578f; }
+      .badge-red   { background: var(--red-light);   color: #a23e31; }
+      .badge-gray  { background: #f1e6da; color: #5f5e5a; }
+
+      .tc-duration { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+      .tc-duration svg { width: 13px; height: 13px; stroke: var(--muted); }
+
+      .tc-title { font-size: 15px; font-weight: 600; line-height: 1.4; }
+      .tc-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+
+      .tc-tags { display: flex; gap: 6px; flex-wrap: wrap; }
+      .tag {
+        font-size: 11px; padding: 3px 9px; border-radius: 6px;
+        background: #f5e6d7; color: var(--muted); border: 1px solid var(--border);
+      }
+
+      .tc-meta { display: flex; gap: 1rem; }
+      .tc-meta span { font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 4px; }
+      .tc-meta svg { width: 12px; height: 12px; stroke: var(--muted); }
+
+      .tc-footer { display: flex; align-items: center; justify-content: space-between; margin-top: auto; padding-top: 4px; border-top: 1px solid var(--border); }
+      .attempts-bar { flex: 1; margin-right: 1rem; }
+      .attempts-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; display: flex; justify-content: space-between; }
+      .progress { height: 5px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+      .progress-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width 0.4s; }
+      .progress-fill.amber { background: var(--amber); }
+      .progress-fill.red   { background: var(--red); }
+
+      .btn {
+        font-family: "Manrope", sans-serif; font-size: 13px; font-weight: 600;
+        padding: 8px 18px; border-radius: 10px; cursor: pointer;
+        transition: all 0.15s; white-space: nowrap; border: 1px solid var(--border);
+        background: rgba(255, 248, 241, 0.95); color: var(--text);
+      }
+      .btn:hover { background: var(--bg); }
+      .btn-primary { background: linear-gradient(135deg, #f2b15f, #c65b2c); border-color: transparent; color: white; }
+      .btn-primary:hover { background: linear-gradient(135deg, #eaa44f, #b45126); }
+      .btn-sm { padding: 6px 14px; font-size: 12px; }
+      .btn-ghost { background: transparent; border: none; color: var(--muted); padding: 6px 10px; }
+      .btn-ghost:hover { color: var(--text); background: var(--bg); }
+
+      /* Exam modal */
+      .modal-overlay {
+        position: fixed; inset: 0;
+        background: rgba(0,0,0,0.45);
+        display: none; align-items: center; justify-content: center;
+        z-index: 100; padding: 1rem;
+      }
+      .modal-overlay.open { display: flex; }
+
+      .modal {
+        background: rgba(255, 248, 241, 0.98);
+        border-radius: 18px;
+        width: 100%; max-width: 860px;
+        max-height: 92vh; overflow: hidden;
+        display: flex; flex-direction: column;
+        animation: slideUp 0.25s ease;
+        box-shadow: 0 24px 60px rgba(45, 37, 32, 0.22);
+      }
+      @keyframes slideUp { from { transform: translateY(30px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+      .modal-header {
+        padding: 1.25rem 1.5rem;
+        border-bottom: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: space-between;
+        flex-shrink: 0;
+      }
+      .modal-header h2 { font-family: "Playfair Display", serif; font-size: 16px; font-weight: 700; }
+      .modal-header p { font-size: 13px; color: var(--muted); margin-top: 2px; }
+
+      .timer-badge {
+        display: flex; align-items: center; gap: 8px;
+        background: var(--primary-light); border-radius: 10px; padding: 8px 16px;
+      }
+      .timer-badge svg { width: 16px; height: 16px; stroke: var(--primary-dark); }
+      .timer-text { font-family: "Playfair Display", serif; font-size: 20px; font-weight: 700; color: var(--primary-dark); letter-spacing: 1px; }
+      .timer-badge.warning { background: var(--amber-light); }
+      .timer-badge.warning .timer-text { color: #8a541b; }
+      .timer-badge.warning svg { stroke: #8a541b; }
+      .timer-badge.danger { background: var(--red-light); }
+      .timer-badge.danger .timer-text { color: #a23e31; }
+      .timer-badge.danger svg { stroke: #a23e31; }
+
+      .modal-body { display: flex; flex: 1; overflow: hidden; }
+
+      .question-panel { flex: 1; padding: 1.5rem; overflow-y: auto; display: flex; flex-direction: column; gap: 1.25rem; }
+
+      .q-header { display: flex; justify-content: space-between; align-items: center; }
+      .q-num { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; }
+      .q-subject { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--blue-light); color: #1c578f; font-weight: 600; }
+
+      .question-text { font-size: 15px; line-height: 1.7; font-weight: 600; }
+
+      .options { display: flex; flex-direction: column; gap: 8px; }
+      .option {
+        display: flex; align-items: center; gap: 12px;
+        padding: 12px 16px; border-radius: var(--radius-sm);
+        border: 1.5px solid var(--border); cursor: pointer;
+        font-size: 14px; transition: all 0.15s;
+        background: rgba(255, 248, 241, 0.9);
+      }
+      .option:hover { border-color: var(--primary); background: var(--primary-light); }
+      .option.selected { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); font-weight: 600; }
+      .option.correct { border-color: var(--primary); background: var(--primary-light); color: var(--primary-dark); }
+      .option.wrong { border-color: var(--red); background: var(--red-light); color: #a23e31; }
+      .opt-label {
+        width: 26px; height: 26px; border-radius: 6px;
+        background: var(--bg); border: 1px solid var(--border);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 12px; font-weight: 600; flex-shrink: 0;
+        transition: all 0.15s;
+      }
+      .option.selected .opt-label { background: var(--primary); border-color: var(--primary); color: white; }
+      .option.correct .opt-label  { background: var(--primary); border-color: var(--primary); color: white; }
+      .option.wrong .opt-label    { background: var(--red);   border-color: var(--red);   color: white; }
+
+      .q-nav { display: flex; align-items: center; justify-content: space-between; padding-top: 0.5rem; border-top: 1px solid var(--border); }
+      .q-nav-left, .q-nav-right { display: flex; gap: 8px; }
+
+      .palette-panel {
+        width: 200px; border-left: 1px solid var(--border);
+        padding: 1.25rem; overflow-y: auto; flex-shrink: 0;
+        background: rgba(255, 248, 241, 0.9);
+      }
+      .palette-panel h4 { font-size: 12px; font-weight: 600; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 12px; }
+      .palette-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 6px; margin-bottom: 1.25rem; }
+      .palette-item {
+        aspect-ratio: 1; border-radius: 6px;
+        border: 1px solid var(--border); background: var(--bg);
+        display: flex; align-items: center; justify-content: center;
+        font-size: 11px; font-weight: 600; cursor: pointer;
+        transition: all 0.15s; color: var(--muted);
+      }
+      .palette-item:hover { border-color: var(--primary); }
+      .palette-item.answered { background: var(--primary); border-color: var(--primary); color: white; }
+      .palette-item.current  { border: 2px solid var(--primary); color: var(--primary); font-weight: 700; background: var(--primary-light); }
+      .palette-item.skipped  { background: var(--amber-light); border-color: var(--amber); color: #8a541b; }
+
+      .palette-legend { display: flex; flex-direction: column; gap: 6px; }
+      .legend-item { display: flex; align-items: center; gap: 8px; font-size: 11px; color: var(--muted); }
+      .legend-dot { width: 10px; height: 10px; border-radius: 3px; flex-shrink: 0; }
+
+      .confirm-box {
+        padding: 1.5rem; text-align: center; max-width: 460px; margin: 0 auto;
+      }
+      .confirm-icon {
+        width: 56px; height: 56px; border-radius: 50%;
+        background: var(--primary-light); margin: 0 auto 1rem;
+        display: flex; align-items: center; justify-content: center;
+      }
+      .confirm-icon svg { width: 28px; height: 28px; stroke: var(--primary); }
+
+      .result-panel { padding: 1.5rem; overflow-y: auto; flex: 1; }
+      .result-score-circle {
+        width: 110px; height: 110px; border-radius: 50%;
+        border: 5px solid var(--primary); margin: 0 auto 1rem;
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        background: rgba(255, 248, 241, 0.95);
+      }
+      .result-score-circle .pct { font-family: "Playfair Display", serif; font-size: 26px; font-weight: 700; color: var(--primary); }
+      .result-score-circle .sub { font-size: 11px; color: var(--muted); }
+
+      /* Responsive */
+      @media (max-width: 900px) {
+        .sidebar { display: none; }
+        .main { margin-left: 0; }
+        .stat-row { grid-template-columns: repeat(2, 1fr); }
+        .palette-panel { display: none; }
+      }
+      @media (max-width: 520px) {
+        .stat-row { grid-template-columns: 1fr 1fr; }
+        .content { padding: 1rem; }
+        .modal-header { flex-direction: column; align-items: flex-start; gap: 10px; }
+      }
+    </style>
   </head>
-  <body
-    class="min-h-screen font-body text-ink bg-[radial-gradient(circle_at_top_left,_#f7efe5,_#f2e4d2_35%,_#efe6dc_60%,_#e6d9c8)] relative overflow-x-hidden"
-  >
-    <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 lg:py-14">
-      <header class="flex flex-wrap items-center justify-between gap-6">
-        <div class="flex items-center gap-4">
-          <div
-            class="h-12 w-12 rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 text-white grid place-items-center text-2xl font-display shadow-[0_16px_36px_rgba(28,26,24,0.18)]"
-          >
-            E
+  <body>
+    <div class="layout">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           </div>
-          <div>
-            <p class="uppercase tracking-[0.2em] text-xs font-semibold text-copper">
-              Online Mock Test System
-            </p>
-            <h1 class="font-display text-3xl sm:text-4xl">Practice with real exam flow</h1>
-          </div>
+          <span class="logo-text">Edu<span>Mate</span></span>
         </div>
-        <div class="flex items-center gap-3">
-          <a
-            class="rounded-2xl border border-amber-200 bg-white/80 px-4 py-2 text-sm font-semibold text-ink shadow-[0_12px_30px_rgba(28,26,24,0.12)]"
-            href="student.html"
-          >
-            Back to dashboard
+        <div class="nav-section">
+          <p class="nav-label">Student</p>
+          <a class="nav-item" href="student.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+            Dashboard
           </a>
-          <button
-            class="rounded-2xl bg-gradient-to-br from-amber-400 to-orange-700 px-4 py-2 text-sm font-semibold text-white"
-            type="button"
-          >
-            Start new test
-          </button>
+          <a class="nav-item active" href="mock-test.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4"/></svg>
+            Mock Tests
+          </a>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+            Courses
+          </a>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
+            Performance
+          </a>
+          <a class="nav-item" href="#">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
+            Discussion
+          </a>
+          <a class="nav-item" href="exam-routine.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+            Exam Routine
+          </a>
         </div>
-      </header>
+      </aside>
 
-      <section class="mt-10 grid gap-6 lg:grid-cols-3">
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">Tests taken</p>
-          <div class="mt-4 flex items-center justify-between">
-            <span class="text-3xl font-semibold">14</span>
-            <span class="text-xs text-copper font-semibold">+3 this month</span>
-          </div>
-          <p class="mt-3 text-sm text-muted">Keep the streak going with weekly practice.</p>
-        </div>
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">Best score</p>
-          <div class="mt-4 flex items-center justify-between">
-            <span class="text-3xl font-semibold">89%</span>
-            <span class="text-xs text-copper font-semibold">Physics</span>
-          </div>
-          <p class="mt-3 text-sm text-muted">Aim for consistent scores across all subjects.</p>
-        </div>
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <p class="text-xs uppercase tracking-[0.18em] text-muted">Time management</p>
-          <div class="mt-4 flex items-center justify-between">
-            <span class="text-3xl font-semibold">78%</span>
-            <span class="text-xs text-copper font-semibold">On pace</span>
-          </div>
-          <p class="mt-3 text-sm text-muted">Average time per section is improving.</p>
-        </div>
-      </section>
-
-      <section class="mt-10 grid gap-6 lg:grid-cols-[1.2fr_0.8fr]">
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <div class="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <h2 class="font-display text-2xl">Upcoming mock tests</h2>
-              <p class="text-sm text-muted">Scheduled sessions with timed practice.</p>
+      <!-- Main -->
+      <div class="main">
+        <div class="topbar">
+          <span class="topbar-title">Mock Tests</span>
+          <div class="topbar-right">
+            <div class="notif-btn">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
+              <div class="notif-dot"></div>
             </div>
-            <a
-              class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-ink"
-              href="exam-routine.html"
-            >
-              View routine
-            </a>
-          </div>
-          <div class="mt-6 grid gap-4">
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Full Admission Mock - Set 12</p>
-              <p class="text-xs text-muted">Saturday, 9:00 AM - 100 questions</p>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Physics Speed Drill</p>
-              <p class="text-xs text-muted">Monday, 7:30 PM - 40 questions</p>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Chemistry MCQ Marathon</p>
-              <p class="text-xs text-muted">Wednesday, 6:00 PM - 60 questions</p>
-            </div>
+            <div class="avatar">SH</div>
           </div>
         </div>
 
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <h2 class="font-display text-2xl">Quick setup</h2>
-          <p class="text-sm text-muted">Customize the next mock test.</p>
-          <div class="mt-6 grid gap-3">
-            <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-layer-group mr-2"></i>Select subjects
-            </button>
-            <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-clock mr-2"></i>Set time limit
-            </button>
-            <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-list-check mr-2"></i>Choose difficulty
-            </button>
-            <button class="rounded-2xl bg-amber-50 px-4 py-3 text-sm font-semibold text-ink">
-              <i class="fa-solid fa-bolt mr-2"></i>Launch practice
-            </button>
+        <div class="content">
+          <div class="page-header">
+            <h1>Mock Tests</h1>
+            <p>Practice with real exam-style questions. Track your attempts and improve your score.</p>
           </div>
-        </div>
-      </section>
 
-      <section class="mt-10 grid gap-6 lg:grid-cols-2">
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <div class="flex items-center justify-between">
-            <h2 class="font-display text-2xl">Recent results</h2>
-            <button class="text-sm font-semibold text-copper">See analytics</button>
+          <div class="stat-row">
+            <div class="stat-card highlight">
+              <p class="s-label">Tests Available</p>
+              <p class="s-val">18</p>
+              <p class="s-sub">3 new this week</p>
+            </div>
+            <div class="stat-card">
+              <p class="s-label">Completed</p>
+              <p class="s-val">12</p>
+              <p class="s-sub">+3 this week</p>
+            </div>
+            <div class="stat-card">
+              <p class="s-label">Average Score</p>
+              <p class="s-val" style="color:var(--primary)">74%</p>
+              <p class="s-sub">Up 6% improvement</p>
+            </div>
+            <div class="stat-card">
+              <p class="s-label">Best Score</p>
+              <p class="s-val">92%</p>
+              <p class="s-sub">Math Practice #4</p>
+            </div>
           </div>
-          <div class="mt-6 grid gap-4">
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Full Admission Mock - Set 11</p>
-              <p class="text-xs text-muted">Score 78% - Rank 42 of 210</p>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Physics Speed Drill</p>
-              <p class="text-xs text-muted">Score 82% - 4 incorrect</p>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Chemistry MCQ Marathon</p>
-              <p class="text-xs text-muted">Score 74% - 12 incorrect</p>
-            </div>
-          </div>
-        </div>
 
-        <div
-          class="rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]"
-        >
-          <div class="flex items-center justify-between">
-            <h2 class="font-display text-2xl">How it works</h2>
-            <button class="text-sm font-semibold text-copper">View guide</button>
-          </div>
-          <div class="mt-6 grid gap-4">
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Timed sections</p>
-              <p class="text-xs text-muted">Auto-save answers and track pacing.</p>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Instant scoring</p>
-              <p class="text-xs text-muted">See performance insights after submission.</p>
-            </div>
-            <div class="rounded-2xl border border-amber-100 bg-white p-4">
-              <p class="text-sm font-semibold">Detailed analysis</p>
-              <p class="text-xs text-muted">Know strengths and gaps by subject.</p>
+          <div class="filters">
+            <button class="filter-btn active" onclick="filterTests('all', this)">All Tests</button>
+            <button class="filter-btn" onclick="filterTests('available', this)">Available</button>
+            <button class="filter-btn" onclick="filterTests('scheduled', this)">Scheduled</button>
+            <button class="filter-btn" onclick="filterTests('completed', this)">Completed</button>
+            <div class="search-box">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="11" cy="11" r="8"/><path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35"/></svg>
+              <input type="text" placeholder="Search tests..." oninput="searchTests(this.value)"/>
             </div>
           </div>
-        </div>
-      </section>
 
-      <section class="mt-10 rounded-3xl border border-amber-100 bg-white/85 backdrop-blur p-6 shadow-[0_20px_50px_rgba(28,26,24,0.12)]">
-        <div class="flex flex-wrap items-center justify-between gap-4">
-          <div>
-            <h2 class="font-display text-2xl">Practice history</h2>
-            <p class="text-sm text-muted">Track consistency across mock test attempts.</p>
-          </div>
-          <button class="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-2 text-sm font-semibold text-ink">
-            Export report
-          </button>
+          <div class="tests-grid" id="testsGrid"></div>
         </div>
-        <div class="mt-6 grid gap-4 lg:grid-cols-3">
-          <div class="rounded-2xl border border-amber-100 bg-white p-4">
-            <p class="text-sm font-semibold">Weekly progress</p>
-            <p class="text-xs text-muted">4 tests completed - 6 hours total</p>
-          </div>
-          <div class="rounded-2xl border border-amber-100 bg-white p-4">
-            <p class="text-sm font-semibold">Accuracy rate</p>
-            <p class="text-xs text-muted">78% correct answers in April</p>
-          </div>
-          <div class="rounded-2xl border border-amber-100 bg-white p-4">
-            <p class="text-sm font-semibold">Exam readiness</p>
-            <p class="text-xs text-muted">Recommended test frequency: 3 per week</p>
-          </div>
-        </div>
-      </section>
+      </div>
     </div>
+
+    <div class="modal-overlay" id="examModal">
+      <div class="modal" id="examModalContent">
+        <div id="confirmView">
+          <div class="modal-header">
+            <div>
+              <h2 id="confirmTitle">BUET Admission Full Mock</h2>
+              <p id="confirmSubtitle">80 questions · 60 minutes</p>
+            </div>
+            <button class="btn btn-ghost" onclick="closeModal()">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="confirm-box">
+            <div class="confirm-icon">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+            </div>
+            <h3 style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:8px">Ready to begin?</h3>
+            <p style="font-size:14px;color:var(--muted);margin-bottom:1.5rem;line-height:1.6">
+              Once started, the timer will count down. You can navigate between questions and review before submitting.
+            </p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:320px;margin:0 auto 1.5rem;text-align:left">
+              <div style="padding:10px 14px;background:var(--bg);border-radius:8px">
+                <p style="font-size:11px;color:var(--muted)">Duration</p>
+                <p style="font-size:14px;font-weight:600" id="ci-duration">60 min</p>
+              </div>
+              <div style="padding:10px 14px;background:var(--bg);border-radius:8px">
+                <p style="font-size:11px;color:var(--muted)">Questions</p>
+                <p style="font-size:14px;font-weight:600" id="ci-questions">80</p>
+              </div>
+              <div style="padding:10px 14px;background:var(--bg);border-radius:8px">
+                <p style="font-size:11px;color:var(--muted)">Subjects</p>
+                <p style="font-size:14px;font-weight:600" id="ci-subjects">3</p>
+              </div>
+              <div style="padding:10px 14px;background:var(--bg);border-radius:8px">
+                <p style="font-size:11px;color:var(--muted)">Marking</p>
+                <p style="font-size:14px;font-weight:600">+4 / -1</p>
+              </div>
+            </div>
+            <div style="display:flex;gap:10px;justify-content:center">
+              <button class="btn" onclick="closeModal()">Cancel</button>
+              <button class="btn btn-primary" onclick="startExam()">Start Test -&gt;</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="examView" style="display:none;flex-direction:column;height:100%">
+          <div class="modal-header">
+            <div>
+              <h2 id="examTitle">BUET Admission Full Mock</h2>
+              <p id="questionCounter" style="font-size:13px;color:var(--muted)">Question 1 of 80</p>
+            </div>
+            <div class="timer-badge" id="timerBadge">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
+              <span class="timer-text" id="timerDisplay">60:00</span>
+            </div>
+          </div>
+          <div style="height:3px;background:var(--border)">
+            <div id="examProgress" style="height:100%;background:var(--primary);transition:width 0.3s;width:0%"></div>
+          </div>
+          <div class="modal-body">
+            <div class="question-panel" id="questionPanel">
+              <div class="q-header">
+                <span class="q-num" id="qNum">Physics - Q1</span>
+                <span class="q-subject" id="qSubject">Physics</span>
+              </div>
+              <p class="question-text" id="questionText"></p>
+              <div class="options" id="optionsContainer"></div>
+              <div class="q-nav">
+                <div class="q-nav-left">
+                  <button class="btn btn-sm" onclick="prevQuestion()">&lt;- Prev</button>
+                  <button class="btn btn-sm" onclick="skipQuestion()">Skip</button>
+                </div>
+                <div class="q-nav-right">
+                  <button class="btn btn-sm btn-primary" id="nextBtn" onclick="nextQuestion()">Next -&gt;</button>
+                  <button class="btn btn-sm" id="submitBtn" onclick="showSubmitConfirm()" style="display:none;background:var(--amber-light);border-color:var(--amber);color:#8a541b">Submit Test</button>
+                </div>
+              </div>
+            </div>
+            <div class="palette-panel">
+              <h4>Questions</h4>
+              <div class="palette-grid" id="paletteGrid"></div>
+              <div class="palette-legend">
+                <div class="legend-item"><div class="legend-dot" style="background:var(--primary)"></div>Answered</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Not visited</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--amber-light);border:1px solid var(--amber)"></div>Skipped</div>
+                <div class="legend-item"><div class="legend-dot" style="background:var(--primary-light);border:2px solid var(--primary)"></div>Current</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div id="submitConfirmView" style="display:none">
+          <div class="modal-header">
+            <div><h2>Submit Test?</h2><p style="font-size:13px;color:var(--muted)">Review your progress before submitting</p></div>
+            <button class="btn btn-ghost" onclick="hideSubmitConfirm()">
+              <svg fill="none" viewBox="0 0 24 24" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+            </button>
+          </div>
+          <div class="confirm-box">
+            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;max-width:380px;margin:0 auto 1.5rem">
+              <div style="padding:12px;background:var(--primary-light);border-radius:8px;text-align:center">
+                <p style="font-size:22px;font-weight:700;color:var(--primary)" id="sc-answered">0</p>
+                <p style="font-size:11px;color:var(--primary-dark)">Answered</p>
+              </div>
+              <div style="padding:12px;background:var(--amber-light);border-radius:8px;text-align:center">
+                <p style="font-size:22px;font-weight:700;color:#8a541b" id="sc-skipped">0</p>
+                <p style="font-size:11px;color:#8a541b">Skipped</p>
+              </div>
+              <div style="padding:12px;background:var(--bg);border-radius:8px;text-align:center">
+                <p style="font-size:22px;font-weight:700;" id="sc-unattempted">0</p>
+                <p style="font-size:11px;color:var(--muted)">Not visited</p>
+              </div>
+            </div>
+            <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">Unanswered questions will be marked as wrong. Are you sure you want to submit?</p>
+            <div style="display:flex;gap:10px;justify-content:center">
+              <button class="btn" onclick="hideSubmitConfirm()">Continue Test</button>
+              <button class="btn btn-primary" onclick="submitExam()">Submit Now</button>
+            </div>
+          </div>
+        </div>
+
+        <div id="resultView" style="display:none">
+          <div class="modal-header">
+            <div><h2>Test Complete!</h2><p style="font-size:13px;color:var(--muted)" id="resultTestName"></p></div>
+            <button class="btn btn-primary btn-sm" onclick="closeModal()">Done</button>
+          </div>
+          <div class="result-panel">
+            <div style="text-align:center;margin-bottom:1.5rem">
+              <div class="result-score-circle">
+                <span class="pct" id="resultPct">0%</span>
+                <span class="sub">Score</span>
+              </div>
+              <p id="resultFeedback" style="font-size:14px;color:var(--muted);margin-top:8px"></p>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem">
+              <div style="padding:12px;background:var(--primary-light);border-radius:8px;text-align:center">
+                <p style="font-size:20px;font-weight:700;color:var(--primary)" id="r-correct">0</p>
+                <p style="font-size:11px;color:var(--primary-dark)">Correct</p>
+              </div>
+              <div style="padding:12px;background:var(--red-light);border-radius:8px;text-align:center">
+                <p style="font-size:20px;font-weight:700;color:#a23e31" id="r-wrong">0</p>
+                <p style="font-size:11px;color:#a23e31">Wrong</p>
+              </div>
+              <div style="padding:12px;background:var(--amber-light);border-radius:8px;text-align:center">
+                <p style="font-size:20px;font-weight:700;color:#8a541b" id="r-skipped">0</p>
+                <p style="font-size:11px;color:#8a541b">Skipped</p>
+              </div>
+              <div style="padding:12px;background:var(--bg);border-radius:8px;text-align:center">
+                <p style="font-size:20px;font-weight:700;" id="r-marks">0</p>
+                <p style="font-size:11px;color:var(--muted)">Marks</p>
+              </div>
+            </div>
+            <div>
+              <h3 style="font-size:14px;font-weight:600;margin-bottom:10px">Answer Review</h3>
+              <div id="reviewList" style="display:flex;flex-direction:column;gap:8px"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const testsData = [
+        {
+          id: 1, title: "BUET Admission Full Mock", status: "available", featured: true,
+          duration: 60, questions: 10, subjects: ["Physics","Chemistry","Math"],
+          attempts: 3, maxAttempts: 5, description: "Complete admission mock covering all three core subjects.",
+          tags: ["BUET","Full Mock"], free: false
+        },
+        {
+          id: 2, title: "DU Ka Unit - Physics Only", status: "available",
+          duration: 45, questions: 8, subjects: ["Physics"],
+          attempts: 1, maxAttempts: 5, description: "Focus test on Physics for Dhaka University Ka unit.",
+          tags: ["DU","Physics"], free: true
+        },
+        {
+          id: 3, title: "Math Practice Set #4", status: "available",
+          duration: 30, questions: 6, subjects: ["Math"],
+          attempts: 0, maxAttempts: 999, description: "Algebra and Calculus intensive - unlimited attempts.",
+          tags: ["Math","Practice"], free: true
+        },
+        {
+          id: 4, title: "Chemistry Full Chapter Mock", status: "scheduled",
+          duration: 50, questions: 8, subjects: ["Chemistry"],
+          attempts: 0, maxAttempts: 3, description: "Organic and Inorganic chemistry comprehensive test.",
+          tags: ["Chemistry","BUET"], free: false, schedDate: "Apr 15, 2025"
+        },
+        {
+          id: 5, title: "Biology for Medical Admission", status: "scheduled",
+          duration: 60, questions: 8, subjects: ["Biology"],
+          attempts: 0, maxAttempts: 3, description: "Covers cell biology, genetics, and human physiology.",
+          tags: ["Biology","Medical"], free: false, schedDate: "Apr 18, 2025"
+        },
+        {
+          id: 6, title: "Chemistry Mock #2", status: "completed",
+          duration: 50, questions: 6, subjects: ["Chemistry"],
+          attempts: 2, maxAttempts: 3, description: "Review your result and understand weak areas.",
+          tags: ["Chemistry","Review"], free: false, score: 72
+        },
+        {
+          id: 7, title: "Physics Wave and Optics", status: "completed",
+          duration: 35, questions: 6, subjects: ["Physics"],
+          attempts: 1, maxAttempts: 3, description: "Focused test on wave motion and optics chapter.",
+          tags: ["Physics","Chapter"], free: true, score: 85
+        },
+        {
+          id: 8, title: "DU Kha Unit Full Mock", status: "available",
+          duration: 75, questions: 10, subjects: ["Physics","Math","Biology"],
+          attempts: 0, maxAttempts: 3, description: "Comprehensive mock for DU Kha unit aspirants.",
+          tags: ["DU","Full Mock"], free: false
+        }
+      ];
+
+      const questionBankData = {
+        Physics: [
+          { text: "A particle moves with displacement s = 2t^3 - 3t^2 + 1 m. What is the velocity at t = 2s?", opts: ["12 m/s","18 m/s","6 m/s","24 m/s"], ans: 1 },
+          { text: "A body is thrown vertically upward with velocity 20 m/s. Maximum height reached (g = 10 m/s^2) is:", opts: ["10 m","20 m","30 m","40 m"], ans: 1 },
+          { text: "The SI unit of electric potential is:", opts: ["Joule","Coulomb","Volt","Ampere"], ans: 2 }
+        ],
+        Chemistry: [
+          { text: "Which of the following is an example of a Lewis acid?", opts: ["NH3","H2O","BF3","NaOH"], ans: 2 },
+          { text: "The number of moles in 44g of CO2 (Molar mass = 44 g/mol) is:", opts: ["0.5 mol","1 mol","2 mol","44 mol"], ans: 1 }
+        ],
+        Math: [
+          { text: "The derivative of f(x) = 3x^4 - 5x^2 + 2 at x = 1 is:", opts: ["2","-2","4","-4"], ans: 0 },
+          { text: "If log2(x) = 5, then x equals:", opts: ["10","25","32","64"], ans: 2 },
+          { text: "The sum of the infinite geometric series 1 + 1/2 + 1/4 + ... is:", opts: ["1","1.5","2","2.5"], ans: 2 }
+        ],
+        Biology: [
+          { text: "The powerhouse of the cell is:", opts: ["Nucleus","Ribosome","Mitochondria","Chloroplast"], ans: 2 },
+          { text: "DNA replication occurs in which phase of the cell cycle?", opts: ["G1","S","G2","M"], ans: 1 }
+        ]
+      };
+
+      function buildQuestions(subjects, count) {
+        const q = [];
+        subjects.forEach(s => { if (questionBankData[s]) questionBankData[s].forEach(item => q.push({ ...item, subject: s })); });
+        const shuffled = q.sort(() => Math.random() - 0.5);
+        return shuffled.slice(0, Math.min(count, shuffled.length));
+      }
+
+      let currentTest = null;
+      let questions = [];
+      let answers = [];
+      let currentQ = 0;
+      let timerInterval = null;
+      let secondsLeft = 0;
+
+      function renderTests(filter = "all", search = "") {
+        const grid = document.getElementById("testsGrid");
+        grid.innerHTML = "";
+        let list = testsData;
+        if (filter !== "all") list = list.filter(t => t.status === filter);
+        if (search) list = list.filter(t => t.title.toLowerCase().includes(search.toLowerCase()) || t.tags.some(g => g.toLowerCase().includes(search.toLowerCase())));
+        if (!list.length) {
+          grid.innerHTML = '<p style="color:var(--muted);font-size:14px;grid-column:1/-1;padding:2rem 0">No tests found.</p>';
+          return;
+        }
+        list.forEach(t => {
+          const pct = t.maxAttempts < 999 ? (t.attempts / t.maxAttempts * 100) : (t.attempts > 0 ? 50 : 0);
+          const pctClass = pct >= 80 ? "red" : pct >= 50 ? "amber" : "";
+          const badgeMap = { available: ["badge-green","Available"], scheduled: ["badge-amber","Scheduled"], completed: ["badge-blue","Completed"] };
+          const [bc, bl] = badgeMap[t.status] || ["badge-gray","Unknown"];
+          const card = document.createElement("div");
+          card.className = "test-card" + (t.featured ? " featured" : "");
+          card.innerHTML = `
+            <div class="tc-top">
+              <div style="display:flex;gap:6px;flex-wrap:wrap">
+                <span class="tc-badge ${bc}">${bl}</span>
+                ${t.free ? '<span class="tc-badge badge-green" style="background:#e4eef9;color:#1c578f">Free</span>' : ""}
+              </div>
+              <span class="tc-duration">
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
+                ${t.duration} min
+              </span>
+            </div>
+            <div>
+              <p class="tc-title">${t.title}</p>
+              <p class="tc-desc" style="margin-top:4px">${t.description}</p>
+            </div>
+            <div class="tc-tags">${t.subjects.map(s => `<span class="tag">${s}</span>`).join("")}${t.tags.map(g => `<span class="tag">${g}</span>`).join("")}</div>
+            <div class="tc-meta">
+              <span>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                ${t.questions} questions
+              </span>
+              <span>
+                <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                ${t.maxAttempts < 999 ? t.attempts + "/" + t.maxAttempts + " attempts" : "Unlimited"}
+              </span>
+            </div>
+            <div class="tc-footer">
+              ${t.maxAttempts < 999 ? `
+                <div class="attempts-bar">
+                  <div class="attempts-label"><span>Attempts</span><span>${t.attempts}/${t.maxAttempts}</span></div>
+                  <div class="progress"><div class="progress-fill ${pctClass}" style="width:${pct}%"></div></div>
+                </div>` : '<div class="attempts-bar"><p style="font-size:12px;color:var(--muted)">Unlimited attempts</p></div>'
+              }
+              ${t.status === "available" ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openTestConfirm(${t.id})">Start -&gt;</button>`
+                : t.status === "scheduled" ? `<button class="btn btn-sm" style="background:var(--amber-light);border-color:var(--amber);color:#8a541b">${t.schedDate}</button>`
+                : `<div style="text-align:right"><p style="font-size:11px;color:var(--muted)">Score</p><p style="font-size:16px;font-weight:700;color:var(--primary)">${t.score}%</p></div>`}
+            </div>`;
+          grid.appendChild(card);
+        });
+      }
+
+      let activeFilter = "all", activeSearch = "";
+      function filterTests(f, btn) {
+        activeFilter = f;
+        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        renderTests(f, activeSearch);
+      }
+      function searchTests(v) { activeSearch = v; renderTests(activeFilter, v); }
+
+      function openTestConfirm(id) {
+        currentTest = testsData.find(t => t.id === id);
+        document.getElementById("confirmTitle").textContent = currentTest.title;
+        document.getElementById("confirmSubtitle").textContent = `${currentTest.questions} questions · ${currentTest.duration} minutes`;
+        document.getElementById("ci-duration").textContent = currentTest.duration + " min";
+        document.getElementById("ci-questions").textContent = currentTest.questions;
+        document.getElementById("ci-subjects").textContent = currentTest.subjects.length;
+        showView("confirmView");
+        document.getElementById("examModal").classList.add("open");
+      }
+
+      function closeModal() {
+        clearInterval(timerInterval);
+        document.getElementById("examModal").classList.remove("open");
+        showView("confirmView");
+      }
+
+      function showView(id) {
+        ["confirmView","examView","submitConfirmView","resultView"].forEach(v => {
+          const el = document.getElementById(v);
+          el.style.display = "none";
+        });
+        const show = document.getElementById(id);
+        show.style.display = id === "examView" ? "flex" : "block";
+        show.style.flexDirection = id === "examView" ? "column" : "";
+        show.style.height = id === "examView" ? "100%" : "";
+      }
+
+      function startExam() {
+        questions = buildQuestions(currentTest.subjects, currentTest.questions);
+        answers = new Array(questions.length).fill(null);
+        currentQ = 0;
+        secondsLeft = currentTest.duration * 60;
+        document.getElementById("examTitle").textContent = currentTest.title;
+        showView("examView");
+        buildPalette();
+        renderQuestion();
+        startTimer();
+      }
+
+      function startTimer() {
+        clearInterval(timerInterval);
+        updateTimerDisplay();
+        timerInterval = setInterval(() => {
+          secondsLeft--;
+          updateTimerDisplay();
+          if (secondsLeft <= 0) { clearInterval(timerInterval); submitExam(); }
+        }, 1000);
+      }
+
+      function updateTimerDisplay() {
+        const m = Math.floor(secondsLeft / 60);
+        const s = secondsLeft % 60;
+        document.getElementById("timerDisplay").textContent = String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
+        const badge = document.getElementById("timerBadge");
+        badge.className = "timer-badge" + (secondsLeft < 60 ? " danger" : secondsLeft < 300 ? " warning" : "");
+      }
+
+      function renderQuestion() {
+        const q = questions[currentQ];
+        document.getElementById("questionCounter").textContent = `Question ${currentQ + 1} of ${questions.length}`;
+        document.getElementById("qNum").textContent = `${q.subject} - Q${currentQ + 1}`;
+        document.getElementById("qSubject").textContent = q.subject;
+        document.getElementById("questionText").textContent = q.text;
+        document.getElementById("examProgress").style.width = ((currentQ + 1) / questions.length * 100) + "%";
+
+        const cont = document.getElementById("optionsContainer");
+        cont.innerHTML = "";
+        const labels = ["A","B","C","D"];
+        q.opts.forEach((opt, i) => {
+          const div = document.createElement("div");
+          div.className = "option" + (answers[currentQ] === i ? " selected" : "");
+          div.innerHTML = `<span class="opt-label">${labels[i]}</span><span>${opt}</span>`;
+          div.onclick = () => selectOption(i);
+          cont.appendChild(div);
+        });
+
+        const isLast = currentQ === questions.length - 1;
+        document.getElementById("nextBtn").style.display = isLast ? "none" : "inline-flex";
+        document.getElementById("submitBtn").style.display = isLast ? "inline-flex" : "none";
+
+        updatePalette();
+      }
+
+      function selectOption(i) {
+        answers[currentQ] = i;
+        renderQuestion();
+      }
+
+      function nextQuestion() {
+        if (answers[currentQ] === null) answers[currentQ] = -1;
+        if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); }
+      }
+      function prevQuestion() {
+        if (currentQ > 0) { currentQ--; renderQuestion(); }
+      }
+      function skipQuestion() {
+        answers[currentQ] = -1;
+        if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); }
+      }
+
+      function buildPalette() {
+        const grid = document.getElementById("paletteGrid");
+        grid.innerHTML = "";
+        questions.forEach((_, i) => {
+          const d = document.createElement("div");
+          d.className = "palette-item";
+          d.id = "pal_" + i;
+          d.textContent = i + 1;
+          d.onclick = () => { currentQ = i; renderQuestion(); };
+          grid.appendChild(d);
+        });
+      }
+
+      function updatePalette() {
+        questions.forEach((_, i) => {
+          const el = document.getElementById("pal_" + i);
+          if (!el) return;
+          el.className = "palette-item";
+          if (i === currentQ) el.classList.add("current");
+          else if (answers[i] !== null && answers[i] >= 0) el.classList.add("answered");
+          else if (answers[i] === -1) el.classList.add("skipped");
+        });
+      }
+
+      function showSubmitConfirm() {
+        const answered = answers.filter(a => a !== null && a >= 0).length;
+        const skipped  = answers.filter(a => a === -1).length;
+        const unvisited = answers.filter(a => a === null).length;
+        document.getElementById("sc-answered").textContent = answered;
+        document.getElementById("sc-skipped").textContent = skipped;
+        document.getElementById("sc-unattempted").textContent = unvisited;
+        showView("submitConfirmView");
+      }
+      function hideSubmitConfirm() { showView("examView"); }
+
+      function submitExam() {
+        clearInterval(timerInterval);
+        let correct = 0, wrong = 0, skipped = 0;
+        questions.forEach((q, i) => {
+          if (answers[i] === null || answers[i] === -1) skipped++;
+          else if (answers[i] === q.ans) correct++;
+          else wrong++;
+        });
+        const marks = correct * 4 - wrong * 1;
+        const total = questions.length * 4;
+        const pct = Math.round(correct / questions.length * 100);
+
+        document.getElementById("resultTestName").textContent = currentTest.title;
+        document.getElementById("resultPct").textContent = pct + "%";
+        document.getElementById("r-correct").textContent = correct;
+        document.getElementById("r-wrong").textContent = wrong;
+        document.getElementById("r-skipped").textContent = skipped;
+        document.getElementById("r-marks").textContent = marks + "/" + total;
+        const fb = pct >= 80 ? "Excellent! Keep it up." : pct >= 60 ? "Good job. Review weak areas." : "Keep practicing. You can do better!";
+        document.getElementById("resultFeedback").textContent = fb;
+
+        const reviewList = document.getElementById("reviewList");
+        reviewList.innerHTML = "";
+        questions.forEach((q, i) => {
+          const userAns = answers[i];
+          const isCorrect = userAns === q.ans;
+          const isSkipped = userAns === null || userAns === -1;
+          const labels = ["A","B","C","D"];
+          const div = document.createElement("div");
+          div.style.cssText = "padding:12px;border-radius:8px;border:1px solid var(--border);font-size:13px";
+          div.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
+              <p style="font-weight:500;line-height:1.5">Q${i+1}. ${q.text}</p>
+              <span style="flex-shrink:0;font-size:11px;padding:2px 8px;border-radius:20px;${isSkipped ? "background:var(--amber-light);color:#8a541b" : isCorrect ? "background:var(--primary-light);color:var(--primary-dark)" : "background:var(--red-light);color:#a23e31"}">${isSkipped ? "Skipped" : isCorrect ? "Correct" : "Wrong"}</span>
+            </div>
+            <p style="color:var(--muted)">Correct: <strong style="color:var(--primary)">${labels[q.ans]}. ${q.opts[q.ans]}</strong>${!isSkipped && !isCorrect ? ` &nbsp;·&nbsp; Your answer: <strong style=\"color:#a23e31\">${labels[userAns]}. ${q.opts[userAns]}</strong>` : ""}</p>`;
+          reviewList.appendChild(div);
+        });
+
+        showView("resultView");
+      }
+
+      renderTests();
+    </script>
   </body>
 </html>

@@ -1,0 +1,24 @@
+.bar {
+  height: 10px;
+  background: var(--bg);
+  border-radius: 999px;
+  overflow: hidden;
+}
+.bar > div {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.bar-fill { height: 100%; border-radius: 999px; }
+.bar-primary { background: var(--primary); }
+.bar-amber { background: var(--amber); }
+.bar-red { background: var(--red); }
+
+.metric { width: 45%; }
+.metric-value { font-size: 12px; color: var(--muted); }
+
+.w-84 { width: 84%; }
+.w-72 { width: 72%; }
+.w-63 { width: 63%; }
+
+.panel-grid-spaced { margin-top: 1.25rem; }

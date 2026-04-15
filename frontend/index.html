@@ -18,106 +18,260 @@
       href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
     />
   </head>
-  <body class="login-page">
-    <main class="login-layout">
-      <section class="intro">
-        <div class="intro-logo">
-          E
+  <body class="home-page">
+    <header class="top-nav" id="home">
+      <div class="container nav-inner">
+        <a class="brand" href="#">EduMate</a>
+        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Toggle menu">
+          <i class="fa-solid fa-bars"></i>
+        </button>
+        <nav class="nav-links" aria-label="Main navigation">
+          <a href="#home">হোম</a>
+          <a href="#features">ফিচারসমূহ</a>
+          <a href="#packages">প্যাকেজসমূহ</a>
+          <a href="#contact">যোগাযোগ</a>
+        </nav>
+        <a class="nav-cta" href="signup.html">অ্যাপ ইন্সটল করুন</a>
+      </div>
+      <nav class="mobile-menu" id="mobileMenu" aria-label="Mobile navigation">
+        <a href="#home">হোম</a>
+        <a href="#features">ফিচারসমূহ</a>
+        <a href="#packages">প্যাকেজসমূহ</a>
+        <a href="#contact">যোগাযোগ</a>
+      </nav>
+    </header>
+
+    <main>
+      <section class="hero container">
+        <div class="hero-left reveal">
+          <p class="hero-tag">সঠিক প্রস্তুতি, সহজ প্রিলি</p>
+          <h1>ঘরে বসেই ভর্তি পরীক্ষার প্রস্তুতি</h1>
+          <p class="hero-copy">
+            প্রতিদিন মডেল টেস্ট, রিয়েল টাইম র‌্যাঙ্কিং, ভিডিও ক্লাস এবং নোটস দিয়ে
+            নিজের প্রস্তুতি যাচাই করুন।
+          </p>
+          <div class="hero-cta-row">
+            <a class="install-btn" href="signup.html">লগইন করুন</a>
+            <a class="ghost-btn" href="#packages">প্যাকেজ দেখুন</a>
+          </div>
+          <blockquote class="quote-box" id="quoteBox">
+            <span id="quoteText">"অধ্যবসায়ের কোন বিকল্প নেই।"</span>
+            <button type="button" class="small-btn" id="nextQuote">আরও উক্তি</button>
+          </blockquote>
+          <div class="hero-stats">
+            <div class="mini-stat"><strong data-count="525">0</strong><span>হাজার+ প্রশ্ন</span></div>
+            <div class="mini-stat"><strong data-count="1300">0</strong><span>ভিডিও লেকচার</span></div>
+            <div class="mini-stat"><strong data-count="1800">0</strong><span>হাজার+ ব্যবহারকারী</span></div>
+          </div>
         </div>
-        <p class="intro-label">Admission prep, made simple</p>
-        <h1 class="intro-title">EduMate</h1>
-        <p class="intro-copy">
-          Your notes, practice tests, and daily plan are all in one place.
-        </p>
-        <div class="intro-stats">
-          <div class="intro-stat">
-            <span>48</span>
-            <p>
-              <i class="fa-solid fa-file-lines mr-2"></i>Practice Sets
-            </p>
-          </div>
-          <div class="intro-stat">
-            <span>560+</span>
-            <p>
-              <i class="fa-solid fa-book-open mr-2"></i>Study Notes
-            </p>
-          </div>
-          <div class="intro-stat">
-            <span>7 days</span>
-            <p>
-              <i class="fa-solid fa-chart-line mr-2"></i>Weekly Streak
-            </p>
-          </div>
-        </div>
-      </section>
 
-      <section class="login-card" aria-label="Login form">
-        <header class="login-header">
-          <h2>Welcome back</h2>
-          <p>Log in to continue from where you left off.</p>
-          <div class="login-role">
-            <span>Role:</span>
-            <a href="student.html">Student</a>
-          </div>
-        </header>
+        <section class="login-card reveal" aria-label="Login form">
+          <header class="login-header">
+            <h2>স্টুডেন্ট লগইন</h2>
+            <p>আপনার প্রস্তুতি চালিয়ে যেতে একাউন্টে প্রবেশ করুন।</p>
+          </header>
 
-        <form class="login-form" id="loginForm" action="student.html">
-          <div class="demo-box">
-            <p><strong>Demo account</strong></p>
-            <p>Email: demo@edumate.com</p>
-            <p>Password: EduMate@123</p>
-          </div>
-          <label class="input-group">
-            <span>Email or phone</span>
-            <input
-              type="text"
-              name="identifier"
-              placeholder="name@email.com"
-              required
-            />
-          </label>
-
-          <label class="input-group">
-            <span>Password</span>
-            <div class="password-row">
+          <form class="login-form" id="loginForm" action="student.html">
+            <div class="demo-box">
+              <p><strong>ডেমো একাউন্ট</strong></p>
+              <p>Email: demo@edumate.com</p>
+              <p>Password: EduMate@123</p>
+            </div>
+            <label class="input-group">
+              <span>ইমেইল বা ফোন</span>
               <input
-                type="password"
-                name="password"
-                placeholder="Enter 8+ characters"
-                minlength="8"
+                type="text"
+                name="identifier"
+                placeholder="name@email.com"
                 required
               />
-              <button
-                type="button"
-                class="toggle-btn"
-                id="togglePassword"
-              >
-                Show
-              </button>
-            </div>
-          </label>
-
-          <div class="remember-row">
-            <label>
-              <input type="checkbox" name="remember" />
-              <span>Remember me</span>
             </label>
-            <a href="#">Forgot password?</a>
-          </div>
 
-          <div>
-            <button class="submit-btn" type="submit">Sign in</button>
-          </div>
-        </form>
+            <label class="input-group">
+              <span>পাসওয়ার্ড</span>
+              <div class="password-row">
+                <input
+                  type="password"
+                  name="password"
+                  placeholder="৮+ অক্ষর লিখুন"
+                  minlength="8"
+                  required
+                />
+                <button
+                  type="button"
+                  class="toggle-btn"
+                  id="togglePassword"
+                >
+                  Show
+                </button>
+              </div>
+            </label>
 
-        <footer class="login-footer">
-          <div>
-            <span>New to EduMate?</span>
-            <a href="signup.html">Create an account</a>
+            <div class="remember-row">
+              <label>
+                <input type="checkbox" name="remember" />
+                <span>লগইন অবস্থায় রাখুন</span>
+              </label>
+              <a href="#">পাসওয়ার্ড ভুলে গেছেন?</a>
+            </div>
+
+            <div>
+              <button class="submit-btn" type="submit">লগইন</button>
+            </div>
+          </form>
+
+          <footer class="login-footer">
+            <div>
+              <span>নতুন?</span>
+              <a href="signup.html">নতুন একাউন্ট খুলুন</a>
+            </div>
+          </footer>
+        </section>
+      </section>
+
+      <section class="stats-band reveal">
+        <div class="container band-grid">
+          <div class="band-item">
+            <strong data-count="1800000">0</strong>
+            <span>অ্যাপ ডাউনলোড</span>
           </div>
-        </footer>
+          <div class="band-item">
+            <strong data-count="400">0</strong>
+            <span>ফ্রি ভিডিও ক্লাস</span>
+          </div>
+          <div class="band-item">
+            <strong data-count="1000">0</strong>
+            <span>ফ্রি PDF</span>
+          </div>
+          <div class="band-item">
+            <strong data-count="7">0</strong>
+            <span>দিন ফ্রি ট্রায়াল</span>
+          </div>
+        </div>
+      </section>
+
+      <section class="feature-section" id="features">
+        <div class="container">
+          <div class="section-head reveal">
+            <h3>গুরুত্বপূর্ণ ফিচারসমূহ</h3>
+            <p>যা আপনার প্রস্তুতিকে আরও স্মার্ট ও কার্যকর করবে।</p>
+          </div>
+          <div class="feature-grid">
+            <article class="feature-card reveal">
+              <h4>স্মার্ট সার্চ</h4>
+              <p>পুরনো প্রশ্ন, টপিক ও রেফারেন্স দ্রুত খুঁজে নিন।</p>
+            </article>
+            <article class="feature-card reveal">
+              <h4>টপিক গুরু</h4>
+              <p>টপিকভিত্তিক প্রশ্ন সমাধান করে দুর্বলতা কাটিয়ে উঠুন।</p>
+            </article>
+            <article class="feature-card reveal">
+              <h4>কুইজ মাস্টার</h4>
+              <p>পছন্দের টপিকে আনলিমিটেড কুইজ তৈরি করে অনুশীলন করুন।</p>
+            </article>
+            <article class="feature-card reveal">
+              <h4>সেন্ট্রাল আর্কাইভ</h4>
+              <p>সব পরীক্ষা ও প্রশ্ন এক জায়গায়, যেকোন সময় অ্যাক্সেসযোগ্য।</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="packages-section" id="packages">
+        <div class="container">
+          <div class="section-head reveal">
+            <h3>প্যাকেজসমূহ</h3>
+            <p>আপনার প্রয়োজন অনুযায়ী প্ল্যান বেছে নিন।</p>
+          </div>
+          <div class="packages-grid">
+            <div class="package-card highlight reveal">
+              <h4>ফ্রি প্রিমিয়াম</h4>
+              <p class="package-price">৳০ / ৭ দিন</p>
+              <p>সকল প্রিমিয়াম ফিচার, পরীক্ষা ও ভিডিও ক্লাস</p>
+            </div>
+            <div class="package-card reveal">
+              <h4>মাসিক প্যাকেজ</h4>
+              <p class="package-price">৳১৯৯ / ৩০ দিন</p>
+              <p>ফুল এক্সেস + র‌্যাঙ্কিং + রিভিশন টুলস</p>
+            </div>
+            <div class="package-card reveal">
+              <h4>ষাণ্মাসিক প্যাকেজ</h4>
+              <p class="package-price">৳৭৯৯ / ৬ মাস</p>
+              <p>দীর্ঘমেয়াদি প্রস্তুতির জন্য সেরা ভ্যালু প্ল্যান</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="faq-section">
+        <div class="container">
+          <div class="section-head reveal">
+            <h3>সাধারণ জিজ্ঞাসা</h3>
+            <p>শিক্ষার্থীরা আমাদের কাছে সবচেয়ে বেশি যা জানতে চায়।</p>
+          </div>
+          <div class="faq-list">
+            <article class="faq-item reveal">
+              <button class="faq-question" type="button">ফ্রি ট্রায়াল কীভাবে পাবো?</button>
+              <p class="faq-answer">লগইন করার পর প্রোফাইল থেকে ৭ দিনের ফ্রি ট্রায়াল সক্রিয় করতে পারবেন।</p>
+            </article>
+            <article class="faq-item reveal">
+              <button class="faq-question" type="button">মডেল টেস্টের রেজাল্ট কখন পাবো?</button>
+              <p class="faq-answer">প্রতিটি টেস্ট শেষ হওয়ার সাথে সাথেই স্কোর, র‌্যাঙ্ক এবং ব্যাখ্যা দেখতে পারবেন।</p>
+            </article>
+            <article class="faq-item reveal">
+              <button class="faq-question" type="button">মোবাইলে এবং ওয়েবে একই একাউন্ট ব্যবহার করা যাবে?</button>
+              <p class="faq-answer">হ্যাঁ, একই একাউন্ট দিয়ে সব ডিভাইসে লগইন করা যাবে।</p>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <section class="address-section" id="contact">
+        <div class="container address-grid">
+          <div class="reveal">
+            <h3>যোগাযোগের ঠিকানা</h3>
+            <p>EduMate Learning Center</p>
+            <p>House 23, Road 10, Dhanmondi, Dhaka 1209</p>
+            <p>Bangladesh</p>
+          </div>
+          <div class="reveal">
+            <h3>সরাসরি যোগাযোগ</h3>
+            <p>Phone: +880 1701-123456</p>
+            <p>Email: <span id="supportEmail">support@edumate.com</span></p>
+            <p>Hours: Sat-Thu, 9:00 AM - 8:00 PM</p>
+            <button type="button" class="small-btn" id="copyEmailBtn">ইমেইল কপি করুন</button>
+          </div>
+        </div>
       </section>
     </main>
+
+    <footer class="site-footer">
+      <div class="container footer-grid">
+        <div>
+          <h4>EduMate</h4>
+          <p>ভর্তি পরীক্ষার প্রস্তুতির জন্য প্রয়োজনীয় সবকিছু এক জায়গায়।</p>
+        </div>
+        <div>
+          <h4>কুইক লিংক</h4>
+          <a href="#home">হোম</a>
+          <a href="#features">ফিচারসমূহ</a>
+          <a href="#packages">প্যাকেজসমূহ</a>
+        </div>
+        <div>
+          <h4>সাপোর্ট</h4>
+          <a href="#">সাধারণ জিজ্ঞাসা</a>
+          <a href="#">প্রাইভেসি পলিসি</a>
+          <a href="#">টার্মস</a>
+        </div>
+      </div>
+      <div class="container footer-bottom">
+        <p>© 2026 EduMate. সর্বস্বত্ব সংরক্ষিত।</p>
+      </div>
+    </footer>
+
+    <button class="back-to-top" id="backToTop" type="button" aria-label="Back to top">
+      <i class="fa-solid fa-arrow-up"></i>
+    </button>
 
     <script src="script.js"></script>
   </body>

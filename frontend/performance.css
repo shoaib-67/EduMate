@@ -1,21 +1,17 @@
 .bar {
   height: 10px;
-  background: var(--bg);
+  background: linear-gradient(160deg, #dceaf7 0%, #eaf4ff 100%);
   border-radius: 999px;
   overflow: hidden;
 }
-.bar > div {
-  height: 100%;
-  border-radius: 999px;
-}
 
 .bar-fill { height: 100%; border-radius: 999px; }
-.bar-primary { background: var(--primary); }
-.bar-amber { background: var(--amber); }
-.bar-red { background: var(--red); }
+.bar-primary { background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%); }
+.bar-amber { background: linear-gradient(90deg, #f1b24d 0%, var(--amber) 100%); }
+.bar-red { background: linear-gradient(90deg, #e57888 0%, var(--red) 100%); }
 
 .metric { width: 45%; }
-.metric-value { font-size: 12px; color: var(--muted); }
+.metric-value { font-size: 12px; color: var(--muted); font-weight: 700; }
 
 .w-84 { width: 84%; }
 .w-72 { width: 72%; }

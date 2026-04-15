@@ -1,1 +1,11 @@
 /* Exam routine page-specific styles. */
+
+.list-item .chip {
+	min-width: 72px;
+	text-align: center;
+}
+
+.panel .list-item:first-child {
+	border-color: #b7d8ee;
+	background: linear-gradient(145deg, #ffffff 0%, #ecf7ff 100%);
+}

@@ -1,6 +1,24 @@
-.layout-grid { display: grid; gap: 1.25rem; grid-template-columns: 2fr 1fr; }
+.layout-grid {
+  display: grid;
+  gap: 1.25rem;
+  grid-template-columns: 2fr 1fr;
+}
 
-.thread { border: 1px solid var(--border); background: var(--surface); border-radius: 12px; padding: 12px 14px; display: grid; gap: 6px; }
+.thread {
+  border: 1px solid var(--border);
+  background: linear-gradient(145deg, #ffffff 0%, #f5faff 100%);
+  border-radius: 12px;
+  padding: 12px 14px;
+  display: grid;
+  gap: 6px;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.thread:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-soft);
+}
+
 .thread h4 { font-size: 14px; }
 .thread span { font-size: 12px; color: var(--muted); }
 
@@ -9,19 +27,27 @@
   padding: 10px 12px;
   border-radius: 12px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: linear-gradient(160deg, #ffffff 0%, #f6fbff 100%);
   font-size: 14px;
 }
+
 .input-row textarea {
   width: 100%;
   min-height: 110px;
   border: 1px solid var(--border);
-  background: var(--surface);
+  background: linear-gradient(160deg, #ffffff 0%, #f6fbff 100%);
   border-radius: 12px;
   padding: 10px 12px;
   font-size: 14px;
   color: var(--text);
   outline: none;
+}
+
+.discussion-input:focus,
+.input-row textarea:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(12, 122, 167, 0.14);
 }
 
 .section-spacer { margin-top: 1.25rem; }

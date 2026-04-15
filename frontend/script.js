@@ -5,37 +5,35 @@ const signupToggle = document.getElementById("toggleSignupPassword");
 const signupPassword = document.querySelector("#signupForm input[name='password']");
 const signupForm = document.getElementById("signupForm");
 
-if (loginToggle && loginPassword) {
-  loginToggle.addEventListener("click", () => {
-    const isHidden = loginPassword.type === "password";
-    loginPassword.type = isHidden ? "text" : "password";
-    loginToggle.textContent = isHidden ? "Hide" : "Show";
+function setupPasswordToggle(toggleButton, passwordInput) {
+  if (!toggleButton || !passwordInput) return;
+  toggleButton.addEventListener("click", () => {
+    const isHidden = passwordInput.type === "password";
+    passwordInput.type = isHidden ? "text" : "password";
+    toggleButton.textContent = isHidden ? "Hide" : "Show";
   });
 }
 
-if (signupToggle && signupPassword) {
-  signupToggle.addEventListener("click", () => {
-    const isHidden = signupPassword.type === "password";
-    signupPassword.type = isHidden ? "text" : "password";
-    signupToggle.textContent = isHidden ? "Hide" : "Show";
-  });
-}
-
-if (loginForm) {
-  loginForm.addEventListener("submit", (event) => {
+function setupFormSubmit(formElement, callback) {
+  if (!formElement) return;
+  formElement.addEventListener("submit", (event) => {
     event.preventDefault();
-    // Placeholder for real auth flow.
-    window.location.href = "student.html";
+    callback();
   });
 }
 
-if (signupForm) {
-  signupForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    // Placeholder for real signup flow.
-    alert("Account created. Wire this to your backend.");
-  });
-}
+setupPasswordToggle(loginToggle, loginPassword);
+setupPasswordToggle(signupToggle, signupPassword);
+
+setupFormSubmit(loginForm, () => {
+  // Placeholder for real auth flow.
+  window.location.href = "student.html";
+});
+
+setupFormSubmit(signupForm, () => {
+  // Placeholder for real signup flow.
+  alert("Account created. Wire this to your backend.");
+});
 
 const quoteText = document.getElementById("quoteText");
 const nextQuoteBtn = document.getElementById("nextQuote");

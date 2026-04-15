@@ -1,11 +1,11 @@
 .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 1.25rem; }
 .course-card {
-  background: rgba(255, 248, 241, 0.95);
+  background: #fffaf6;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem;
   display: flex; flex-direction: column; gap: 10px;
-  box-shadow: 0 18px 40px rgba(45, 37, 32, 0.08);
+  box-shadow: 0 6px 16px rgba(45, 37, 32, 0.06);
 }
 .course-card h3 { font-size: 16px; }
 .course-card p { font-size: 13px; color: var(--muted); line-height: 1.5; }

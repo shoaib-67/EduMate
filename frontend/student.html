@@ -60,13 +60,13 @@
               <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
               <div class="notif-dot"></div>
             </div>
-            <div class="avatar">SH</div>
+            <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
           </div>
         </div>
 
         <div class="content">
           <div class="page-header">
-            <h1>Welcome back, Ayesha</h1>
+            <h1>Welcome back, Shoaib</h1>
             <p>You are doing well. Pick one target for today and finish it.</p>
           </div>
 
@@ -78,7 +78,7 @@
             </div>
             <div class="stat-card">
               <p class="s-label">Average Score</p>
-              <p class="s-val" style="color:var(--primary)">76%</p>
+              <p class="s-val text-primary">76%</p>
               <p class="s-sub">Up 5% from last week</p>
             </div>
             <div class="stat-card">
@@ -93,48 +93,35 @@
             </div>
           </div>
 
-          <div class="panel-grid">
-            <section class="panel">
-              <h2>Upcoming exams</h2>
-              <p>Here is what you have coming up this week.</p>
-              <div class="list">
-                <div class="list-item">
-                  <div>
-                    <h4>Physics Mock Test</h4>
-                    <span>Saturday, 9:00 AM - 100 questions</span>
-                  </div>
-                  <span class="chip">High</span>
+          <section class="panel">
+            <h2>Upcoming exams</h2>
+            <p>Here is what you have coming up this week.</p>
+            <div class="list">
+              <div class="list-item">
+                <div>
+                  <h4>Physics Mock Test</h4>
+                  <span>Saturday, 9:00 AM - 100 questions</span>
                 </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Chemistry Drill</h4>
-                    <span>Monday, 7:30 PM - 40 questions</span>
-                  </div>
-                  <span class="chip">Medium</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Interview Prep</h4>
-                    <span>Wednesday, 5:00 PM - 20 prompts</span>
-                  </div>
-                  <span class="chip">Upcoming</span>
-                </div>
+                <span class="chip">High</span>
               </div>
-            </section>
-
-            <section class="panel">
-              <h2>Quick actions</h2>
-              <p>Use these shortcuts to continue quickly.</p>
-              <div class="quick-actions">
-                <a class="btn btn-primary" href="mock-test.html">Start a mock test</a>
-                <a class="btn btn-light" href="exam-routine.html">View exam routine</a>
-                <button class="btn" type="button">Open notes</button>
-                <button class="btn" type="button">Open discussion</button>
+              <div class="list-item">
+                <div>
+                  <h4>Chemistry Drill</h4>
+                  <span>Monday, 7:30 PM - 40 questions</span>
+                </div>
+                <span class="chip">Medium</span>
               </div>
-            </section>
-          </div>
+              <div class="list-item">
+                <div>
+                  <h4>Interview Prep</h4>
+                  <span>Wednesday, 5:00 PM - 20 prompts</span>
+                </div>
+                <span class="chip">Upcoming</span>
+              </div>
+            </div>
+          </section>
 
-          <div class="panel-grid" style="margin-top:1.25rem">
+          <div class="panel-grid panel-grid-spaced">
             <section class="panel">
               <h2>Course progress</h2>
               <p>Your current course completion progress.</p>
@@ -194,5 +181,6 @@
         </div>
       </div>
     </div>
+    <script src="student.js"></script>
   </body>
 </html>

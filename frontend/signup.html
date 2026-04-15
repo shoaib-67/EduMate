@@ -73,7 +73,7 @@
             <section class="panel">
               <h2>Create your account</h2>
               <p>It only takes a minute to get started.</p>
-              <form id="signupForm" style="margin-top:1rem">
+              <form id="signupForm" class="signup-form">
                 <div class="form-group">
                   <label for="fullName">Full name</label>
                   <input id="fullName" name="fullName" type="text" placeholder="Your name" required />
@@ -93,11 +93,11 @@
                     <button class="toggle-btn" type="button" id="toggleSignupPassword">Show</button>
                   </div>
                 </div>
-                <label style="display:flex;gap:8px;font-size:13px;color:var(--muted);margin-bottom:12px">
+                <label class="terms-row">
                   <input type="checkbox" required />
                   <span>
-                    I agree to the <a href="#" style="color:var(--primary-dark);font-weight:600;text-decoration:none">terms</a>
-                    and <a href="#" style="color:var(--primary-dark);font-weight:600;text-decoration:none">privacy policy</a>.
+                    I agree to the <a href="#" class="terms-link">terms</a>
+                    and <a href="#" class="terms-link">privacy policy</a>.
                   </span>
                 </label>
                 <button class="btn btn-primary" type="submit">Create account</button>
@@ -111,6 +111,6 @@
       </div>
     </div>
 
-    <script src="script.js"></script>
+    <script src="signup.js"></script>
   </body>
 </html>

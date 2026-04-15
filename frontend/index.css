@@ -12,6 +12,9 @@
   --radius-xl: 24px;
   --radius-lg: 18px;
   --radius-md: 14px;
+  --brand-gradient: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
+  --brand-shadow-sm: 0 10px 20px rgba(7, 93, 136, 0.2);
+  --brand-shadow-md: 0 12px 26px rgba(7, 93, 136, 0.18);
   --shadow-soft: 0 12px 30px rgba(16, 50, 90, 0.08);
   --shadow-pop: 0 18px 38px rgba(8, 56, 88, 0.14);
 }
@@ -65,7 +68,7 @@
   width: 34px;
   height: 34px;
   border-radius: 11px;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
+  background: var(--brand-gradient);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -99,13 +102,13 @@
 
 .nav-cta {
   text-decoration: none;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
+  background: var(--brand-gradient);
   color: #fff;
   border-radius: 999px;
   padding: 10px 18px;
   font-size: 14px;
   font-weight: 700;
-  box-shadow: 0 10px 20px rgba(7, 93, 136, 0.2);
+  box-shadow: var(--brand-shadow-sm);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
@@ -201,9 +204,9 @@
 }
 
 .install-btn {
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
+  background: var(--brand-gradient);
   color: #fff;
-  box-shadow: 0 12px 26px rgba(7, 93, 136, 0.18);
+  box-shadow: var(--brand-shadow-md);
 }
 
 .install-btn:hover {
@@ -246,7 +249,7 @@
 }
 
 #nextQuote {
-  background: linear-gradient(135deg, #0c7aa7 0%, #075d88 100%);
+  background: var(--brand-gradient);
   border-color: #0a6f99;
   color: #ffffff;
 }
@@ -379,7 +382,7 @@
   width: 100%;
   border: none;
   border-radius: 12px;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
+  background: var(--brand-gradient);
   color: #fff;
   padding: 11px 14px;
   font-weight: 700;
@@ -627,7 +630,7 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  background: linear-gradient(135deg, var(--brand) 0%, var(--brand-strong) 100%);
+  background: var(--brand-gradient);
   color: #fff;
   cursor: pointer;
   display: none;
@@ -666,12 +669,9 @@ input:focus-visible {
     max-width: 620px;
   }
 
-  .feature-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-
+  .feature-grid,
   .packages-grid {
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 }
 

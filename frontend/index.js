@@ -1,39 +1,25 @@
-const loginToggle = document.getElementById("togglePassword");
-const loginPassword = document.querySelector("#loginForm input[name='password']");
-const loginForm = document.getElementById("loginForm");
-const signupToggle = document.getElementById("toggleSignupPassword");
-const signupPassword = document.querySelector("#signupForm input[name='password']");
-const signupForm = document.getElementById("signupForm");
+const $ = (selector, root = document) => root.querySelector(selector);
+const $$ = (selector, root = document) => root.querySelectorAll(selector);
 
-function setupPasswordToggle(toggleButton, passwordInput) {
-  if (!toggleButton || !passwordInput) return;
-  toggleButton.addEventListener("click", () => {
-    const isHidden = passwordInput.type === "password";
-    passwordInput.type = isHidden ? "text" : "password";
-    toggleButton.textContent = isHidden ? "Hide" : "Show";
+const loginForm = $("#loginForm");
+const loginToggle = $("#togglePassword");
+const loginPassword = $("input[name='password']", loginForm);
+
+if (loginToggle && loginPassword) {
+  loginToggle.addEventListener("click", () => {
+    const isHidden = loginPassword.type === "password";
+    loginPassword.type = isHidden ? "text" : "password";
+    loginToggle.textContent = isHidden ? "Hide" : "Show";
   });
 }
 
-function setupFormSubmit(formElement, callback) {
-  if (!formElement) return;
-  formElement.addEventListener("submit", (event) => {
+if (loginForm) {
+  loginForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    callback();
+    // Placeholder for real auth flow.
+    window.location.href = "student.html";
   });
 }
-
-setupPasswordToggle(loginToggle, loginPassword);
-setupPasswordToggle(signupToggle, signupPassword);
-
-setupFormSubmit(loginForm, () => {
-  // Placeholder for real auth flow.
-  window.location.href = "student.html";
-});
-
-setupFormSubmit(signupForm, () => {
-  // Placeholder for real signup flow.
-  alert("Account created. Wire this to your backend.");
-});
 
 const quoteText = document.getElementById("quoteText");
 const nextQuoteBtn = document.getElementById("nextQuote");
@@ -53,8 +39,7 @@ if (quoteText && nextQuoteBtn) {
   setInterval(setQuote, 5000);
 }
 
-const navAnchors = document.querySelectorAll("a[href^='#']");
-navAnchors.forEach((anchor) => {
+$$("a[href^='#']").forEach((anchor) => {
   anchor.addEventListener("click", (event) => {
     event.preventDefault();
     const targetId = anchor.getAttribute("href");
@@ -65,22 +50,27 @@ navAnchors.forEach((anchor) => {
   });
 });
 
-const menuToggle = document.getElementById("menuToggle");
-const mobileMenu = document.getElementById("mobileMenu");
+const menuToggle = $("#menuToggle");
+const mobileMenu = $("#mobileMenu");
 if (menuToggle && mobileMenu) {
   menuToggle.addEventListener("click", () => {
     mobileMenu.classList.toggle("open");
   });
-  mobileMenu.querySelectorAll("a").forEach((link) => {
+  $$("a", mobileMenu).forEach((link) => {
     link.addEventListener("click", () => mobileMenu.classList.remove("open"));
   });
 }
 
-const counters = document.querySelectorAll("[data-count]");
-const counterObserver = new IntersectionObserver((entries, observer) => {
-  entries.forEach((entry) => {
-    if (!entry.isIntersecting) return;
-    const el = entry.target;
+const createObserver = (callback, options) =>
+  new IntersectionObserver((entries, observer) => {
+    entries.forEach((entry) => callback(entry, observer));
+  }, options);
+
+const counters = $$("[data-count]");
+const counterObserver = createObserver(
+  (entries, observer) => {
+    if (!entries.isIntersecting) return;
+    const el = entries.target;
     const target = Number(el.getAttribute("data-count")) || 0;
     const duration = 1200;
     const start = performance.now();
@@ -92,41 +82,44 @@ const counterObserver = new IntersectionObserver((entries, observer) => {
     };
     requestAnimationFrame(tick);
     observer.unobserve(el);
-  });
-}, { threshold: 0.3 });
+  },
+  { threshold: 0.3 }
+);
 
 counters.forEach((counter) => counterObserver.observe(counter));
 
-const revealElements = document.querySelectorAll(".reveal");
-const revealObserver = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
+const revealElements = $$(".reveal");
+const revealObserver = createObserver(
+  (entry) => {
     if (entry.isIntersecting) {
       entry.target.classList.add("visible");
     }
-  });
-}, { threshold: 0.15 });
+  },
+  { threshold: 0.15 }
+);
 
 revealElements.forEach((item) => revealObserver.observe(item));
 
 const sectionIds = ["home", "features", "packages", "contact"];
-const allNavLinks = document.querySelectorAll(".nav-links a");
-const sectionObserver = new IntersectionObserver((entries) => {
-  entries.forEach((entry) => {
+const allNavLinks = $$(".nav-links a");
+const sectionObserver = createObserver(
+  (entry) => {
     if (!entry.isIntersecting) return;
     const id = entry.target.getAttribute("id");
     allNavLinks.forEach((link) => {
       const isActive = link.getAttribute("href") === `#${id}`;
       link.classList.toggle("active", isActive);
     });
-  });
-}, { threshold: 0.4 });
+  },
+  { threshold: 0.4 }
+);
 
 sectionIds.forEach((id) => {
   const section = document.getElementById(id);
   if (section) sectionObserver.observe(section);
 });
 
-const faqItems = document.querySelectorAll(".faq-item");
+const faqItems = $$(".faq-item");
 faqItems.forEach((item, index) => {
   const button = item.querySelector(".faq-question");
   if (!button) return;
@@ -136,8 +129,8 @@ faqItems.forEach((item, index) => {
   });
 });
 
-const copyEmailBtn = document.getElementById("copyEmailBtn");
-const supportEmail = document.getElementById("supportEmail");
+const copyEmailBtn = $("#copyEmailBtn");
+const supportEmail = $("#supportEmail");
 if (copyEmailBtn && supportEmail && navigator.clipboard) {
   copyEmailBtn.addEventListener("click", async () => {
     try {
@@ -152,7 +145,7 @@ if (copyEmailBtn && supportEmail && navigator.clipboard) {
   });
 }
 
-const backToTop = document.getElementById("backToTop");
+const backToTop = $("#backToTop");
 if (backToTop) {
   window.addEventListener("scroll", () => {
     backToTop.classList.toggle("show", window.scrollY > 350);

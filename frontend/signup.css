@@ -80,6 +80,24 @@
   cursor: pointer;
 }
 
+.signup-form {
+  margin-top: 1rem;
+}
+
+.terms-row {
+  display: flex;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--muted);
+  margin-bottom: 12px;
+}
+
+.terms-link {
+  color: var(--primary-dark);
+  font-weight: 600;
+  text-decoration: none;
+}
+
 .form-footer {
   margin-top: 12px;
   font-size: 13px;

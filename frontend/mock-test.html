@@ -62,7 +62,7 @@
               <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/></svg>
               <div class="notif-dot"></div>
             </div>
-            <div class="avatar">SH</div>
+            <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
           </div>
         </div>
 
@@ -85,7 +85,7 @@
             </div>
             <div class="stat-card">
               <p class="s-label">Average Score</p>
-              <p class="s-val" style="color:var(--primary)">74%</p>
+              <p class="s-val text-primary">74%</p>
               <p class="s-sub">Up 6% improvement</p>
             </div>
             <div class="stat-card">
@@ -127,48 +127,48 @@
             <div class="confirm-icon">
               <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
             </div>
-            <h3 style="font-family:'Playfair Display',serif;font-size:16px;font-weight:700;margin-bottom:8px">Ready to begin?</h3>
-            <p style="font-size:14px;color:var(--muted);margin-bottom:1.5rem;line-height:1.6">
+            <h3 class="confirm-title">Ready to begin?</h3>
+            <p class="confirm-copy">
               Once started, the timer will count down. You can navigate between questions and review before submitting.
             </p>
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;max-width:320px;margin:0 auto 1.5rem;text-align:left">
-              <div style="padding:10px 14px;background:var(--bg);border-radius:8px">
-                <p style="font-size:11px;color:var(--muted)">Duration</p>
-                <p style="font-size:14px;font-weight:600" id="ci-duration">60 min</p>
+            <div class="confirm-meta-grid">
+              <div class="info-box">
+                <p class="info-label">Duration</p>
+                <p class="info-value" id="ci-duration">60 min</p>
               </div>
-              <div style="padding:10px 14px;background:var(--bg);border-radius:8px">
-                <p style="font-size:11px;color:var(--muted)">Questions</p>
-                <p style="font-size:14px;font-weight:600" id="ci-questions">80</p>
+              <div class="info-box">
+                <p class="info-label">Questions</p>
+                <p class="info-value" id="ci-questions">80</p>
               </div>
-              <div style="padding:10px 14px;background:var(--bg);border-radius:8px">
-                <p style="font-size:11px;color:var(--muted)">Subjects</p>
-                <p style="font-size:14px;font-weight:600" id="ci-subjects">3</p>
+              <div class="info-box">
+                <p class="info-label">Subjects</p>
+                <p class="info-value" id="ci-subjects">3</p>
               </div>
-              <div style="padding:10px 14px;background:var(--bg);border-radius:8px">
-                <p style="font-size:11px;color:var(--muted)">Marking</p>
-                <p style="font-size:14px;font-weight:600">+4 / -1</p>
+              <div class="info-box">
+                <p class="info-label">Marking</p>
+                <p class="info-value">+4 / -1</p>
               </div>
             </div>
-            <div style="display:flex;gap:10px;justify-content:center">
+            <div class="confirm-actions">
               <button class="btn" onclick="closeModal()">Cancel</button>
               <button class="btn btn-primary" onclick="startExam()">Start Test -&gt;</button>
             </div>
           </div>
         </div>
 
-        <div id="examView" style="display:none;flex-direction:column;height:100%">
+        <div id="examView" class="view-hidden exam-view">
           <div class="modal-header">
             <div>
               <h2 id="examTitle">BUET Admission Full Mock</h2>
-              <p id="questionCounter" style="font-size:13px;color:var(--muted)">Question 1 of 80</p>
+              <p id="questionCounter" class="modal-subtext">Question 1 of 80</p>
             </div>
             <div class="timer-badge" id="timerBadge">
               <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
               <span class="timer-text" id="timerDisplay">60:00</span>
             </div>
           </div>
-          <div style="height:3px;background:var(--border)">
-            <div id="examProgress" style="height:100%;background:var(--primary);transition:width 0.3s;width:0%"></div>
+          <div class="exam-progress-track">
+            <div id="examProgress" class="exam-progress"></div>
           </div>
           <div class="modal-body">
             <div class="question-panel" id="questionPanel">
@@ -185,7 +185,7 @@
                 </div>
                 <div class="q-nav-right">
                   <button class="btn btn-sm btn-primary" id="nextBtn" onclick="nextQuestion()">Next -&gt;</button>
-                  <button class="btn btn-sm" id="submitBtn" onclick="showSubmitConfirm()" style="display:none;background:var(--amber-light);border-color:var(--amber);color:#8a541b">Submit Test</button>
+                  <button class="btn btn-sm submit-test-btn" id="submitBtn" onclick="showSubmitConfirm()">Submit Test</button>
                 </div>
               </div>
             </div>
@@ -193,418 +193,86 @@
               <h4>Questions</h4>
               <div class="palette-grid" id="paletteGrid"></div>
               <div class="palette-legend">
-                <div class="legend-item"><div class="legend-dot" style="background:var(--primary)"></div>Answered</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--border)"></div>Not visited</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--amber-light);border:1px solid var(--amber)"></div>Skipped</div>
-                <div class="legend-item"><div class="legend-dot" style="background:var(--primary-light);border:2px solid var(--primary)"></div>Current</div>
+                <div class="legend-item"><div class="legend-dot legend-dot-answered"></div>Answered</div>
+                <div class="legend-item"><div class="legend-dot legend-dot-default"></div>Not visited</div>
+                <div class="legend-item"><div class="legend-dot legend-dot-skipped"></div>Skipped</div>
+                <div class="legend-item"><div class="legend-dot legend-dot-current"></div>Current</div>
               </div>
             </div>
           </div>
         </div>
 
-        <div id="submitConfirmView" style="display:none">
+        <div id="submitConfirmView" class="view-hidden">
           <div class="modal-header">
-            <div><h2>Submit Test?</h2><p style="font-size:13px;color:var(--muted)">Review your progress before submitting</p></div>
+            <div><h2>Submit Test?</h2><p class="modal-subtext">Review your progress before submitting</p></div>
             <button class="btn btn-ghost" onclick="hideSubmitConfirm()">
               <svg fill="none" viewBox="0 0 24 24" stroke-width="2" width="18" height="18"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
             </button>
           </div>
           <div class="confirm-box">
-            <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;max-width:380px;margin:0 auto 1.5rem">
-              <div style="padding:12px;background:var(--primary-light);border-radius:8px;text-align:center">
-                <p style="font-size:22px;font-weight:700;color:var(--primary)" id="sc-answered">0</p>
-                <p style="font-size:11px;color:var(--primary-dark)">Answered</p>
+            <div class="summary-grid">
+              <div class="summary-card summary-card-primary">
+                <p class="summary-number summary-number-primary" id="sc-answered">0</p>
+                <p class="summary-label summary-label-primary">Answered</p>
               </div>
-              <div style="padding:12px;background:var(--amber-light);border-radius:8px;text-align:center">
-                <p style="font-size:22px;font-weight:700;color:#8a541b" id="sc-skipped">0</p>
-                <p style="font-size:11px;color:#8a541b">Skipped</p>
+              <div class="summary-card summary-card-amber">
+                <p class="summary-number summary-number-amber" id="sc-skipped">0</p>
+                <p class="summary-label summary-label-amber">Skipped</p>
               </div>
-              <div style="padding:12px;background:var(--bg);border-radius:8px;text-align:center">
-                <p style="font-size:22px;font-weight:700;" id="sc-unattempted">0</p>
-                <p style="font-size:11px;color:var(--muted)">Not visited</p>
+              <div class="summary-card summary-card-default">
+                <p class="summary-number" id="sc-unattempted">0</p>
+                <p class="summary-label">Not visited</p>
               </div>
             </div>
-            <p style="font-size:13px;color:var(--muted);margin-bottom:1.5rem">Unanswered questions will be marked as wrong. Are you sure you want to submit?</p>
-            <div style="display:flex;gap:10px;justify-content:center">
+            <p class="confirm-warning">Unanswered questions will be marked as wrong. Are you sure you want to submit?</p>
+            <div class="confirm-actions">
               <button class="btn" onclick="hideSubmitConfirm()">Continue Test</button>
               <button class="btn btn-primary" onclick="submitExam()">Submit Now</button>
             </div>
           </div>
         </div>
 
-        <div id="resultView" style="display:none">
+        <div id="resultView" class="view-hidden">
           <div class="modal-header">
-            <div><h2>Test Complete!</h2><p style="font-size:13px;color:var(--muted)" id="resultTestName"></p></div>
+            <div><h2>Test Complete!</h2><p class="modal-subtext" id="resultTestName"></p></div>
             <button class="btn btn-primary btn-sm" onclick="closeModal()">Done</button>
           </div>
           <div class="result-panel">
-            <div style="text-align:center;margin-bottom:1.5rem">
+            <div class="result-top">
               <div class="result-score-circle">
                 <span class="pct" id="resultPct">0%</span>
                 <span class="sub">Score</span>
               </div>
-              <p id="resultFeedback" style="font-size:14px;color:var(--muted);margin-top:8px"></p>
+              <p id="resultFeedback" class="result-feedback"></p>
             </div>
-            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:1.5rem">
-              <div style="padding:12px;background:var(--primary-light);border-radius:8px;text-align:center">
-                <p style="font-size:20px;font-weight:700;color:var(--primary)" id="r-correct">0</p>
-                <p style="font-size:11px;color:var(--primary-dark)">Correct</p>
+            <div class="result-stats-grid">
+              <div class="result-stat result-stat-primary">
+                <p class="result-stat-num result-stat-num-primary" id="r-correct">0</p>
+                <p class="result-stat-label result-stat-label-primary">Correct</p>
               </div>
-              <div style="padding:12px;background:var(--red-light);border-radius:8px;text-align:center">
-                <p style="font-size:20px;font-weight:700;color:#a23e31" id="r-wrong">0</p>
-                <p style="font-size:11px;color:#a23e31">Wrong</p>
+              <div class="result-stat result-stat-red">
+                <p class="result-stat-num result-stat-num-red" id="r-wrong">0</p>
+                <p class="result-stat-label result-stat-label-red">Wrong</p>
               </div>
-              <div style="padding:12px;background:var(--amber-light);border-radius:8px;text-align:center">
-                <p style="font-size:20px;font-weight:700;color:#8a541b" id="r-skipped">0</p>
-                <p style="font-size:11px;color:#8a541b">Skipped</p>
+              <div class="result-stat result-stat-amber">
+                <p class="result-stat-num result-stat-num-amber" id="r-skipped">0</p>
+                <p class="result-stat-label result-stat-label-amber">Skipped</p>
               </div>
-              <div style="padding:12px;background:var(--bg);border-radius:8px;text-align:center">
-                <p style="font-size:20px;font-weight:700;" id="r-marks">0</p>
-                <p style="font-size:11px;color:var(--muted)">Marks</p>
+              <div class="result-stat result-stat-default">
+                <p class="result-stat-num" id="r-marks">0</p>
+                <p class="result-stat-label">Marks</p>
               </div>
             </div>
             <div>
-              <h3 style="font-size:14px;font-weight:600;margin-bottom:10px">Answer Review</h3>
-              <div id="reviewList" style="display:flex;flex-direction:column;gap:8px"></div>
+              <h3 class="result-review-title">Answer Review</h3>
+              <div id="reviewList" class="review-list"></div>
             </div>
           </div>
         </div>
       </div>
     </div>
 
-    <script>
-      const testsData = [
-        {
-          id: 1, title: "BUET Admission Full Mock", status: "available", featured: true,
-          duration: 60, questions: 10, subjects: ["Physics","Chemistry","Math"],
-          attempts: 3, maxAttempts: 5, description: "Complete admission mock covering all three core subjects.",
-          tags: ["BUET","Full Mock"], free: false
-        },
-        {
-          id: 2, title: "DU Ka Unit - Physics Only", status: "available",
-          duration: 45, questions: 8, subjects: ["Physics"],
-          attempts: 1, maxAttempts: 5, description: "Focus test on Physics for Dhaka University Ka unit.",
-          tags: ["DU","Physics"], free: true
-        },
-        {
-          id: 3, title: "Math Practice Set #4", status: "available",
-          duration: 30, questions: 6, subjects: ["Math"],
-          attempts: 0, maxAttempts: 999, description: "Algebra and Calculus intensive - unlimited attempts.",
-          tags: ["Math","Practice"], free: true
-        },
-        {
-          id: 4, title: "Chemistry Full Chapter Mock", status: "scheduled",
-          duration: 50, questions: 8, subjects: ["Chemistry"],
-          attempts: 0, maxAttempts: 3, description: "Organic and Inorganic chemistry comprehensive test.",
-          tags: ["Chemistry","BUET"], free: false, schedDate: "Apr 15, 2025"
-        },
-        {
-          id: 5, title: "Biology for Medical Admission", status: "scheduled",
-          duration: 60, questions: 8, subjects: ["Biology"],
-          attempts: 0, maxAttempts: 3, description: "Covers cell biology, genetics, and human physiology.",
-          tags: ["Biology","Medical"], free: false, schedDate: "Apr 18, 2025"
-        },
-        {
-          id: 6, title: "Chemistry Mock #2", status: "completed",
-          duration: 50, questions: 6, subjects: ["Chemistry"],
-          attempts: 2, maxAttempts: 3, description: "Review your result and understand weak areas.",
-          tags: ["Chemistry","Review"], free: false, score: 72
-        },
-        {
-          id: 7, title: "Physics Wave and Optics", status: "completed",
-          duration: 35, questions: 6, subjects: ["Physics"],
-          attempts: 1, maxAttempts: 3, description: "Focused test on wave motion and optics chapter.",
-          tags: ["Physics","Chapter"], free: true, score: 85
-        },
-        {
-          id: 8, title: "DU Kha Unit Full Mock", status: "available",
-          duration: 75, questions: 10, subjects: ["Physics","Math","Biology"],
-          attempts: 0, maxAttempts: 3, description: "Comprehensive mock for DU Kha unit aspirants.",
-          tags: ["DU","Full Mock"], free: false
-        }
-      ];
-
-      const questionBankData = {
-        Physics: [
-          { text: "A particle moves with displacement s = 2t^3 - 3t^2 + 1 m. What is the velocity at t = 2s?", opts: ["12 m/s","18 m/s","6 m/s","24 m/s"], ans: 1 },
-          { text: "A body is thrown vertically upward with velocity 20 m/s. Maximum height reached (g = 10 m/s^2) is:", opts: ["10 m","20 m","30 m","40 m"], ans: 1 },
-          { text: "The SI unit of electric potential is:", opts: ["Joule","Coulomb","Volt","Ampere"], ans: 2 }
-        ],
-        Chemistry: [
-          { text: "Which of the following is an example of a Lewis acid?", opts: ["NH3","H2O","BF3","NaOH"], ans: 2 },
-          { text: "The number of moles in 44g of CO2 (Molar mass = 44 g/mol) is:", opts: ["0.5 mol","1 mol","2 mol","44 mol"], ans: 1 }
-        ],
-        Math: [
-          { text: "The derivative of f(x) = 3x^4 - 5x^2 + 2 at x = 1 is:", opts: ["2","-2","4","-4"], ans: 0 },
-          { text: "If log2(x) = 5, then x equals:", opts: ["10","25","32","64"], ans: 2 },
-          { text: "The sum of the infinite geometric series 1 + 1/2 + 1/4 + ... is:", opts: ["1","1.5","2","2.5"], ans: 2 }
-        ],
-        Biology: [
-          { text: "The powerhouse of the cell is:", opts: ["Nucleus","Ribosome","Mitochondria","Chloroplast"], ans: 2 },
-          { text: "DNA replication occurs in which phase of the cell cycle?", opts: ["G1","S","G2","M"], ans: 1 }
-        ]
-      };
-
-      function buildQuestions(subjects, count) {
-        const q = [];
-        subjects.forEach(s => { if (questionBankData[s]) questionBankData[s].forEach(item => q.push({ ...item, subject: s })); });
-        const shuffled = q.sort(() => Math.random() - 0.5);
-        return shuffled.slice(0, Math.min(count, shuffled.length));
-      }
-
-      let currentTest = null;
-      let questions = [];
-      let answers = [];
-      let currentQ = 0;
-      let timerInterval = null;
-      let secondsLeft = 0;
-
-      function renderTests(filter = "all", search = "") {
-        const grid = document.getElementById("testsGrid");
-        grid.innerHTML = "";
-        let list = testsData;
-        if (filter !== "all") list = list.filter(t => t.status === filter);
-        if (search) list = list.filter(t => t.title.toLowerCase().includes(search.toLowerCase()) || t.tags.some(g => g.toLowerCase().includes(search.toLowerCase())));
-        if (!list.length) {
-          grid.innerHTML = '<p style="color:var(--muted);font-size:14px;grid-column:1/-1;padding:2rem 0">No tests found.</p>';
-          return;
-        }
-        list.forEach(t => {
-          const pct = t.maxAttempts < 999 ? (t.attempts / t.maxAttempts * 100) : (t.attempts > 0 ? 50 : 0);
-          const pctClass = pct >= 80 ? "red" : pct >= 50 ? "amber" : "";
-          const badgeMap = { available: ["badge-green","Available"], scheduled: ["badge-amber","Scheduled"], completed: ["badge-blue","Completed"] };
-          const [bc, bl] = badgeMap[t.status] || ["badge-gray","Unknown"];
-          const card = document.createElement("div");
-          card.className = "test-card" + (t.featured ? " featured" : "");
-          card.innerHTML = `
-            <div class="tc-top">
-              <div style="display:flex;gap:6px;flex-wrap:wrap">
-                <span class="tc-badge ${bc}">${bl}</span>
-                ${t.free ? '<span class="tc-badge badge-green" style="background:#e4eef9;color:#1c578f">Free</span>' : ""}
-              </div>
-              <span class="tc-duration">
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><circle cx="12" cy="12" r="10"/><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2"/></svg>
-                ${t.duration} min
-              </span>
-            </div>
-            <div>
-              <p class="tc-title">${t.title}</p>
-              <p class="tc-desc" style="margin-top:4px">${t.description}</p>
-            </div>
-            <div class="tc-tags">${t.subjects.map(s => `<span class="tag">${s}</span>`).join("")}${t.tags.map(g => `<span class="tag">${g}</span>`).join("")}</div>
-            <div class="tc-meta">
-              <span>
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                ${t.questions} questions
-              </span>
-              <span>
-                <svg fill="none" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
-                ${t.maxAttempts < 999 ? t.attempts + "/" + t.maxAttempts + " attempts" : "Unlimited"}
-              </span>
-            </div>
-            <div class="tc-footer">
-              ${t.maxAttempts < 999 ? `
-                <div class="attempts-bar">
-                  <div class="attempts-label"><span>Attempts</span><span>${t.attempts}/${t.maxAttempts}</span></div>
-                  <div class="progress"><div class="progress-fill ${pctClass}" style="width:${pct}%"></div></div>
-                </div>` : '<div class="attempts-bar"><p style="font-size:12px;color:var(--muted)">Unlimited attempts</p></div>'
-              }
-              ${t.status === "available" ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openTestConfirm(${t.id})">Start -&gt;</button>`
-                : t.status === "scheduled" ? `<button class="btn btn-sm" style="background:var(--amber-light);border-color:var(--amber);color:#8a541b">${t.schedDate}</button>`
-                : `<div style="text-align:right"><p style="font-size:11px;color:var(--muted)">Score</p><p style="font-size:16px;font-weight:700;color:var(--primary)">${t.score}%</p></div>`}
-            </div>`;
-          grid.appendChild(card);
-        });
-      }
-
-      let activeFilter = "all", activeSearch = "";
-      function filterTests(f, btn) {
-        activeFilter = f;
-        document.querySelectorAll(".filter-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        renderTests(f, activeSearch);
-      }
-      function searchTests(v) { activeSearch = v; renderTests(activeFilter, v); }
-
-      function openTestConfirm(id) {
-        currentTest = testsData.find(t => t.id === id);
-        document.getElementById("confirmTitle").textContent = currentTest.title;
-        document.getElementById("confirmSubtitle").textContent = `${currentTest.questions} questions · ${currentTest.duration} minutes`;
-        document.getElementById("ci-duration").textContent = currentTest.duration + " min";
-        document.getElementById("ci-questions").textContent = currentTest.questions;
-        document.getElementById("ci-subjects").textContent = currentTest.subjects.length;
-        showView("confirmView");
-        document.getElementById("examModal").classList.add("open");
-      }
-
-      function closeModal() {
-        clearInterval(timerInterval);
-        document.getElementById("examModal").classList.remove("open");
-        showView("confirmView");
-      }
-
-      function showView(id) {
-        ["confirmView","examView","submitConfirmView","resultView"].forEach(v => {
-          const el = document.getElementById(v);
-          el.style.display = "none";
-        });
-        const show = document.getElementById(id);
-        show.style.display = id === "examView" ? "flex" : "block";
-        show.style.flexDirection = id === "examView" ? "column" : "";
-        show.style.height = id === "examView" ? "100%" : "";
-      }
-
-      function startExam() {
-        questions = buildQuestions(currentTest.subjects, currentTest.questions);
-        answers = new Array(questions.length).fill(null);
-        currentQ = 0;
-        secondsLeft = currentTest.duration * 60;
-        document.getElementById("examTitle").textContent = currentTest.title;
-        showView("examView");
-        buildPalette();
-        renderQuestion();
-        startTimer();
-      }
-
-      function startTimer() {
-        clearInterval(timerInterval);
-        updateTimerDisplay();
-        timerInterval = setInterval(() => {
-          secondsLeft--;
-          updateTimerDisplay();
-          if (secondsLeft <= 0) { clearInterval(timerInterval); submitExam(); }
-        }, 1000);
-      }
-
-      function updateTimerDisplay() {
-        const m = Math.floor(secondsLeft / 60);
-        const s = secondsLeft % 60;
-        document.getElementById("timerDisplay").textContent = String(m).padStart(2,"0") + ":" + String(s).padStart(2,"0");
-        const badge = document.getElementById("timerBadge");
-        badge.className = "timer-badge" + (secondsLeft < 60 ? " danger" : secondsLeft < 300 ? " warning" : "");
-      }
-
-      function renderQuestion() {
-        const q = questions[currentQ];
-        document.getElementById("questionCounter").textContent = `Question ${currentQ + 1} of ${questions.length}`;
-        document.getElementById("qNum").textContent = `${q.subject} - Q${currentQ + 1}`;
-        document.getElementById("qSubject").textContent = q.subject;
-        document.getElementById("questionText").textContent = q.text;
-        document.getElementById("examProgress").style.width = ((currentQ + 1) / questions.length * 100) + "%";
-
-        const cont = document.getElementById("optionsContainer");
-        cont.innerHTML = "";
-        const labels = ["A","B","C","D"];
-        q.opts.forEach((opt, i) => {
-          const div = document.createElement("div");
-          div.className = "option" + (answers[currentQ] === i ? " selected" : "");
-          div.innerHTML = `<span class="opt-label">${labels[i]}</span><span>${opt}</span>`;
-          div.onclick = () => selectOption(i);
-          cont.appendChild(div);
-        });
-
-        const isLast = currentQ === questions.length - 1;
-        document.getElementById("nextBtn").style.display = isLast ? "none" : "inline-flex";
-        document.getElementById("submitBtn").style.display = isLast ? "inline-flex" : "none";
-
-        updatePalette();
-      }
-
-      function selectOption(i) {
-        answers[currentQ] = i;
-        renderQuestion();
-      }
-
-      function nextQuestion() {
-        if (answers[currentQ] === null) answers[currentQ] = -1;
-        if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); }
-      }
-      function prevQuestion() {
-        if (currentQ > 0) { currentQ--; renderQuestion(); }
-      }
-      function skipQuestion() {
-        answers[currentQ] = -1;
-        if (currentQ < questions.length - 1) { currentQ++; renderQuestion(); }
-      }
-
-      function buildPalette() {
-        const grid = document.getElementById("paletteGrid");
-        grid.innerHTML = "";
-        questions.forEach((_, i) => {
-          const d = document.createElement("div");
-          d.className = "palette-item";
-          d.id = "pal_" + i;
-          d.textContent = i + 1;
-          d.onclick = () => { currentQ = i; renderQuestion(); };
-          grid.appendChild(d);
-        });
-      }
-
-      function updatePalette() {
-        questions.forEach((_, i) => {
-          const el = document.getElementById("pal_" + i);
-          if (!el) return;
-          el.className = "palette-item";
-          if (i === currentQ) el.classList.add("current");
-          else if (answers[i] !== null && answers[i] >= 0) el.classList.add("answered");
-          else if (answers[i] === -1) el.classList.add("skipped");
-        });
-      }
-
-      function showSubmitConfirm() {
-        const answered = answers.filter(a => a !== null && a >= 0).length;
-        const skipped  = answers.filter(a => a === -1).length;
-        const unvisited = answers.filter(a => a === null).length;
-        document.getElementById("sc-answered").textContent = answered;
-        document.getElementById("sc-skipped").textContent = skipped;
-        document.getElementById("sc-unattempted").textContent = unvisited;
-        showView("submitConfirmView");
-      }
-      function hideSubmitConfirm() { showView("examView"); }
-
-      function submitExam() {
-        clearInterval(timerInterval);
-        let correct = 0, wrong = 0, skipped = 0;
-        questions.forEach((q, i) => {
-          if (answers[i] === null || answers[i] === -1) skipped++;
-          else if (answers[i] === q.ans) correct++;
-          else wrong++;
-        });
-        const marks = correct * 4 - wrong * 1;
-        const total = questions.length * 4;
-        const pct = Math.round(correct / questions.length * 100);
-
-        document.getElementById("resultTestName").textContent = currentTest.title;
-        document.getElementById("resultPct").textContent = pct + "%";
-        document.getElementById("r-correct").textContent = correct;
-        document.getElementById("r-wrong").textContent = wrong;
-        document.getElementById("r-skipped").textContent = skipped;
-        document.getElementById("r-marks").textContent = marks + "/" + total;
-        const fb = pct >= 80 ? "Excellent! Keep it up." : pct >= 60 ? "Good job. Review weak areas." : "Keep practicing. You can do better!";
-        document.getElementById("resultFeedback").textContent = fb;
-
-        const reviewList = document.getElementById("reviewList");
-        reviewList.innerHTML = "";
-        questions.forEach((q, i) => {
-          const userAns = answers[i];
-          const isCorrect = userAns === q.ans;
-          const isSkipped = userAns === null || userAns === -1;
-          const labels = ["A","B","C","D"];
-          const div = document.createElement("div");
-          div.style.cssText = "padding:12px;border-radius:8px;border:1px solid var(--border);font-size:13px";
-          div.innerHTML = `
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px">
-              <p style="font-weight:500;line-height:1.5">Q${i+1}. ${q.text}</p>
-              <span style="flex-shrink:0;font-size:11px;padding:2px 8px;border-radius:20px;${isSkipped ? "background:var(--amber-light);color:#8a541b" : isCorrect ? "background:var(--primary-light);color:var(--primary-dark)" : "background:var(--red-light);color:#a23e31"}">${isSkipped ? "Skipped" : isCorrect ? "Correct" : "Wrong"}</span>
-            </div>
-            <p style="color:var(--muted)">Correct: <strong style="color:var(--primary)">${labels[q.ans]}. ${q.opts[q.ans]}</strong>${!isSkipped && !isCorrect ? ` &nbsp;·&nbsp; Your answer: <strong style=\"color:#a23e31\">${labels[userAns]}. ${q.opts[userAns]}</strong>` : ""}</p>`;
-          reviewList.appendChild(div);
-        });
-
-        showView("resultView");
-      }
-
-      renderTests();
-    </script>
+    <script src="mock-test.js"></script>
   </body>
 </html>
+

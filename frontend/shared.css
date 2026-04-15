@@ -189,6 +189,24 @@ body {
   border: 1px solid #b7d8ee;
 }
 
+.logout-btn {
+  width: auto;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 700;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: #ffffff;
+  border-color: var(--primary);
+}
+
+.logout-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px rgba(7, 93, 136, 0.22);
+}
+
 .notif-btn {
   width: 36px;
   height: 36px;

@@ -36,7 +36,7 @@
           <a href="#packages">প্যাকেজসমূহ</a>
           <a href="#contact">যোগাযোগ</a>
         </nav>
-        <a class="nav-cta" href="signup.html">অ্যাপ ইন্সটল করুন</a>
+        <a class="nav-cta" href="signup.html">সাইন আপ</a>
       </div>
       <nav class="mobile-menu" id="mobileMenu" aria-label="Mobile navigation">
         <a href="#home">হোম</a>
@@ -56,7 +56,7 @@
             নিজের প্রস্তুতি যাচাই করুন।
           </p>
           <div class="hero-cta-row">
-            <a class="install-btn" href="signup.html">লগইন করুন</a>
+            <a class="primary-btn" href="signup.html">লগইন করুন</a>
             <a class="ghost-btn" href="#packages">প্যাকেজ দেখুন</a>
           </div>
           <blockquote class="quote-box" id="quoteBox">
@@ -72,20 +72,32 @@
 
         <section class="login-card reveal" aria-label="Login form">
           <header class="login-header">
-            <h2>স্টুডেন্ট লগইন</h2>
-            <p>আপনার প্রস্তুতি চালিয়ে যেতে একাউন্টে প্রবেশ করুন।</p>
+            <div class="login-header-top">
+              <h2 id="loginTitle">Student Login</h2>
+              <button
+                type="button"
+                class="role-toggle-btn"
+                id="roleToggleBtn"
+                aria-label="Switch login role"
+                title="Switch to Instructor Login"
+              >
+                <i class="fa-solid fa-arrow-right-long"></i>
+              </button>
+            </div>
+            <p id="loginSubtitle">Login to your account to continue your preparation.</p>
           </header>
 
           <form class="login-form" id="loginForm" action="student.html">
             <div class="demo-box">
-              <p><strong>ডেমো একাউন্ট</strong></p>
-              <p>Email: demo@edumate.com</p>
-              <p>Password: EduMate@123</p>
+              <p><strong id="demoTitle">Demo account</strong></p>
+              <p id="demoEmail">Email: demo@edumate.com</p>
+              <p id="demoPassword">Password: EduMate@123</p>
             </div>
             <label class="input-group">
-              <span>ইমেইল বা ফোন</span>
+              <span id="loginIdentifierLabel">ইমেইল বা ফোন</span>
               <input
                 type="text"
+                id="loginIdentifierInput"
                 name="identifier"
                 placeholder="name@email.com"
                 required
@@ -121,14 +133,14 @@
             </div>
 
             <div>
-              <button class="submit-btn" type="submit">লগইন</button>
+              <button class="submit-btn" type="submit" id="loginSubmitBtn">Login</button>
             </div>
           </form>
 
           <footer class="login-footer">
-            <div>
-              <span>নতুন?</span>
-              <a href="signup.html">নতুন একাউন্ট খুলুন</a>
+            <div id="accountCreateRow">
+              <span>New?</span>
+              <a href="signup.html">Open a new account</a>
             </div>
           </footer>
         </section>
@@ -138,7 +150,7 @@
         <div class="container band-grid">
           <div class="band-item">
             <strong data-count="1800000">0</strong>
-            <span>অ্যাপ ডাউনলোড</span>
+            <span>লগইন</span>
           </div>
           <div class="band-item">
             <strong data-count="400">0</strong>
@@ -190,19 +202,19 @@
           </div>
           <div class="packages-grid">
             <div class="package-card highlight reveal">
-              <h4>ফ্রি প্রিমিয়াম</h4>
+              <h4>ফ্রি প্ল্যান</h4>
               <p class="package-price">৳০ / ৭ দিন</p>
-              <p>সকল প্রিমিয়াম ফিচার, পরীক্ষা ও ভিডিও ক্লাস</p>
+              <p>ফ্রি এক্সাম,মেটেরিয়াল,ফ্রি ক্লাস</p>
             </div>
             <div class="package-card reveal">
               <h4>মাসিক প্যাকেজ</h4>
               <p class="package-price">৳১৯৯ / ৩০ দিন</p>
-              <p>ফুল এক্সেস + র‌্যাঙ্কিং + রিভিশন টুলস</p>
+              <p>ফুল এক্সেস + র‌্যাঙ্কিং + রিভিশন টুলস,পেইড ক্লাস</p>
             </div>
             <div class="package-card reveal">
-              <h4>ষাণ্মাসিক প্যাকেজ</h4>
+              <h4>সেমিস্টার প্যাকেজ</h4>
               <p class="package-price">৳৭৯৯ / ৬ মাস</p>
-              <p>দীর্ঘমেয়াদি প্রস্তুতির জন্য সেরা ভ্যালু প্ল্যান</p>
+              <p>দীর্ঘমেয়াদি প্রস্তুতির জন্য সেরা ভ্যালু প্ল্যান,আনলিমিটেড এক্সাম,পেইড ক্লাস</p>
             </div>
           </div>
         </div>

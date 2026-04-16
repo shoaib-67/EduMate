@@ -194,6 +194,7 @@
 }
 
 .install-btn,
+.primary-btn,
 .ghost-btn {
   text-decoration: none;
   border-radius: 12px;
@@ -203,13 +204,15 @@
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.install-btn {
+.install-btn,
+.primary-btn {
   background: var(--brand-gradient);
   color: #fff;
   box-shadow: var(--brand-shadow-md);
 }
 
-.install-btn:hover {
+.install-btn:hover,
+.primary-btn:hover {
   transform: translateY(-1px);
   box-shadow: 0 14px 30px rgba(7, 93, 136, 0.24);
 }
@@ -294,9 +297,39 @@
   margin-bottom: 16px;
 }
 
+.login-header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
 .login-header h2 {
   font-size: 26px;
   margin-bottom: 6px;
+}
+
+.role-toggle-btn {
+  width: 38px;
+  height: 38px;
+  border: 1px solid #bfd9ea;
+  border-radius: 50%;
+  background: #ffffff;
+  color: var(--brand-strong);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.role-toggle-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px rgba(7, 93, 136, 0.16);
+}
+
+.role-toggle-btn.instructor-mode i {
+  transform: rotate(180deg);
 }
 
 .login-header p {
@@ -398,6 +431,12 @@
 .login-footer {
   margin-top: 12px;
   font-size: 13px;
+  color: var(--ink-500);
+  display: grid;
+  gap: 6px;
+}
+
+.role-switch {
   color: var(--ink-500);
 }
 

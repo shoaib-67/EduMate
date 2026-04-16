@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instructor Login - EduMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="shared.css" />
+    <link rel="stylesheet" href="index.css" />
+    <link rel="stylesheet" href="instructor-login.css" />
+  </head>
+  <body class="home-page instructor-login-page">
+    <main class="instructor-auth-wrapper">
+      <section class="login-card" aria-label="Instructor login form">
+        <header class="login-header">
+          <h2>Instructor Login</h2>
+        
+        </header>
+
+        <form class="login-form" id="instructorLoginForm" action="instructor.html">
+          <div class="demo-box">
+            <p><strong>Demo instructor account</strong></p>
+            <p>Email: instructor@edumate.com</p>
+            <p>Password: EduMate@123</p>
+          </div>
+
+          <label class="input-group">
+            <span>Email</span>
+            <input
+              type="email"
+              name="email"
+              placeholder="instructor@edumate.com"
+              required
+            />
+          </label>
+
+          <label class="input-group">
+            <span>Password</span>
+            <div class="password-row">
+              <input
+                type="password"
+                name="password"
+                placeholder="Enter 8+ characters"
+                minlength="8"
+                required
+              />
+              <button type="button" class="toggle-btn" id="toggleInstructorPassword">
+                Show
+              </button>
+            </div>
+          </label>
+
+          <div class="remember-row">
+            <label>
+              <input type="checkbox" name="remember" />
+              <span>Keep me logged in</span>
+            </label>
+            <a href="index.html">Student login</a>
+          </div>
+
+          <div>
+            <button class="submit-btn" type="submit">Login as Instructor</button>
+          </div>
+        </form>
+
+        <footer class="login-footer">
+          <div>
+            <span>Need a student account?</span>
+            <a href="signup.html">Create account</a>
+          </div>
+        </footer>
+      </section>
+    </main>
+
+    <script src="instructor-login.js"></script>
+  </body>
+</html>

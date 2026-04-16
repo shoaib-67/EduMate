@@ -4,6 +4,16 @@ const $$ = (selector, root = document) => root.querySelectorAll(selector);
 const loginForm = $("#loginForm");
 const loginToggle = $("#togglePassword");
 const loginPassword = $("input[name='password']", loginForm);
+const roleToggleBtn = $("#roleToggleBtn");
+const loginTitle = $("#loginTitle");
+const loginSubtitle = $("#loginSubtitle");
+const demoTitle = $("#demoTitle");
+const demoEmail = $("#demoEmail");
+const demoPassword = $("#demoPassword");
+const loginIdentifierLabel = $("#loginIdentifierLabel");
+const loginIdentifierInput = $("#loginIdentifierInput");
+const loginSubmitBtn = $("#loginSubmitBtn");
+const accountCreateRow = $("#accountCreateRow");
 
 if (loginToggle && loginPassword) {
   loginToggle.addEventListener("click", () => {
@@ -13,11 +23,72 @@ if (loginToggle && loginPassword) {
   });
 }
 
+const roleConfig = {
+  student: {
+    title: "Student Login",
+    subtitle: "Login to your account to continue your preparation.",
+    demoTitle: "Demo account",
+    email: "Email: demo@edumate.com",
+    password: "Password: EduMate@123",
+    identifierLabel: "Email or phone",
+    identifierPlaceholder: "name@email.com",
+    submitText: "Login",
+    action: "student.html",
+    toggleTitle: "Switch to Instructor Login",
+    showCreateAccount: true,
+  },
+  instructor: {
+    title: "Instructor Login",
+    subtitle: "",
+    demoTitle: "Instructor demo account",
+    email: "Email: instructor@edumate.com",
+    password: "Password: EduMate@123",
+    identifierLabel: "Instructor email",
+    identifierPlaceholder: "instructor@edumate.com",
+    submitText: "Login as Instructor",
+    action: "instructor.html",
+    toggleTitle: "Switch to Student Login",
+    showCreateAccount: false,
+  },
+};
+
+let activeRole = "student";
+
+const applyLoginRole = (role) => {
+  const config = roleConfig[role] || roleConfig.student;
+  activeRole = role;
+
+  if (loginTitle) loginTitle.textContent = config.title;
+  if (loginSubtitle) {
+    loginSubtitle.textContent = config.subtitle;
+    loginSubtitle.hidden = !config.subtitle;
+  }
+  if (demoTitle) demoTitle.textContent = config.demoTitle;
+  if (demoEmail) demoEmail.textContent = config.email;
+  if (demoPassword) demoPassword.textContent = config.password;
+  if (loginIdentifierLabel) loginIdentifierLabel.textContent = config.identifierLabel;
+  if (loginIdentifierInput) loginIdentifierInput.placeholder = config.identifierPlaceholder;
+  if (loginSubmitBtn) loginSubmitBtn.textContent = config.submitText;
+  if (loginForm) loginForm.action = config.action;
+  if (roleToggleBtn) {
+    roleToggleBtn.title = config.toggleTitle;
+    roleToggleBtn.classList.toggle("instructor-mode", role === "instructor");
+  }
+  if (accountCreateRow) accountCreateRow.hidden = !config.showCreateAccount;
+};
+
+if (roleToggleBtn) {
+  roleToggleBtn.addEventListener("click", () => {
+    applyLoginRole(activeRole === "student" ? "instructor" : "student");
+  });
+}
+
+applyLoginRole("student");
+
 if (loginForm) {
   loginForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    // Placeholder for real auth flow.
-    window.location.href = "student.html";
+    window.location.href = activeRole === "instructor" ? "instructor.html" : "student.html";
   });
 }
 

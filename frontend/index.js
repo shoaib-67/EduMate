@@ -14,6 +14,7 @@ const loginIdentifierLabel = $("#loginIdentifierLabel");
 const loginIdentifierInput = $("#loginIdentifierInput");
 const loginSubmitBtn = $("#loginSubmitBtn");
 const accountCreateRow = $("#accountCreateRow");
+const API_BASE_URL = "http://localhost:5000/api";
 
 if (loginToggle && loginPassword) {
   loginToggle.addEventListener("click", () => {
@@ -119,9 +120,42 @@ if (roleToggleBtn) {
 applyLoginRole("student");
 
 if (loginForm) {
-  loginForm.addEventListener("submit", (event) => {
+  loginForm.addEventListener("submit", async (event) => {
     event.preventDefault();
-    window.location.href = (roleConfig[activeRole] || roleConfig.student).action;
+
+    const identifier = (loginIdentifierInput?.value || "").trim();
+    const password = (loginPassword?.value || "").trim();
+
+    if (!identifier || !password) {
+      alert("Please enter both identifier and password.");
+      return;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          identifier,
+          password,
+          role: activeRole,
+        }),
+      });
+
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        alert(payload.message || "Login failed.");
+        return;
+      }
+
+      localStorage.setItem("edumateCurrentUser", JSON.stringify(payload.user || {}));
+      window.location.href = (roleConfig[activeRole] || roleConfig.student).action;
+    } catch (_error) {
+      alert("Cannot connect to backend. Run node server.js and try again.");
+    }
   });
 }
 

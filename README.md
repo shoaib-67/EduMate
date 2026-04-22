@@ -90,6 +90,39 @@ The platform supports students, instructors, and administrators with role-specif
 | Development Tools | VS Code, GitHub, XAMPP or local Node environment |
 | Hosting / Deployment | Localhost (XAMPP) |
 
+## Local Setup (Node.js Backend + XAMPP MySQL)
+
+1. Start Apache and MySQL from XAMPP Control Panel.
+2. Open phpMyAdmin and make sure a database named `edumate` exists.
+3. From project root, install backend dependencies:
+
+```bash
+npm --prefix backend install
+```
+
+4. Keep `backend/.env` values as default for XAMPP local MySQL:
+
+```env
+PORT=5000
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_USER=root
+DB_PASSWORD=
+DB_NAME=edumate
+```
+
+5. Run backend API server from project root:
+
+```bash
+node server.js
+```
+
+6. Open the frontend files in browser (or with Live Server).
+
+Notes:
+- On first backend start, the API auto-creates the `users` table in `edumate` and inserts demo users.
+- Backend API health check is available at `http://localhost:5000/api/health`.
+
 ## Design and User Experience
 
 EduMate follows a clean, modern, and user-friendly UI/UX approach to ensure smooth navigation and accessibility.

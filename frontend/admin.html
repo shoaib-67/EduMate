@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Dashboard - EduMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="shared.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <div class="layout admin-layout">
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <span class="logo-text">Edu<span>Mate</span></span>
+        </div>
+
+        <div class="nav-section">
+          <p class="nav-label">Admin Panel</p>
+          <a class="nav-item active" href="admin.html">Overview</a>
+          <a class="nav-item" href="admin-users.html">Users</a>
+          <a class="nav-item" href="admin-content.html">Content</a>
+          <a class="nav-item" href="admin-reports.html">Reports</a>
+          <a class="nav-item" href="index.html">Public Site</a>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <span class="topbar-title">Admin Dashboard</span>
+          <div class="topbar-right">
+            <a class="avatar logout-btn" href="admin-login.html" aria-label="Logout">Logout</a>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="page-header" id="overview">
+            <h1>Platform control center</h1>
+            <p>Monitor users, manage learning resources, and review site activity in one place.</p>
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-card">
+              <p class="s-label">Active Users</p>
+              <p class="s-val" id="userCount">0</p>
+              <p class="s-sub">Live sessions across the platform</p>
+            </article>
+            <article class="stat-card">
+              <p class="s-label">New Signups</p>
+              <p class="s-val text-primary" id="newSignupCount">0</p>
+              <p class="s-sub">Last 24 hours</p>
+            </article>
+            <article class="stat-card">
+              <p class="s-label">Pending Reports</p>
+              <p class="s-val" id="reportCount">0</p>
+              <p class="s-sub">Needs review</p>
+            </article>
+            <article class="stat-card">
+              <p class="s-label">Content Updates</p>
+              <p class="s-val" id="contentCount">0</p>
+              <p class="s-sub">Items awaiting approval</p>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel" id="users">
+              <div class="panel-header">
+                <h2>User management</h2>
+                <button class="btn btn-small" id="refreshUsers">Refresh</button>
+              </div>
+              <p>Review active users and account status.</p>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Name</th>
+                      <th>Role</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody id="userTableBody"></tbody>
+                </table>
+              </div>
+            </section>
+
+            <section class="panel" id="content">
+              <div class="panel-header">
+                <h2>Content review</h2>
+                <button class="btn btn-small" id="approveAll">Approve all</button>
+              </div>
+              <p>Approve or deny newly submitted learning material.</p>
+              <ul class="content-list" id="contentList"></ul>
+            </section>
+
+            <section class="panel panel-full" id="reports">
+              <div class="panel-header">
+                <h2>Recent reports</h2>
+                <span class="badge" id="reportBadge">0 open</span>
+              </div>
+              <p>Investigate flagged activity and take action.</p>
+              <div class="report-grid" id="reportCards"></div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="admin.js"></script>
+  </body>
+</html>

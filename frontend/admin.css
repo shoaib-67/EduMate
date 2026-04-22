@@ -1,0 +1,250 @@
+.admin-layout .main {
+  margin-left: 240px;
+}
+
+.admin-content {
+  padding: 2rem;
+  scroll-behavior: smooth;
+}
+
+.page-header,
+.panel {
+  scroll-margin-top: 100px;
+}
+
+.page-header h1 {
+  font-size: clamp(2rem, 2.6vw, 2.8rem);
+  margin-bottom: 0.5rem;
+}
+
+.page-header p {
+  color: var(--muted);
+  max-width: 45rem;
+  margin-bottom: 1.8rem;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.8rem;
+}
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid rgba(207, 225, 240, 0.95);
+  border-radius: var(--radius);
+  padding: 1.4rem 1.5rem;
+  box-shadow: var(--shadow-soft);
+}
+
+.stat-card.highlight {
+  background: var(--surface);
+}
+
+.s-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--muted);
+  margin-bottom: 0.65rem;
+}
+
+.s-val {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 0.65rem;
+}
+
+.s-val.text-primary {
+  color: var(--primary-dark);
+}
+
+.s-sub {
+  color: var(--muted);
+  font-size: 0.95rem;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 3fr 2fr;
+  gap: 1.5rem;
+}
+
+.panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  border: 1px solid rgba(207, 225, 240, 0.95);
+  box-shadow: var(--shadow-soft);
+  padding: 1.5rem;
+}
+
+.panel-full {
+  grid-column: 1 / -1;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+
+.panel-header h2 {
+  font-size: 1.1rem;
+  margin: 0;
+}
+
+.badge {
+  display: inline-flex;
+  padding: 0.55rem 0.85rem;
+  border-radius: 999px;
+  background: var(--amber-light);
+  color: #9a5d0f;
+  font-weight: 700;
+  font-size: 0.85rem;
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  border: none;
+  border-radius: 999px;
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  color: white;
+}
+
+.btn-small {
+  font-size: 0.92rem;
+  padding: 0.65rem 0.95rem;
+}
+
+.table-wrap {
+  overflow: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+}
+
+th,
+td {
+  text-align: left;
+  padding: 0.95rem 1rem;
+  border-bottom: 1px solid rgba(207, 225, 240, 0.9);
+  color: var(--text);
+}
+
+th {
+  font-size: 0.85rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+tbody tr:hover {
+  background: rgba(12, 122, 167, 0.03);
+}
+
+.content-list {
+  list-style: none;
+  display: grid;
+  gap: 0.9rem;
+  margin: 0;
+  padding: 0;
+}
+
+.content-list li {
+  background: var(--surface-soft);
+  border-radius: 16px;
+  border: 1px solid rgba(207, 225, 240, 0.95);
+  padding: 1rem 1.1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.content-list h3 {
+  font-size: 1rem;
+  margin: 0;
+}
+
+.content-list p {
+  color: var(--muted);
+  margin: 0;
+}
+
+.report-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.report-card {
+  background: var(--primary-light);
+  border-radius: 18px;
+  padding: 1.2rem;
+  min-height: 130px;
+  display: grid;
+  gap: 0.7rem;
+}
+
+.report-card h3 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.report-card span {
+  color: var(--muted);
+}
+
+.report-card strong {
+  font-size: 1.6rem;
+  display: block;
+}
+
+@media (max-width: 1100px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .report-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  .main {
+    margin-left: 0;
+  }
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+    border-right: none;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-section {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 0.75rem;
+    padding: 0 0 1rem;
+    margin-bottom: 0;
+  }
+  .nav-item {
+    font-size: 0.85rem;
+    justify-content: center;
+  }
+}

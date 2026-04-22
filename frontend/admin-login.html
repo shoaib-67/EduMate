@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Login - EduMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="shared.css" />
+    <link rel="stylesheet" href="admin-login.css" />
+  </head>
+  <body>
+    <div class="admin-login-page">
+      <header class="admin-header">
+        <a class="brand" href="index.html">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </span>
+          <span>EduMate Admin</span>
+        </a>
+      </header>
+
+      <main class="admin-login-shell">
+        <section class="admin-hero-card">
+          <h1>Admin access for EduMate</h1>
+          <p>Review platform activity, manage accounts, and monitor site performance from one dashboard.</p>
+          <div class="hero-stats-row">
+            <article class="hero-stat">
+              <strong>24/7</strong>
+              <span>Platform monitoring</span>
+            </article>
+            <article class="hero-stat">
+              <strong>9.5</strong>
+              <span>Average admin score</span>
+            </article>
+            <article class="hero-stat">
+              <strong>5</strong>
+              <span>Action categories</span>
+            </article>
+          </div>
+        </section>
+
+        <section class="admin-login-card" aria-labelledby="adminLoginTitle">
+          <div class="card-header">
+            <div>
+              <p class="eyebrow">Admin Login</p>
+              <h2 id="adminLoginTitle">Sign in to the dashboard</h2>
+              <p class="card-copy">Use your admin credentials to continue. This is a static demo panel built alongside the existing site.</p>
+            </div>
+          </div>
+
+          <form class="login-form" id="adminLoginForm" action="admin.html">
+            <div class="demo-box admin-demo">
+              <p><strong>Demo admin account</strong></p>
+              <p>Email: admin@edumate.com</p>
+              <p>Password: Admin@123</p>
+            </div>
+
+            <label class="input-group">
+              <span>Email address</span>
+              <input type="email" name="email" placeholder="admin@edumate.com" required />
+            </label>
+
+            <label class="input-group">
+              <span>Password</span>
+              <div class="password-row">
+                <input type="password" name="password" placeholder="Enter your password" minlength="8" required />
+                <button type="button" class="toggle-btn" id="adminTogglePassword">Show</button>
+              </div>
+            </label>
+
+            <button class="submit-btn" type="submit">Continue to Admin</button>
+          </form>
+
+          <div class="login-footer">
+            <a href="index.html">Return to public site</a>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="admin-login.js"></script>
+  </body>
+</html>

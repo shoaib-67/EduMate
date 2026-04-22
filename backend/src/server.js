@@ -4,8 +4,7 @@ const bcrypt = require("bcryptjs");
 const dotenv = require("dotenv");
 const path = require("path");
 
-const { ensureDatabaseExists, getPool } = require("./db");
-const { ensureSchema, seedDemoUsers } = require("./initDb");
+const { getPool } = require("./db");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -50,9 +49,8 @@ app.post("/api/auth/signup", async (req, res) => {
     }
 
     const pool = getPool();
-
     const [existingRows] = await pool.query(
-      "SELECT id FROM users WHERE email = ? OR phone = ? LIMIT 1",
+      "SELECT student_id FROM students WHERE email = ? OR phone_number = ? LIMIT 1",
       [cleanEmail, cleanPhone]
     );
 
@@ -66,8 +64,8 @@ app.post("/api/auth/signup", async (req, res) => {
     const passwordHash = await bcrypt.hash(cleanPassword, 10);
 
     await pool.query(
-      "INSERT INTO users (full_name, email, phone, password_hash, role) VALUES (?, ?, ?, ?, ?)",
-      [cleanFullName, cleanEmail, cleanPhone, passwordHash, "student"]
+      "INSERT INTO students (name, email, phone_number, password_hash) VALUES (?, ?, ?, ?)",
+      [cleanFullName, cleanEmail, cleanPhone, passwordHash]
     );
 
     return res.status(201).json({
@@ -75,6 +73,14 @@ app.post("/api/auth/signup", async (req, res) => {
       message: "Account created successfully.",
     });
   } catch (error) {
+    if (error && (error.code === "ER_NO_SUCH_TABLE" || error.code === "ER_BAD_FIELD_ERROR")) {
+      return res.status(500).json({
+        success: false,
+        message:
+          "Students table/schema is missing required fields. Please create students(name, email, phone_number, password_hash) in XAMPP first.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Could not create account.",
@@ -106,10 +112,16 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const pool = getPool();
+    const roleTableConfig = {
+      student: { table: "students", idColumn: "student_id" },
+      instructor: { table: "instructors", idColumn: "instructor_id" },
+      admin: { table: "admins", idColumn: "admin_id" },
+    };
+    const { table, idColumn } = roleTableConfig[cleanRole];
 
     const [rows] = await pool.query(
-      "SELECT id, full_name, email, phone, password_hash, role FROM users WHERE (email = ? OR phone = ?) AND role = ? LIMIT 1",
-      [cleanIdentifier, cleanIdentifier, cleanRole]
+      `SELECT ${idColumn} AS id, name, email, phone_number, password_hash FROM ${table} WHERE (email = ? OR phone_number = ?) LIMIT 1`,
+      [cleanIdentifier, cleanIdentifier]
     );
 
     if (rows.length === 0) {
@@ -119,8 +131,8 @@ app.post("/api/auth/login", async (req, res) => {
       });
     }
 
-    const user = rows[0];
-    const passwordOk = await bcrypt.compare(cleanPassword, user.password_hash);
+    const account = rows[0];
+    const passwordOk = await bcrypt.compare(cleanPassword, account.password_hash);
 
     if (!passwordOk) {
       return res.status(401).json({
@@ -133,13 +145,21 @@ app.post("/api/auth/login", async (req, res) => {
       success: true,
       message: "Login successful.",
       user: {
-        id: user.id,
-        fullName: user.full_name,
-        email: user.email,
-        role: user.role,
+        id: account.id,
+        fullName: account.name,
+        email: account.email,
+        role: cleanRole,
       },
     });
   } catch (error) {
+    if (error && (error.code === "ER_NO_SUCH_TABLE" || error.code === "ER_BAD_FIELD_ERROR")) {
+      return res.status(500).json({
+        success: false,
+        message:
+          "Required auth tables are missing required fields. Please create students/instructors/admins with (name, email, phone_number, password_hash) in XAMPP first.",
+      });
+    }
+
     return res.status(500).json({
       success: false,
       message: "Could not login.",
@@ -150,10 +170,6 @@ app.post("/api/auth/login", async (req, res) => {
 
 async function startServer() {
   try {
-    await ensureDatabaseExists();
-    await ensureSchema();
-    await seedDemoUsers();
-
     app.listen(PORT, () => {
       console.log(`EduMate backend running on http://localhost:${PORT}`);
     });

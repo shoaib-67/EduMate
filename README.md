@@ -114,14 +114,15 @@ DB_NAME=edumate
 5. Run backend API server from project root:
 
 ```bash
-node server.js
+npm start
 ```
 
-6. Open the frontend files in browser (or with Live Server).
+6. Frontend is optional for backend testing. You can test login API directly with Postman/Thunder Client.
 
 Notes:
-- On first backend start, the API auto-creates the `users` table in `edumate` and inserts demo users.
+- Create database and tables manually in XAMPP/phpMyAdmin before using auth APIs.
 - Backend API health check is available at `http://localhost:5000/api/health`.
+- Login API endpoint: `POST http://localhost:5000/api/auth/login`
 
 ## Design and User Experience
 

@@ -47,16 +47,57 @@ const roleConfig = {
     identifierPlaceholder: "instructor@edumate.com",
     submitText: "Login as Instructor",
     action: "instructor.html",
+    toggleTitle: "Switch to Admin Login",
+    showCreateAccount: false,
+  },
+  admin: {
+    title: "Admin Login",
+    subtitle: "Login to manage users, content, and reports.",
+    demoTitle: "Admin demo account",
+    email: "Email: admin@edumate.com",
+    password: "Password: Admin@123",
+    identifierLabel: "Admin email",
+    identifierPlaceholder: "admin@edumate.com",
+    submitText: "Login as Admin",
+    action: "admin.html",
     toggleTitle: "Switch to Student Login",
     showCreateAccount: false,
   },
 };
 
+const roleOrder = ["student", "instructor", "admin"];
+const roleLabels = {
+  student: "Student",
+  instructor: "Instructor",
+  admin: "Admin",
+};
+const clicksPerHalfRotation = 3;
+
 let activeRole = "student";
+let cycleDirection = 1;
+let stepsInCurrentDirection = 0;
+
+const getNextRole = (role, direction = 1) => {
+  const currentIndex = roleOrder.indexOf(role);
+  if (currentIndex === -1) return "student";
+  const normalizedDirection = direction >= 0 ? 1 : -1;
+  const nextIndex = (currentIndex + normalizedDirection + roleOrder.length) % roleOrder.length;
+  return roleOrder[nextIndex];
+};
+
+const updateRoleToggleMeta = () => {
+  if (!roleToggleBtn) return;
+  const nextRole = getNextRole(activeRole, cycleDirection);
+  const toggleTitle = `Switch to ${roleLabels[nextRole]} Login`;
+  roleToggleBtn.title = toggleTitle;
+  roleToggleBtn.setAttribute("aria-label", toggleTitle);
+  roleToggleBtn.classList.toggle("backward-mode", cycleDirection === -1);
+};
 
 const applyLoginRole = (role) => {
-  const config = roleConfig[role] || roleConfig.student;
-  activeRole = role;
+  const resolvedRole = roleConfig[role] ? role : "student";
+  const config = roleConfig[resolvedRole];
+  activeRole = resolvedRole;
 
   if (loginTitle) loginTitle.textContent = config.title;
   if (loginSubtitle) {
@@ -70,16 +111,20 @@ const applyLoginRole = (role) => {
   if (loginIdentifierInput) loginIdentifierInput.placeholder = config.identifierPlaceholder;
   if (loginSubmitBtn) loginSubmitBtn.textContent = config.submitText;
   if (loginForm) loginForm.action = config.action;
-  if (roleToggleBtn) {
-    roleToggleBtn.title = config.toggleTitle;
-    roleToggleBtn.classList.toggle("instructor-mode", role === "instructor");
-  }
+  updateRoleToggleMeta();
   if (accountCreateRow) accountCreateRow.hidden = !config.showCreateAccount;
 };
 
 if (roleToggleBtn) {
   roleToggleBtn.addEventListener("click", () => {
-    applyLoginRole(activeRole === "student" ? "instructor" : "student");
+    applyLoginRole(getNextRole(activeRole, cycleDirection));
+    stepsInCurrentDirection += 1;
+
+    if (stepsInCurrentDirection >= clicksPerHalfRotation) {
+      stepsInCurrentDirection = 0;
+      cycleDirection = cycleDirection === 1 ? -1 : 1;
+      updateRoleToggleMeta();
+    }
   });
 }
 
@@ -88,7 +133,7 @@ applyLoginRole("student");
 if (loginForm) {
   loginForm.addEventListener("submit", (event) => {
     event.preventDefault();
-    window.location.href = activeRole === "instructor" ? "instructor.html" : "student.html";
+    window.location.href = (roleConfig[activeRole] || roleConfig.student).action;
   });
 }
 

@@ -304,6 +304,12 @@
   gap: 10px;
 }
 
+.login-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .login-header h2 {
   font-size: 26px;
   margin-bottom: 6px;
@@ -328,7 +334,7 @@
   box-shadow: 0 8px 18px rgba(7, 93, 136, 0.16);
 }
 
-.role-toggle-btn.instructor-mode i {
+.role-toggle-btn.backward-mode i {
   transform: rotate(180deg);
 }
 

@@ -71,27 +71,22 @@ const roleLabels = {
   instructor: "Instructor",
   admin: "Admin",
 };
-const clicksPerHalfRotation = 3;
 
 let activeRole = "student";
-let cycleDirection = 1;
-let stepsInCurrentDirection = 0;
 
-const getNextRole = (role, direction = 1) => {
+const getNextRole = (role) => {
   const currentIndex = roleOrder.indexOf(role);
   if (currentIndex === -1) return "student";
-  const normalizedDirection = direction >= 0 ? 1 : -1;
-  const nextIndex = (currentIndex + normalizedDirection + roleOrder.length) % roleOrder.length;
+  const nextIndex = (currentIndex + 1) % roleOrder.length;
   return roleOrder[nextIndex];
 };
 
 const updateRoleToggleMeta = () => {
   if (!roleToggleBtn) return;
-  const nextRole = getNextRole(activeRole, cycleDirection);
+  const nextRole = getNextRole(activeRole);
   const toggleTitle = `Switch to ${roleLabels[nextRole]} Login`;
   roleToggleBtn.title = toggleTitle;
   roleToggleBtn.setAttribute("aria-label", toggleTitle);
-  roleToggleBtn.classList.toggle("backward-mode", cycleDirection === -1);
 };
 
 const applyLoginRole = (role) => {
@@ -117,14 +112,7 @@ const applyLoginRole = (role) => {
 
 if (roleToggleBtn) {
   roleToggleBtn.addEventListener("click", () => {
-    applyLoginRole(getNextRole(activeRole, cycleDirection));
-    stepsInCurrentDirection += 1;
-
-    if (stepsInCurrentDirection >= clicksPerHalfRotation) {
-      stepsInCurrentDirection = 0;
-      cycleDirection = cycleDirection === 1 ? -1 : 1;
-      updateRoleToggleMeta();
-    }
+    applyLoginRole(getNextRole(activeRole));
   });
 }
 

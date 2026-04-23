@@ -4,7 +4,8 @@ const bcrypt = require("bcryptjs");
 const dotenv = require("dotenv");
 const path = require("path");
 
-const { getPool } = require("./db");
+const { ensureDatabaseExists, getPool } = require("./db");
+const { ensureSchema, seedDemoAccounts } = require("./initDb");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -120,7 +121,7 @@ app.post("/api/auth/login", async (req, res) => {
     const { table, idColumn } = roleTableConfig[cleanRole];
 
     const [rows] = await pool.query(
-      `SELECT ${idColumn} AS id, name, email, phone_number, password_hash FROM ${table} WHERE (email = ? OR phone_number = ?) LIMIT 1`,
+      `SELECT * FROM ${table} WHERE (email = ? OR phone_number = ?) LIMIT 1`,
       [cleanIdentifier, cleanIdentifier]
     );
 
@@ -145,8 +146,8 @@ app.post("/api/auth/login", async (req, res) => {
       success: true,
       message: "Login successful.",
       user: {
-        id: account.id,
-        fullName: account.name,
+        id: account[idColumn] || account.id,
+        fullName: account.name || account.full_name,
         email: account.email,
         role: cleanRole,
       },
@@ -170,6 +171,10 @@ app.post("/api/auth/login", async (req, res) => {
 
 async function startServer() {
   try {
+    await ensureDatabaseExists();
+    await ensureSchema();
+    await seedDemoAccounts();
+
     app.listen(PORT, () => {
       console.log(`EduMate backend running on http://localhost:${PORT}`);
     });

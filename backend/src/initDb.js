@@ -85,12 +85,46 @@ async function ensureRoleTable(pool, tableName, idColumn) {
   await ensureUniqueIndex(pool, tableName, `${tableName}_phone_unique`, "phone_number");
 }
 
+async function ensureContentSubmissionsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`content_submissions\` (
+      \`submission_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED,
+      \`title\` VARCHAR(255) NOT NULL,
+      \`type\` VARCHAR(50) NOT NULL,
+      \`description\` TEXT,
+      \`status\` VARCHAR(50) DEFAULT 'pending',
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureReportsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`reports\` (
+      \`report_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`title\` VARCHAR(255) NOT NULL,
+      \`description\` TEXT,
+      \`status\` VARCHAR(50) DEFAULT 'open',
+      \`priority\` VARCHAR(50) DEFAULT 'normal',
+      \`value\` VARCHAR(100),
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureSchema() {
   const pool = getPool();
 
   for (const config of roleTableConfig) {
     await ensureRoleTable(pool, config.tableName, config.idColumn);
   }
+  
+  await ensureContentSubmissionsTable(pool);
+  await ensureReportsTable(pool);
 }
 
 async function seedDemoAccounts() {
@@ -136,7 +170,50 @@ async function seedDemoAccounts() {
   }
 }
 
+async function seedDemoContentAndReports() {
+  const pool = getPool();
+
+  // Seed content submissions
+  const contentSubmissions = [
+    { title: "Physics: Work & Energy", type: "PDF", description: "Comprehensive guide on work and energy concepts" },
+    { title: "Math Quiz Set - Algebra", type: "Quiz", description: "20 questions covering algebra fundamentals" },
+    { title: "Chemistry lab worksheet", type: "Assignment", description: "Practical chemistry lab exercises" },
+  ];
+
+  for (const content of contentSubmissions) {
+    await pool.query(
+      `
+      INSERT INTO \`content_submissions\` (title, type, description, status)
+      VALUES (?, ?, ?, 'pending')
+      ON DUPLICATE KEY UPDATE
+        title = VALUES(title)
+      `,
+      [content.title, content.type, content.description]
+    );
+  }
+
+  // Seed reports
+  const reportsList = [
+    { title: "Login spike review", status: "completed", priority: "high", value: "18k logins" },
+    { title: "Content approval delay", status: "open", priority: "high", value: "3 pending" },
+    { title: "System warning alert", status: "open", priority: "high", value: "2 issues" },
+  ];
+
+  for (const report of reportsList) {
+    await pool.query(
+      `
+      INSERT INTO \`reports\` (title, status, priority, value)
+      VALUES (?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        title = VALUES(title)
+      `,
+      [report.title, report.status, report.priority, report.value]
+    );
+  }
+}
+
 module.exports = {
   ensureSchema,
   seedDemoAccounts,
+  seedDemoContentAndReports,
 };

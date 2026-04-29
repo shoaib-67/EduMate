@@ -30,7 +30,6 @@
           <a class="nav-item active" href="admin-users.html">Users</a>
           <a class="nav-item" href="admin-content.html">Content</a>
           <a class="nav-item" href="admin-reports.html">Reports</a>
-          <a class="nav-item" href="index.html">Public Site</a>
         </div>
       </aside>
 
@@ -54,6 +53,21 @@
               <button class="btn btn-small" id="refreshUsers">Refresh</button>
             </div>
             <p>Review active users and account status.</p>
+            <div class="panel-tools">
+              <input type="search" id="userSearch" class="filter-input" placeholder="Search users by name or email" />
+              <select id="userRoleFilter" class="filter-select">
+                <option value="all">All roles</option>
+                <option value="Student">Student</option>
+                <option value="Instructor">Instructor</option>
+                <option value="Admin">Admin</option>
+              </select>
+              <select id="userStatusFilter" class="filter-select">
+                <option value="all">All statuses</option>
+                <option value="Active">Active</option>
+                <option value="Pending">Pending</option>
+                <option value="Inactive">Inactive</option>
+              </select>
+            </div>
             <div class="table-wrap">
               <table>
                 <thead>

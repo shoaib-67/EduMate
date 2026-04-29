@@ -30,7 +30,6 @@
           <a class="nav-item" href="admin-users.html">Users</a>
           <a class="nav-item" href="admin-content.html">Content</a>
           <a class="nav-item" href="admin-reports.html">Reports</a>
-          <a class="nav-item" href="index.html">Public Site</a>
         </div>
       </aside>
 
@@ -42,7 +41,7 @@
           </div>
         </div>
 
-        <div class="content">
+        <div class="content admin-content">
           <div class="page-header" id="overview">
             <h1>Platform control center</h1>
             <p>Monitor users, manage learning resources, and review site activity in one place.</p>
@@ -72,12 +71,27 @@
           </div>
 
           <div class="dashboard-grid">
-            <section class="panel" id="users">
+            <section class="panel panel-full" id="users">
               <div class="panel-header">
                 <h2>User management</h2>
                 <button class="btn btn-small" id="refreshUsers">Refresh</button>
               </div>
               <p>Review active users and account status.</p>
+              <div class="panel-tools">
+                <input type="search" id="userSearch" class="filter-input" placeholder="Search users by name or email" />
+                <select id="userRoleFilter" class="filter-select">
+                  <option value="all">All roles</option>
+                  <option value="Student">Student</option>
+                  <option value="Instructor">Instructor</option>
+                  <option value="Admin">Admin</option>
+                </select>
+                <select id="userStatusFilter" class="filter-select">
+                  <option value="all">All statuses</option>
+                  <option value="Active">Active</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Inactive">Inactive</option>
+                </select>
+              </div>
               <div class="table-wrap">
                 <table>
                   <thead>
@@ -91,24 +105,6 @@
                   <tbody id="userTableBody"></tbody>
                 </table>
               </div>
-            </section>
-
-            <section class="panel" id="content">
-              <div class="panel-header">
-                <h2>Content review</h2>
-                <button class="btn btn-small" id="approveAll">Approve all</button>
-              </div>
-              <p>Approve or deny newly submitted learning material.</p>
-              <ul class="content-list" id="contentList"></ul>
-            </section>
-
-            <section class="panel panel-full" id="reports">
-              <div class="panel-header">
-                <h2>Recent reports</h2>
-                <span class="badge" id="reportBadge">0 open</span>
-              </div>
-              <p>Investigate flagged activity and take action.</p>
-              <div class="report-grid" id="reportCards"></div>
             </section>
           </div>
         </div>

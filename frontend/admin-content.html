@@ -30,7 +30,6 @@
           <a class="nav-item" href="admin-users.html">Users</a>
           <a class="nav-item active" href="admin-content.html">Content</a>
           <a class="nav-item" href="admin-reports.html">Reports</a>
-          <a class="nav-item" href="index.html">Public Site</a>
         </div>
       </aside>
 
@@ -51,9 +50,18 @@
           <section class="panel" id="content">
             <div class="panel-header">
               <h2>Review submissions</h2>
-              <button class="btn btn-small" id="approveAll">Approve all</button>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-small" id="refreshContent">Refresh</button>
+                <button class="btn btn-small" id="approveAll">Approve all</button>
+              </div>
             </div>
             <p>Approve or deny newly submitted learning material.</p>
+            <div class="panel-tools">
+              <input type="search" id="contentSearch" class="filter-input" placeholder="Search pending content by title" />
+              <select id="contentTypeFilter" class="filter-select">
+                <option value="all">All types</option>
+              </select>
+            </div>
             <ul class="content-list" id="contentList"></ul>
           </section>
         </div>

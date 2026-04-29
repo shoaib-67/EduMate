@@ -30,7 +30,6 @@
           <a class="nav-item" href="admin-users.html">Users</a>
           <a class="nav-item" href="admin-content.html">Content</a>
           <a class="nav-item active" href="admin-reports.html">Reports</a>
-          <a class="nav-item" href="index.html">Public Site</a>
         </div>
       </aside>
 
@@ -51,9 +50,26 @@
           <section class="panel panel-full" id="reports">
             <div class="panel-header">
               <h2>Recent reports</h2>
+              <button class="btn btn-small" id="refreshReports" style="margin-left: auto;">Refresh</button>
               <span class="badge" id="reportBadge">0 open</span>
             </div>
             <p>Investigate flagged activity and take action.</p>
+            <div class="panel-tools">
+              <input type="search" id="reportSearch" class="filter-input" placeholder="Search reports by title" />
+              <select id="reportStatusFilter" class="filter-select">
+                <option value="open">Open only</option>
+                <option value="all">All statuses</option>
+                <option value="completed">Completed</option>
+                <option value="denied">Denied</option>
+                <option value="pending">Pending</option>
+              </select>
+              <select id="reportPriorityFilter" class="filter-select">
+                <option value="all">All priorities</option>
+                <option value="high">High</option>
+                <option value="medium">Medium</option>
+                <option value="low">Low</option>
+              </select>
+            </div>
             <div class="report-grid" id="reportCards"></div>
           </section>
         </div>

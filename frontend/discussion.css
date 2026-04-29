@@ -21,6 +21,31 @@
 
 .thread h4 { font-size: 14px; }
 .thread span { font-size: 12px; color: var(--muted); }
+.thread.clickable { cursor: pointer; }
+
+.discussion-filters {
+  display: flex;
+  gap: 0.6rem;
+  margin: 0.8rem 0;
+}
+
+.discussion-filters input,
+.discussion-filters select {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 13px;
+}
+
+.discussion-filters input { flex: 1; }
+
+.thread-detail {
+  margin-top: 0.85rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  padding: 10px 12px;
+  background: #fff;
+}
 
 .input-row { display: grid; gap: 8px; margin-top: 1rem; }
 .discussion-input {

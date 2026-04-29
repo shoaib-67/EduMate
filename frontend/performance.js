@@ -1,0 +1,236 @@
+// Performance page script
+
+const API_BASE_URL = "http://localhost:5000/api";
+
+// Get student ID from localStorage
+function getStudentId() {
+  const user = JSON.parse(localStorage.getItem("edumateCurrentUser") || localStorage.getItem("user") || "{}");
+  return user.id;
+}
+
+// Get color class based on accuracy percentage
+function getAccuracyColorClass(accuracy) {
+  if (accuracy >= 80) return "bar-primary";
+  if (accuracy >= 70) return "bar-amber";
+  return "bar-red";
+}
+
+// Get width utility class based on percentage
+function getWidthClass(percentage) {
+  const width = Math.round(percentage / 5) * 5; // Round to nearest 5
+  return `w-${width}`;
+}
+
+// Get chip class and text based on score
+function getPerformanceChip(score) {
+  if (score >= 80) return { class: "", text: "Strong" };
+  if (score >= 70) return { class: "amber", text: "Good" };
+  if (score >= 60) return { class: "blue", text: "Improve" };
+  return { class: "red", text: "Focus" };
+}
+
+function toDisplayPercent(value) {
+  const num = Number(value);
+  if (!Number.isFinite(num)) return "0";
+  return Number.isInteger(num) ? String(num) : num.toFixed(1);
+}
+
+// Fetch and display dashboard statistics
+async function loadPerformanceStats() {
+  try {
+    const studentId = getStudentId();
+    if (!studentId) {
+      console.error("Student ID not found");
+      return;
+    }
+
+    // Get overall performance stats
+    const dashboardResponse = await fetch(`${API_BASE_URL}/student/${studentId}/dashboard`);
+    const dashboardResult = await dashboardResponse.json();
+
+    if (dashboardResult.success && dashboardResult.data) {
+      const data = dashboardResult.data;
+      const statCards = document.querySelectorAll(".stat-row .stat-card");
+
+      if (statCards.length >= 4) {
+        // Update Average Score stat
+        const avgScoreCard = statCards[0];
+        avgScoreCard.classList.add("highlight");
+        avgScoreCard.innerHTML = `
+          <p class="s-label">Average Score</p>
+          <p class="s-val">${toDisplayPercent(data.averageScore)}%</p>
+          <p class="s-sub">Up 6% in 30 days</p>
+        `;
+
+        // Update Best Score stat
+        const bestScoreCard = statCards[1];
+        bestScoreCard.innerHTML = `
+          <p class="s-label">Best Score</p>
+          <p class="s-val">${toDisplayPercent(data.bestScore)}%</p>
+          <p class="s-sub">Latest achievement</p>
+        `;
+
+        // Update Mock Tests stat
+        const mockTestCard = statCards[2];
+        mockTestCard.innerHTML = `
+          <p class="s-label">Mock Tests</p>
+          <p class="s-val">${data.mockTestsCompleted}</p>
+          <p class="s-sub">${data.totalTests} total</p>
+        `;
+
+        // Update Accuracy stat
+        const accuracyCard = statCards[3];
+        accuracyCard.innerHTML = `
+          <p class="s-label">Accuracy</p>
+          <p class="s-val">${toDisplayPercent(data.accuracy)}%</p>
+          <p class="s-sub">${Number(data.bestScore || 0) >= 80 ? "Physics is strongest" : "Keep practicing"}</p>
+        `;
+      }
+    }
+  } catch (error) {
+    console.error("Error loading performance stats:", error);
+  }
+}
+
+// Fetch and display subject accuracy
+async function loadSubjectAccuracy() {
+  try {
+    const studentId = getStudentId();
+    if (!studentId) return;
+
+    const response = await fetch(`${API_BASE_URL}/student/${studentId}/performance/subjects`);
+    const result = await response.json();
+    const subjectList = document.querySelector(".panel-grid .panel:first-child .list");
+    if (!subjectList) return;
+    subjectList.innerHTML = "";
+
+    if (result.success && result.data && result.data.length > 0) {
+      result.data.forEach((subject) => {
+        const colorClass = getAccuracyColorClass(subject.accuracy);
+        const widthClass = getWidthClass(subject.accuracy);
+        
+        const listItem = document.createElement("div");
+        listItem.className = "list-item";
+        listItem.innerHTML = `
+          <div>
+            <h4>${subject.subject}</h4>
+            <span>${subject.test_count} tests taken</span>
+          </div>
+          <div class="metric">
+            <div class="bar"><div class="bar-fill ${colorClass} ${widthClass}"></div></div>
+            <span class="metric-value">${subject.accuracy}%</span>
+          </div>
+        `;
+        subjectList.appendChild(listItem);
+      });
+    } else {
+      subjectList.innerHTML = '<div class="list-item"><div><h4>No performance data yet</h4><span>Take a mock test to see subject analytics.</span></div><span class="chip">New</span></div>';
+    }
+  } catch (error) {
+    console.error("Error loading subject accuracy:", error);
+  }
+}
+
+// Fetch and display recent tests
+async function loadRecentTests() {
+  try {
+    const studentId = getStudentId();
+    if (!studentId) return;
+
+    const response = await fetch(`${API_BASE_URL}/student/${studentId}/performance/recent-tests`);
+    const result = await response.json();
+    const panels = document.querySelectorAll(".panel-grid .panel");
+    if (panels.length <= 1) return;
+    const recentTestsPanel = panels[1];
+    const testList = recentTestsPanel.querySelector(".list");
+    if (!testList) return;
+    testList.innerHTML = "";
+
+    if (result.success && result.data && result.data.length > 0) {
+      // Show only the first 3 recent tests
+      result.data.slice(0, 3).forEach((test) => {
+        const chip = getPerformanceChip(test.score);
+        const rankInfo = test.rank ? ` - Rank ${test.rank} of ${test.total_participants}` : "";
+        
+        const listItem = document.createElement("div");
+        listItem.className = "list-item";
+        listItem.innerHTML = `
+          <div>
+            <h4>${test.test_name || test.subject + " Test"}</h4>
+            <span>Score ${test.score}%${rankInfo}</span>
+          </div>
+          <span class="chip ${chip.class}">${chip.text}</span>
+        `;
+        testList.appendChild(listItem);
+      });
+    } else {
+      testList.innerHTML = '<div class="list-item"><div><h4>No recent tests</h4><span>Your latest tests will appear here.</span></div><span class="chip">Pending</span></div>';
+    }
+  } catch (error) {
+    console.error("Error loading recent tests:", error);
+  }
+}
+
+async function loadTrendAndActions() {
+  try {
+    const studentId = getStudentId();
+    if (!studentId) return;
+
+    const [recentRes, subjectRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/student/${studentId}/performance/recent-tests`),
+      fetch(`${API_BASE_URL}/student/${studentId}/performance/subjects`),
+    ]);
+    const recentPayload = await recentRes.json();
+    const subjectPayload = await subjectRes.json();
+    const recentTests = recentPayload.success ? (recentPayload.data || []) : [];
+    const subjects = subjectPayload.success ? (subjectPayload.data || []) : [];
+
+    const trendChart = document.getElementById("scoreTrendChart");
+    if (trendChart) {
+      if (!recentTests.length) {
+        trendChart.innerHTML = '<div class="list-item"><div><h4>No trend yet</h4><span>Take tests to build a trend.</span></div></div>';
+      } else {
+        trendChart.innerHTML = recentTests.slice(0, 5).reverse().map((test) => {
+          const score = Number(test.score || 0);
+          return `
+            <div class="trend-row">
+              <span class="trend-label">${test.test_name || test.subject || "Test"}</span>
+              <div class="trend-bar"><div class="trend-fill" style="width: ${Math.max(0, Math.min(100, score))}%;"></div></div>
+              <span class="metric-value">${toDisplayPercent(score)}%</span>
+            </div>
+          `;
+        }).join("");
+      }
+    }
+
+    const nextActionsList = document.getElementById("nextActionsList");
+    if (nextActionsList) {
+      if (!subjects.length) {
+        nextActionsList.innerHTML = '<div class="list-item"><div><h4>No recommendations yet</h4><span>Complete a few mocks first.</span></div><span class="chip">New</span></div>';
+      } else {
+        const weakSubjects = [...subjects]
+          .sort((a, b) => Number(a.accuracy) - Number(b.accuracy))
+          .slice(0, 3);
+        nextActionsList.innerHTML = weakSubjects.map((subject) => `
+          <div class="list-item">
+            <div>
+              <h4>${subject.subject} revision</h4>
+              <span>Current accuracy ${toDisplayPercent(subject.accuracy)}% · ${subject.test_count} tests</span>
+            </div>
+            <a class="action-link" href="mock-test.html">Practice now</a>
+          </div>
+        `).join("");
+      }
+    }
+  } catch (error) {
+    console.error("Error loading trends/actions:", error);
+  }
+}
+
+// Initialize performance page on load
+document.addEventListener("DOMContentLoaded", () => {
+  loadPerformanceStats();
+  loadSubjectAccuracy();
+  loadRecentTests();
+  loadTrendAndActions();
+});

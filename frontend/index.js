@@ -152,6 +152,8 @@ if (loginForm) {
       }
 
       localStorage.setItem("edumateCurrentUser", JSON.stringify(payload.user || {}));
+      // Backward compatibility for pages still reading legacy key.
+      localStorage.setItem("user", JSON.stringify(payload.user || {}));
       window.location.href = (roleConfig[activeRole] || roleConfig.student).action;
     } catch (_error) {
       alert("Cannot connect to backend. Run node server.js and try again.");

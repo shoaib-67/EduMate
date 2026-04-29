@@ -1,3 +1,10 @@
 .panel-grid-spaced {
 	margin-top: 1.25rem;
 }
+
+.dashboard-quick-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem;
+  margin-bottom: 1rem;
+}

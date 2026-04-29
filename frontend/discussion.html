@@ -74,7 +74,18 @@
             <section class="panel">
               <h2>Latest threads</h2>
               <p>Join the most active discussions right now.</p>
-              <div class="list">
+              <div class="discussion-filters">
+                <input type="search" id="discussionSearch" placeholder="Search threads..." />
+                <select id="discussionSubjectFilter">
+                  <option value="all">All subjects</option>
+                  <option value="general">General</option>
+                  <option value="physics">Physics</option>
+                  <option value="chemistry">Chemistry</option>
+                  <option value="math">Math</option>
+                  <option value="biology">Biology</option>
+                </select>
+              </div>
+              <div class="list" id="discussionList">
                 <div class="thread">
                   <div class="u-flex u-space-between u-gap-8">
                     <h4>Physics optics tips for admission mock?</h4>
@@ -103,6 +114,10 @@
                   </div>
                   <span>8 replies · Last by Mentor · Yesterday</span>
                 </div>
+              </div>
+              <div class="thread-detail" id="discussionDetail">
+                <h4>Select a thread</h4>
+                <p>Thread details and replies will appear here.</p>
               </div>
             </section>
 

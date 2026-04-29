@@ -73,6 +73,11 @@
             <h1>Welcome back, Shoaib</h1>
             <p>You are doing well. Pick one target for today and finish it.</p>
           </div>
+          <div class="dashboard-quick-actions">
+            <a class="btn btn-primary" href="mock-test.html">Start Mock</a>
+            <a class="btn" href="performance.html">View Performance</a>
+            <a class="btn" href="discussion.html">Open Discussion</a>
+          </div>
 
           <div class="stat-row">
             <div class="stat-card highlight">
@@ -100,22 +105,22 @@
           <section class="panel">
             <h2>Upcoming exams</h2>
             <p>Here is what you have coming up this week.</p>
-            <div class="list">
-              <div class="list-item">
+            <div class="list" id="upcomingExamList">
+              <div class="list-item upcoming-exam-item" data-mock-test-id="2" role="button" tabindex="0" aria-label="Open Physics Mock Test">
                 <div>
                   <h4>Physics Mock Test</h4>
                   <span>Saturday, 9:00 AM - 100 questions</span>
                 </div>
                 <span class="chip">High</span>
               </div>
-              <div class="list-item">
+              <div class="list-item upcoming-exam-item" data-mock-test-id="4" role="button" tabindex="0" aria-label="Open Chemistry Drill">
                 <div>
                   <h4>Chemistry Drill</h4>
                   <span>Monday, 7:30 PM - 40 questions</span>
                 </div>
                 <span class="chip">Medium</span>
               </div>
-              <div class="list-item">
+              <div class="list-item upcoming-exam-item" data-mock-test-id="8" role="button" tabindex="0" aria-label="Open Interview Prep mock">
                 <div>
                   <h4>Interview Prep</h4>
                   <span>Wednesday, 5:00 PM - 20 prompts</span>
@@ -129,7 +134,7 @@
             <section class="panel">
               <h2>Course progress</h2>
               <p>Your current course completion progress.</p>
-              <div class="list">
+              <div class="list" id="courseProgressList">
                 <div class="list-item">
                   <div>
                     <h4>Engineering Admission Sprint</h4>
@@ -157,7 +162,7 @@
             <section class="panel">
               <h2>Performance snapshot</h2>
               <p>A quick look at strengths and weak spots.</p>
-              <div class="list">
+              <div class="list" id="performanceSnapshotList">
                 <div class="list-item">
                   <div>
                     <h4>Top subject</h4>

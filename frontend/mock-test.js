@@ -544,3 +544,16 @@ function submitExam() {
 }
 
 renderTests();
+
+const openTestFromQuery = () => {
+  const params = new URLSearchParams(window.location.search);
+  const testId = Number(params.get("openTest"));
+  if (!testId) return;
+
+  const matchedTest = testsData.find((test) => test.id === testId);
+  if (!matchedTest) return;
+
+  openTestConfirm(testId);
+};
+
+openTestFromQuery();

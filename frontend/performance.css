@@ -18,3 +18,42 @@
 .w-63 { width: 63%; }
 
 .panel-grid-spaced { margin-top: 1.25rem; }
+
+.trend-chart {
+  display: grid;
+  gap: 0.6rem;
+}
+
+.trend-row {
+  display: grid;
+  grid-template-columns: 140px 1fr 52px;
+  gap: 0.6rem;
+  align-items: center;
+}
+
+.trend-label {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.trend-bar {
+  height: 10px;
+  border-radius: 999px;
+  background: #e8f0f7;
+  overflow: hidden;
+}
+
+.trend-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--primary-dark) 100%);
+}
+
+.action-link {
+  text-decoration: none;
+  color: var(--primary-dark);
+  font-size: 12px;
+  font-weight: 700;
+}

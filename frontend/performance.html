@@ -162,57 +162,21 @@
 
           <div class="panel-grid panel-grid-spaced">
             <section class="panel">
-              <h2>Time management</h2>
-              <p>Average pace compared to ideal time.</p>
-              <div class="list">
-                <div class="list-item">
-                  <div>
-                    <h4>Section completion</h4>
-                    <span>Average time per question</span>
-                  </div>
-                  <span class="chip">1.2 min</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Skipped questions</h4>
-                    <span>Return and review rate</span>
-                  </div>
-                  <span class="chip amber">8%</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Focus score</h4>
-                    <span>Based on pause activity</span>
-                  </div>
-                  <span class="chip blue">76%</span>
-                </div>
-              </div>
+              <h2>Score trend</h2>
+              <p>Recent performance trend across your latest tests.</p>
+              <div id="scoreTrendChart" class="trend-chart"></div>
             </section>
 
             <section class="panel">
               <h2>Next actions</h2>
               <p>Personalized suggestions for the week.</p>
-              <div class="list">
+              <div class="list" id="nextActionsList">
                 <div class="list-item">
                   <div>
-                    <h4>Math revision</h4>
-                    <span>Complete 2 practice sets</span>
+                    <h4>Loading recommendations...</h4>
+                    <span>Analyzing weak subjects</span>
                   </div>
-                  <span class="chip red">Priority</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Physics recap</h4>
-                    <span>Review optics notes</span>
-                  </div>
-                  <span class="chip">Plan</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Take a full mock</h4>
-                    <span>Schedule for Friday evening</span>
-                  </div>
-                  <span class="chip blue">Schedule</span>
+                  <span class="chip">...</span>
                 </div>
               </div>
             </section>

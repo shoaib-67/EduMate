@@ -37,7 +37,7 @@
         <div class="topbar">
           <span class="topbar-title">Reports</span>
           <div class="topbar-right">
-            <a class="avatar logout-btn" href="admin-login.html" aria-label="Logout">Logout</a>
+            <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
           </div>
         </div>
 
@@ -56,6 +56,12 @@
             <p>Investigate flagged activity and take action.</p>
             <div class="panel-tools">
               <input type="search" id="reportSearch" class="filter-input" placeholder="Search reports by title" />
+              <select id="reportCategoryFilter" class="filter-select">
+                <option value="all">All categories</option>
+                <option value="complaint">Complaints</option>
+                <option value="bug">Bugs</option>
+                <option value="content">Content issues</option>
+              </select>
               <select id="reportStatusFilter" class="filter-select">
                 <option value="open">Open only</option>
                 <option value="all">All statuses</option>

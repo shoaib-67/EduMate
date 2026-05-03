@@ -3,10 +3,57 @@ const API_BASE_URL = "http://localhost:5000/api";
 let users = [];
 let pendingContent = [];
 let reports = [];
+let activityLogs = [];
 const filters = {
   users: { query: "", role: "all", status: "all" },
   content: { query: "", type: "all" },
-  reports: { query: "", status: "open", priority: "all" },
+  reports: { query: "", status: "open", priority: "all", category: "all" },
+};
+const MANAGEABLE_ROLES = new Set(["Student", "Instructor"]);
+
+const escapeHTML = (value) =>
+  String(value ?? "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+
+const roleToApiParam = (role) => String(role || "").trim().toLowerCase();
+
+const setUserFormMessage = (message, type = "neutral") => {
+  const userFormMessage = document.getElementById("userFormMessage");
+  if (!userFormMessage) return;
+  userFormMessage.textContent = message || "";
+  userFormMessage.dataset.type = type;
+};
+
+const getInitials = (name) =>
+  String(name || "U")
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .map((part) => part[0]?.toUpperCase() || "")
+    .join("") || "U";
+
+const showToast = (message, type = "info") => {
+  let toastStack = document.getElementById("toastStack");
+  if (!toastStack) {
+    toastStack = document.createElement("div");
+    toastStack.id = "toastStack";
+    toastStack.className = "toast-stack";
+    document.body.appendChild(toastStack);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = `toast toast-${type}`;
+  toast.textContent = message;
+  toastStack.appendChild(toast);
+
+  setTimeout(() => {
+    toast.classList.add("is-leaving");
+    setTimeout(() => toast.remove(), 220);
+  }, 3200);
 };
 
 // Create modal for user details
@@ -16,42 +63,17 @@ function createUserModal() {
   
   const modal = document.createElement("div");
   modal.id = "userDetailModal";
-  modal.style.cssText = `
-    display: none;
-    position: fixed;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background: rgba(0, 0, 0, 0.6);
-    z-index: 1000;
-    justify-content: center;
-    align-items: center;
-    backdrop-filter: blur(4px);
-  `;
+  modal.className = "user-modal";
   
   modal.innerHTML = `
-    <div style="background: linear-gradient(135deg, #ffffff 0%, #f8f9fa 100%); padding: 0; border-radius: 12px; max-width: 600px; width: 90%; box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3); animation: slideUp 0.3s ease-out;">
-      <style>
-        @keyframes slideUp {
-          from {
-            opacity: 0;
-            transform: translateY(20px);
-          }
-          to {
-            opacity: 1;
-            transform: translateY(0);
-          }
-        }
-      </style>
-      <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); padding: 25px 30px; border-radius: 12px 12px 0 0; display: flex; justify-content: space-between; align-items: center;">
-        <h2 id="modalTitle" style="margin: 0; font-size: 24px; color: white; font-weight: 600;">User Details</h2>
-        <button id="closeModal" style="background: rgba(255,255,255,0.2); border: none; font-size: 28px; cursor: pointer; color: white; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; transition: all 0.2s;">&times;</button>
+    <div class="user-modal-dialog">
+      <div class="user-modal-header">
+        <h2 id="modalTitle">User details</h2>
+        <button id="closeModal" class="modal-close-btn" type="button" aria-label="Close">&times;</button>
       </div>
-      <div id="modalContent" style="color: #333; line-height: 1.8; padding: 30px;"></div>
-      <div style="border-top: 1px solid #e0e0e0; padding: 20px 30px; display: flex; gap: 10px; justify-content: flex-end; background: #f8f9fa; border-radius: 0 0 12px 12px;">
-        <button id="editUserBtn" class="btn btn-small" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; border: none; cursor: pointer; padding: 8px 16px; border-radius: 6px; transition: all 0.2s;">Edit</button>
-        <button id="closeModalBtn" class="btn btn-small" style="background: #e0e0e0; color: #333; border: none; cursor: pointer; padding: 8px 16px; border-radius: 6px; transition: all 0.2s;">Close</button>
+      <div id="modalContent" class="user-modal-content"></div>
+      <div class="user-modal-footer">
+        <button id="closeModalBtn" class="btn btn-small btn-secondary" type="button">Close</button>
       </div>
     </div>
   `;
@@ -60,49 +82,21 @@ function createUserModal() {
   
   const closeModal = document.getElementById("closeModal");
   const closeModalBtn = document.getElementById("closeModalBtn");
-  const editUserBtn = document.getElementById("editUserBtn");
   
   closeModal.addEventListener("click", () => {
     modal.style.display = "none";
-  });
-  
-  closeModal.addEventListener("mouseover", function() {
-    this.style.background = "rgba(255,255,255,0.3)";
-  });
-  
-  closeModal.addEventListener("mouseout", function() {
-    this.style.background = "rgba(255,255,255,0.2)";
+    modal.classList.remove("is-open");
   });
   
   closeModalBtn.addEventListener("click", () => {
     modal.style.display = "none";
-  });
-  
-  closeModalBtn.addEventListener("mouseover", function() {
-    this.style.background = "#d0d0d0";
-  });
-  
-  closeModalBtn.addEventListener("mouseout", function() {
-    this.style.background = "#e0e0e0";
-  });
-  
-  editUserBtn.addEventListener("mouseover", function() {
-    this.style.transform = "translateY(-2px)";
-    this.style.boxShadow = "0 4px 12px rgba(102, 126, 234, 0.4)";
-  });
-  
-  editUserBtn.addEventListener("mouseout", function() {
-    this.style.transform = "translateY(0)";
-    this.style.boxShadow = "none";
-  });
-  
-  editUserBtn.addEventListener("click", function() {
-    alert("Edit functionality coming soon!");
+    modal.classList.remove("is-open");
   });
   
   modal.addEventListener("click", (e) => {
     if (e.target === modal) {
       modal.style.display = "none";
+      modal.classList.remove("is-open");
     }
   });
 }
@@ -125,6 +119,7 @@ function showUserDetail(user) {
       case "Active": return "#27ae60";
       case "Pending": return "#f39c12";
       case "Inactive": return "#e74c3c";
+      case "Frozen": return "#6c5ce7";
       default: return "#95a5a6";
     }
   };
@@ -134,7 +129,7 @@ function showUserDetail(user) {
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
       <div>
         <p style="margin: 0 0 8px 0; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Full Name</p>
-        <p style="margin: 0; font-size: 18px; font-weight: 600; color: #333;">${user.name}</p>
+        <p style="margin: 0; font-size: 18px; font-weight: 600; color: #333;">${escapeHTML(user.name)}</p>
       </div>
       <div>
         <p style="margin: 0 0 8px 0; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">User ID</p>
@@ -145,22 +140,22 @@ function showUserDetail(user) {
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px;">
       <div>
         <p style="margin: 0 0 8px 0; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Email Address</p>
-        <p style="margin: 0; font-size: 14px; color: #555; word-break: break-all;">${user.email}</p>
+        <p style="margin: 0; font-size: 14px; color: #555; word-break: break-all;">${escapeHTML(user.email)}</p>
       </div>
       <div>
         <p style="margin: 0 0 8px 0; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Role</p>
-        <span style="display: inline-block; background: ${getRoleColor(user.role)}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">${user.role}</span>
+        <span style="display: inline-block; background: ${getRoleColor(user.role)}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">${escapeHTML(user.role)}</span>
       </div>
     </div>
     
     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; padding: 15px; background: rgba(102, 126, 234, 0.05); border-radius: 8px; border-left: 4px solid ${getRoleColor(user.role)};">
       <div>
         <p style="margin: 0 0 8px 0; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Account Status</p>
-        <span style="display: inline-block; background: ${getStatusColor(user.status)}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">● ${user.status}</span>
+        <span style="display: inline-block; background: ${getStatusColor(user.status)}; color: white; padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;">● ${escapeHTML(user.status)}</span>
       </div>
       <div>
         <p style="margin: 0 0 8px 0; color: #666; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Account Type</p>
-        <p style="margin: 0; font-size: 14px; font-weight: 500; color: #333;">${user.role} Account</p>
+        <p style="margin: 0; font-size: 14px; font-weight: 500; color: #333;">${escapeHTML(user.role)} Account</p>
       </div>
     </div>
     
@@ -198,15 +193,38 @@ const renderUsers = () => {
   }
 
   userTableBody.innerHTML = filteredUsers
-    .map(
-      (user) => `
+    .map((user) => {
+      const canManage = MANAGEABLE_ROLES.has(user.role);
+      const frozen = user.status === "Frozen";
+      const statusClass = frozen ? "status-badge status-frozen" : "status-badge status-active";
+      const roleClass = `role-pill role-${roleToApiParam(user.role)}`;
+
+      return `
       <tr>
-        <td data-label="Name">${user.name}</td>
-        <td data-label="Role">${user.role}</td>
-        <td data-label="Status">${user.status}</td>
-        <td data-label="Actions"><button class="btn btn-small btn-secondary user-view-btn" data-user-id="${user.id}" data-user-role="${user.role}">View</button></td>
-      </tr>`
-    )
+        <td data-label="Name">
+          <div class="user-cell">
+            <span class="user-avatar-sm">${escapeHTML(getInitials(user.name))}</span>
+            <span class="user-meta">
+              <strong>${escapeHTML(user.name)}</strong>
+              <span class="user-email">${escapeHTML(user.email)}</span>
+            </span>
+          </div>
+        </td>
+        <td data-label="Role"><span class="${roleClass}">${escapeHTML(user.role)}</span></td>
+        <td data-label="Status"><span class="${statusClass}">${escapeHTML(user.status)}</span></td>
+        <td data-label="Actions">
+          <div class="user-action-group">
+            <button class="btn btn-small btn-quiet user-view-btn" data-user-id="${user.id}" data-user-role="${user.role}">Details</button>
+            ${
+              canManage
+                ? `<button class="btn btn-small btn-quiet user-status-btn" data-user-id="${user.id}" data-user-role="${user.role}" data-next-status="${frozen ? "active" : "frozen"}">${frozen ? "Unfreeze" : "Freeze"}</button>
+                   <button class="btn btn-small btn-quiet btn-text-danger user-delete-btn" data-user-id="${user.id}" data-user-role="${user.role}">Delete</button>`
+                : ""
+            }
+          </div>
+        </td>
+      </tr>`;
+    })
     .join("");
   
   // Add event listeners for view buttons
@@ -216,6 +234,76 @@ const renderUsers = () => {
       const role = btn.getAttribute("data-user-role");
       const user = users.find((item) => item.id === id && item.role === role);
       if (user) showUserDetail(user);
+    });
+  });
+
+  userTableBody?.querySelectorAll(".user-status-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-user-id");
+      const role = btn.getAttribute("data-user-role");
+      const nextStatus = btn.getAttribute("data-next-status");
+      btn.disabled = true;
+      btn.textContent = nextStatus === "frozen" ? "Freezing..." : "Unfreezing...";
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/users/${roleToApiParam(role)}/${id}/status`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextStatus }),
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+          showToast(payload.message || "Failed to update account status.", "error");
+          renderUsers();
+          return;
+        }
+
+        await loadUsers();
+        await updateStats();
+        await loadActivityLogs();
+        showToast(payload.message || "Account status updated.", "success");
+      } catch (error) {
+        showToast("Failed to update account status: " + error.message, "error");
+        renderUsers();
+      }
+    });
+  });
+
+  userTableBody?.querySelectorAll(".user-delete-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-user-id");
+      const role = btn.getAttribute("data-user-role");
+      const user = users.find((item) => String(item.id) === String(id) && item.role === role);
+      const label = user ? `${user.name} (${user.role})` : `${role} #${id}`;
+
+      if (!window.confirm(`Delete ${label}? This cannot be undone.`)) {
+        return;
+      }
+
+      btn.disabled = true;
+      btn.textContent = "Deleting...";
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/users/${roleToApiParam(role)}/${id}`, {
+          method: "DELETE",
+        });
+        const payload = await response.json();
+
+        if (!response.ok || !payload.success) {
+          showToast(payload.message || "Failed to delete account.", "error");
+          renderUsers();
+          return;
+        }
+
+        await loadUsers();
+        await updateStats();
+        await loadActivityLogs();
+        showToast(payload.message || "Account deleted.", "success");
+      } catch (error) {
+        showToast("Failed to delete account: " + error.message, "error");
+        renderUsers();
+      }
     });
   });
 };
@@ -276,17 +364,20 @@ const renderContent = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
-        if (response.ok) {
+        const payload = await response.json();
+        if (response.ok && payload.success) {
           // Reload content after approval
           await loadContent();
           await updateStats();
+          await loadActivityLogs();
+          showToast(payload.message || "Content approved.", "success");
         } else {
-          alert("Failed to approve content");
+          showToast(payload.message || "Failed to approve content.", "error");
           btn.textContent = "Approve";
           btn.disabled = false;
         }
       } catch (_error) {
-        alert("Failed to approve content: " + _error.message);
+        showToast("Failed to approve content: " + _error.message, "error");
         btn.textContent = "Approve";
         btn.disabled = false;
       }
@@ -304,17 +395,20 @@ const renderContent = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
-        if (response.ok) {
+        const payload = await response.json();
+        if (response.ok && payload.success) {
           // Reload content after denial
           await loadContent();
           await updateStats();
+          await loadActivityLogs();
+          showToast(payload.message || "Content denied.", "success");
         } else {
-          alert("Failed to deny content");
+          showToast(payload.message || "Failed to deny content.", "error");
           btn.textContent = "Deny";
           btn.disabled = false;
         }
       } catch (_error) {
-        alert("Failed to deny content: " + _error.message);
+        showToast("Failed to deny content: " + _error.message, "error");
         btn.textContent = "Deny";
         btn.disabled = false;
       }
@@ -329,11 +423,14 @@ const renderReports = () => {
   const query = filters.reports.query.trim().toLowerCase();
   const statusFilter = filters.reports.status;
   const priorityFilter = filters.reports.priority;
+  const categoryFilter = filters.reports.category;
   const filteredReports = reports.filter((item) => {
-    const matchQuery = !query || item.title?.toLowerCase().includes(query);
+    const haystack = `${item.title || ""} ${item.description || ""} ${item.reporterName || ""} ${item.reporterEmail || ""}`.toLowerCase();
+    const matchQuery = !query || haystack.includes(query);
     const matchStatus = statusFilter === "all" || (item.status || "").toLowerCase() === statusFilter;
     const matchPriority = priorityFilter === "all" || (item.priority || "").toLowerCase() === priorityFilter;
-    return matchQuery && matchStatus && matchPriority;
+    const matchCategory = categoryFilter === "all" || (item.category || "").toLowerCase() === categoryFilter;
+    return matchQuery && matchStatus && matchPriority && matchCategory;
   });
   
   const getStatusColor = (status) => {
@@ -346,15 +443,6 @@ const renderReports = () => {
     }
   };
   
-  const getPriorityIcon = (priority) => {
-    switch(priority?.toLowerCase()) {
-      case "high": return "🔴";
-      case "medium": return "🟡";
-      case "low": return "🟢";
-      default: return "⚪";
-    }
-  };
-  
   if (filteredReports.length === 0) {
     reportCards.innerHTML = '<div class="empty-state" style="grid-column: 1/-1;">No reports match your filters.</div>';
     return;
@@ -363,15 +451,16 @@ const renderReports = () => {
   reportCards.innerHTML = filteredReports
     .map(
       (item) => `
-      <article class="report-card" style="background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%); border-left: 4px solid ${getStatusColor(item.status)}; cursor: pointer; transition: all 0.3s; padding: 16px; border-radius: 6px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; flex-direction: column;">
+      <article class="report-card report-card-${escapeHTML((item.category || "bug").toLowerCase())}">
         <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 12px;">
-          <strong style="color: #333; font-size: 16px;">${item.title}</strong>
-          <span style="font-size: 18px;">${getPriorityIcon(item.priority)}</span>
+          <strong style="color: #333; font-size: 16px;">${escapeHTML(item.title)}</strong>
+          <span class="report-priority priority-${escapeHTML((item.priority || "normal").toLowerCase())}">${escapeHTML(item.priority || "normal")}</span>
         </div>
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex: 1;">
-          <span style="background: ${getStatusColor(item.status)}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;">● ${item.status}</span>
-          <span style="color: #667eea; font-weight: 700; font-size: 14px;">${item.value}</span>
+          <span style="background: ${getStatusColor(item.status)}; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; font-weight: 600; text-transform: uppercase;">${escapeHTML(item.status)}</span>
+          <span style="color: #667eea; font-weight: 700; font-size: 14px;">${escapeHTML(item.category || item.value || "report")}</span>
         </div>
+        <p style="color: #5f7895; font-size: 13px; margin: 0 0 12px;">${escapeHTML(item.description || "No description provided.")}</p>
         <div class="report-actions">
           <button class="btn btn-small btn-approve report-resolve-btn" data-id="${item.id}">Resolve</button>
           <button class="btn btn-small btn-muted report-deny-btn" data-id="${item.id}">Dismiss</button>
@@ -405,16 +494,19 @@ const renderReports = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
-        if (response.ok) {
+        const payload = await response.json();
+        if (response.ok && payload.success) {
           await loadReports();
           await updateStats();
+          await loadActivityLogs();
+          showToast(payload.message || "Report resolved.", "success");
         } else {
-          alert("Failed to resolve report");
+          showToast(payload.message || "Failed to resolve report.", "error");
           btn.textContent = "Resolve";
           btn.disabled = false;
         }
       } catch (_error) {
-        alert("Failed to resolve report: " + _error.message);
+        showToast("Failed to resolve report: " + _error.message, "error");
         btn.textContent = "Resolve";
         btn.disabled = false;
       }
@@ -433,16 +525,19 @@ const renderReports = () => {
           method: "POST",
           headers: { "Content-Type": "application/json" },
         });
-        if (response.ok) {
+        const payload = await response.json();
+        if (response.ok && payload.success) {
           await loadReports();
           await updateStats();
+          await loadActivityLogs();
+          showToast(payload.message || "Report dismissed.", "success");
         } else {
-          alert("Failed to dismiss report");
+          showToast(payload.message || "Failed to dismiss report.", "error");
           btn.textContent = "Dismiss";
           btn.disabled = false;
         }
       } catch (_error) {
-        alert("Failed to dismiss report: " + _error.message);
+        showToast("Failed to dismiss report: " + _error.message, "error");
         btn.textContent = "Dismiss";
         btn.disabled = false;
       }
@@ -460,6 +555,117 @@ const loadUsers = async () => {
     }
   } catch (_error) {
     console.error("Failed to load users");
+  }
+};
+
+const setupUserForm = () => {
+  const addUserForm = document.getElementById("addUserForm");
+  const addUserButton = document.getElementById("addUserButton");
+  const toggleAddUserForm = document.getElementById("toggleAddUserForm");
+
+  if (!addUserForm || addUserForm.dataset.ready === "true") return;
+  addUserForm.dataset.ready = "true";
+
+  if (toggleAddUserForm) {
+    toggleAddUserForm.addEventListener("click", () => {
+      const isHidden = addUserForm.classList.toggle("is-hidden");
+      toggleAddUserForm.textContent = isHidden ? "Add account" : "Close form";
+      if (!isHidden) {
+        addUserForm.querySelector("input[name='fullName']")?.focus();
+      }
+    });
+  }
+
+  addUserForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    setUserFormMessage("");
+
+    const formData = new FormData(addUserForm);
+    const payload = {
+      fullName: formData.get("fullName"),
+      email: formData.get("email"),
+      phone: formData.get("phone"),
+      role: formData.get("role"),
+      password: formData.get("password"),
+    };
+
+    if (addUserButton) {
+      addUserButton.disabled = true;
+      addUserButton.textContent = "Adding...";
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/users`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+      const result = await response.json();
+
+      if (!response.ok || !result.success) {
+        setUserFormMessage(result.message || "Could not add account.", "error");
+        return;
+      }
+
+      addUserForm.reset();
+      setUserFormMessage(result.message || "Account added.", "success");
+      await loadUsers();
+      await updateStats();
+      await loadActivityLogs();
+      showToast(result.message || "Account added.", "success");
+    } catch (error) {
+      setUserFormMessage("Cannot connect to backend: " + error.message, "error");
+      showToast("Cannot connect to backend: " + error.message, "error");
+    } finally {
+      if (addUserButton) {
+        addUserButton.disabled = false;
+        addUserButton.textContent = "Create account";
+      }
+    }
+  });
+};
+
+const formatActivityAction = (action) =>
+  String(action || "")
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+const renderActivityLogs = () => {
+  const activityLogList = document.getElementById("activityLogList");
+  if (!activityLogList) return;
+
+  if (!activityLogs.length) {
+    activityLogList.innerHTML = '<li><div class="empty-state">No admin activity yet.</div></li>';
+    return;
+  }
+
+  activityLogList.innerHTML = activityLogs
+    .slice(0, 8)
+    .map((log) => {
+      const created = log.createdAt ? new Date(log.createdAt).toLocaleString() : "";
+      return `
+        <li class="activity-item">
+          <div>
+            <strong>${escapeHTML(formatActivityAction(log.action))}</strong>
+            <span>${escapeHTML(log.targetLabel || log.targetType || "System")}</span>
+          </div>
+          <time>${escapeHTML(created)}</time>
+        </li>`;
+    })
+    .join("");
+};
+
+const loadActivityLogs = async () => {
+  try {
+    const response = await fetch(`${API_BASE_URL}/admin/activity-logs`);
+    const payload = await response.json();
+    if (payload.success) {
+      activityLogs = payload.data || [];
+      renderActivityLogs();
+    }
+  } catch (_error) {
+    console.error("Failed to load activity logs");
   }
 };
 
@@ -625,6 +831,7 @@ const setupFilters = () => {
   const reportSearch = document.getElementById("reportSearch");
   const reportStatusFilter = document.getElementById("reportStatusFilter");
   const reportPriorityFilter = document.getElementById("reportPriorityFilter");
+  const reportCategoryFilter = document.getElementById("reportCategoryFilter");
 
   if (userSearch) {
     userSearch.addEventListener("input", (event) => {
@@ -676,6 +883,12 @@ const setupFilters = () => {
       renderReports();
     });
   }
+  if (reportCategoryFilter) {
+    reportCategoryFilter.addEventListener("change", (event) => {
+      filters.reports.category = event.target.value || "all";
+      renderReports();
+    });
+  }
 };
 
 // Load all data on page load
@@ -689,7 +902,6 @@ async function initAdminDashboard() {
   const reportCount = document.getElementById("reportCount");
   const contentCount = document.getElementById("contentCount");
   const reportBadge = document.getElementById("reportBadge");
-  const refreshUsers = document.getElementById("refreshUsers");
   const refreshContent = document.getElementById("refreshContent");
   const refreshReports = document.getElementById("refreshReports");
   const approveAll = document.getElementById("approveAll");
@@ -749,25 +961,9 @@ async function initAdminDashboard() {
   
   addUpdateIndicator();
   setupFilters();
+  setupUserForm();
   
-  // Attach event listeners to refresh buttons
-  if (refreshUsers) {
-    refreshUsers.addEventListener("click", async () => {
-      refreshUsers.textContent = "Refreshing...";
-      refreshUsers.disabled = true;
-      try {
-        await loadUsers();
-        await updateStats();
-      } catch (error) {
-        console.error("Error refreshing users:", error);
-        alert("Failed to refresh users");
-      } finally {
-        refreshUsers.textContent = "Refresh";
-        refreshUsers.disabled = false;
-      }
-    });
-  }
-
+  // Attach event listeners to page action buttons
   if (refreshContent) {
     refreshContent.addEventListener("click", async () => {
       refreshContent.textContent = "Refreshing...";
@@ -777,7 +973,7 @@ async function initAdminDashboard() {
         await updateStats();
       } catch (error) {
         console.error("Error refreshing content:", error);
-        alert("Failed to refresh content");
+        showToast("Failed to refresh content", "error");
       } finally {
         refreshContent.textContent = "Refresh";
         refreshContent.disabled = false;
@@ -794,7 +990,7 @@ async function initAdminDashboard() {
         await updateStats();
       } catch (error) {
         console.error("Error refreshing reports:", error);
-        alert("Failed to refresh reports");
+        showToast("Failed to refresh reports", "error");
       } finally {
         refreshReports.textContent = "Refresh";
         refreshReports.disabled = false;
@@ -821,9 +1017,11 @@ async function initAdminDashboard() {
         }
         await loadContent();
         await updateStats();
+        await loadActivityLogs();
+        showToast("Pending content approved.", "success");
       } catch (error) {
         console.error("Error approving content:", error);
-        alert("Failed to approve content");
+        showToast("Failed to approve content", "error");
       } finally {
         approveAll.textContent = "Approve all";
         approveAll.disabled = false;
@@ -834,6 +1032,7 @@ async function initAdminDashboard() {
   await loadUsers();
   await loadContent();
   await loadReports();
+  await loadActivityLogs();
   startStatsAutoRefresh();
   
   // Handle page visibility changes

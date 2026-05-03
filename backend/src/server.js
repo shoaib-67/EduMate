@@ -11,6 +11,85 @@ dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
 const app = express();
 const PORT = Number(process.env.PORT || 5000);
+const USER_ROLE_CONFIG = {
+  student: {
+    table: "students",
+    idColumn: "student_id",
+    displayRole: "Student",
+    canManage: true,
+  },
+  instructor: {
+    table: "instructors",
+    idColumn: "instructor_id",
+    displayRole: "Instructor",
+    canManage: true,
+  },
+  admin: {
+    table: "admins",
+    idColumn: "admin_id",
+    displayRole: "Admin",
+    canManage: false,
+  },
+};
+function getManageableUserConfig(role) {
+  const cleanRole = String(role || "").trim().toLowerCase();
+  const config = USER_ROLE_CONFIG[cleanRole];
+  return config?.canManage ? config : null;
+}
+
+function formatAccountStatus(accountStatus) {
+  return String(accountStatus || "active").toLowerCase() === "frozen" ? "Frozen" : "Active";
+}
+
+function validateAccountPayload(body) {
+  const cleanFullName = String(body?.fullName || body?.name || "").trim();
+  const cleanEmail = String(body?.email || "").trim().toLowerCase();
+  const cleanPhone = String(body?.phone || body?.phoneNumber || "").trim();
+  const cleanPassword = String(body?.password || "");
+  const cleanRole = String(body?.role || "").trim().toLowerCase();
+
+  if (!cleanFullName || !cleanEmail || !cleanPassword || !cleanRole) {
+    return { error: "Name, email, password, and role are required." };
+  }
+
+  if (!getManageableUserConfig(cleanRole)) {
+    return { error: "Only student and instructor accounts can be managed here." };
+  }
+
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+    return { error: "Please provide a valid email address." };
+  }
+
+  if (cleanPassword.length < 8) {
+    return { error: "Password must be at least 8 characters long." };
+  }
+
+  return {
+    value: {
+      fullName: cleanFullName,
+      email: cleanEmail,
+      phone: cleanPhone || null,
+      password: cleanPassword,
+      role: cleanRole,
+    },
+  };
+}
+
+async function logAdminActivity(pool, { action, targetType, targetId, targetLabel, details }) {
+  await pool.query(
+    `
+    INSERT INTO admin_activity_logs (action, target_type, target_id, target_label, details)
+    VALUES (?, ?, ?, ?, ?)
+    `,
+    [
+      action,
+      targetType,
+      targetId || null,
+      targetLabel || null,
+      details ? JSON.stringify(details) : null,
+    ]
+  );
+}
 
 app.use(cors());
 app.use(express.json());
@@ -113,12 +192,7 @@ app.post("/api/auth/login", async (req, res) => {
     }
 
     const pool = getPool();
-    const roleTableConfig = {
-      student: { table: "students", idColumn: "student_id" },
-      instructor: { table: "instructors", idColumn: "instructor_id" },
-      admin: { table: "admins", idColumn: "admin_id" },
-    };
-    const { table, idColumn } = roleTableConfig[cleanRole];
+    const { table, idColumn } = USER_ROLE_CONFIG[cleanRole];
 
     const [rows] = await pool.query(
       `SELECT * FROM ${table} WHERE (email = ? OR phone_number = ?) LIMIT 1`,
@@ -139,6 +213,13 @@ app.post("/api/auth/login", async (req, res) => {
       return res.status(401).json({
         success: false,
         message: "Invalid credentials.",
+      });
+    }
+
+    if (String(account.account_status || "active").toLowerCase() === "frozen") {
+      return res.status(403).json({
+        success: false,
+        message: "This account is frozen. Please contact an administrator.",
       });
     }
 
@@ -179,6 +260,12 @@ app.get("/api/admin/overview", async (_req, res) => {
     const [studentRows] = await pool.query("SELECT COUNT(*) as count FROM students");
     const [instructorRows] = await pool.query("SELECT COUNT(*) as count FROM instructors");
     const [adminRows] = await pool.query("SELECT COUNT(*) as count FROM admins");
+    const [activeStudentRows] = await pool.query(
+      "SELECT COUNT(*) as count FROM students WHERE account_status = 'active'"
+    );
+    const [activeInstructorRows] = await pool.query(
+      "SELECT COUNT(*) as count FROM instructors WHERE account_status = 'active'"
+    );
     
     // Get content statistics
     const [pendingContentRows] = await pool.query("SELECT COUNT(*) as count FROM content_submissions WHERE status = 'pending'");
@@ -195,8 +282,8 @@ app.get("/api/admin/overview", async (_req, res) => {
       "SELECT COUNT(*) as count FROM students WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"
     );
     
-    // Get total active users (students + instructors + admins)
-    const totalActiveUsers = (studentRows[0]?.count || 0) + (instructorRows[0]?.count || 0);
+    // Get total active users (students + instructors)
+    const totalActiveUsers = (activeStudentRows[0]?.count || 0) + (activeInstructorRows[0]?.count || 0);
 
     return res.status(200).json({
       success: true,
@@ -228,15 +315,24 @@ app.get("/api/admin/users", async (_req, res) => {
   try {
     const pool = getPool();
 
-    // Get all users combined
-    const [students] = await pool.query(
-      "SELECT student_id as id, name, email, 'Student' as role, 'Active' as status FROM students LIMIT 10"
-    );
-    const [instructors] = await pool.query(
-      "SELECT instructor_id as id, name, email, 'Instructor' as role, 'Active' as status FROM instructors LIMIT 10"
+    const userQueries = Object.values(USER_ROLE_CONFIG).map((config) =>
+      pool.query(
+        `SELECT ${config.idColumn} as id, name, email, phone_number as phoneNumber,
+                ? as role, account_status as accountStatus, created_at as createdAt
+         FROM ${config.table}
+         ORDER BY created_at DESC`,
+        [config.displayRole]
+      )
     );
 
-    const allUsers = [...students, ...instructors];
+    const userResults = await Promise.all(userQueries);
+    const allUsers = userResults
+      .flatMap(([rows]) => rows)
+      .map((user) => ({
+        ...user,
+        status: formatAccountStatus(user.accountStatus),
+      }))
+      .sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
 
     return res.status(200).json({
       success: true,
@@ -246,6 +342,193 @@ app.get("/api/admin/users", async (_req, res) => {
     return res.status(500).json({
       success: false,
       message: "Could not fetch users.",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/admin/users", async (req, res) => {
+  try {
+    const validation = validateAccountPayload(req.body || {});
+
+    if (validation.error) {
+      return res.status(422).json({
+        success: false,
+        message: validation.error,
+      });
+    }
+
+    const { fullName, email, phone, password, role } = validation.value;
+    const config = getManageableUserConfig(role);
+    const pool = getPool();
+
+    const [existingRows] = await pool.query(
+      `SELECT ${config.idColumn} FROM ${config.table} WHERE email = ? OR phone_number = ? LIMIT 1`,
+      [email, phone]
+    );
+
+    if (existingRows.length > 0) {
+      return res.status(409).json({
+        success: false,
+        message: `A ${config.displayRole.toLowerCase()} account with this email or phone already exists.`,
+      });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 10);
+
+    const [result] = await pool.query(
+      `INSERT INTO ${config.table} (name, email, phone_number, password_hash, account_status)
+       VALUES (?, ?, ?, ?, 'active')`,
+      [fullName, email, phone, passwordHash]
+    );
+
+    await logAdminActivity(pool, {
+      action: "created_account",
+      targetType: role,
+      targetId: result.insertId,
+      targetLabel: fullName,
+      details: { role: config.displayRole, email },
+    });
+
+    return res.status(201).json({
+      success: true,
+      message: `${config.displayRole} account created successfully.`,
+      data: {
+        id: result.insertId,
+        name: fullName,
+        email,
+        phoneNumber: phone,
+        role: config.displayRole,
+        status: "Active",
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not create user account.",
+      error: error.message,
+    });
+  }
+});
+
+app.patch("/api/admin/users/:role/:id/status", async (req, res) => {
+  try {
+    const { role, id } = req.params;
+    const requestedStatus = String(req.body?.status || "").trim().toLowerCase();
+    const nextStatus = requestedStatus === "frozen" ? "frozen" : "active";
+    const config = getManageableUserConfig(role);
+
+    if (!config) {
+      return res.status(422).json({
+        success: false,
+        message: "Only student and instructor accounts can be frozen or unfrozen.",
+      });
+    }
+
+    const pool = getPool();
+    const [accountRows] = await pool.query(
+      `SELECT name, email FROM ${config.table} WHERE ${config.idColumn} = ? LIMIT 1`,
+      [id]
+    );
+
+    if (accountRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found.",
+      });
+    }
+
+    const [result] = await pool.query(
+      `UPDATE ${config.table} SET account_status = ? WHERE ${config.idColumn} = ?`,
+      [nextStatus, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found.",
+      });
+    }
+
+    await logAdminActivity(pool, {
+      action: nextStatus === "frozen" ? "froze_account" : "unfroze_account",
+      targetType: role,
+      targetId: Number(id),
+      targetLabel: accountRows[0].name,
+      details: { email: accountRows[0].email, role: config.displayRole },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${config.displayRole} account ${nextStatus === "frozen" ? "frozen" : "unfrozen"} successfully.`,
+      data: {
+        id: Number(id),
+        role: config.displayRole,
+        status: formatAccountStatus(nextStatus),
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not update account status.",
+      error: error.message,
+    });
+  }
+});
+
+app.delete("/api/admin/users/:role/:id", async (req, res) => {
+  try {
+    const { role, id } = req.params;
+    const config = getManageableUserConfig(role);
+
+    if (!config) {
+      return res.status(422).json({
+        success: false,
+        message: "Only student and instructor accounts can be deleted here.",
+      });
+    }
+
+    const pool = getPool();
+    const [accountRows] = await pool.query(
+      `SELECT name, email FROM ${config.table} WHERE ${config.idColumn} = ? LIMIT 1`,
+      [id]
+    );
+
+    if (accountRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found.",
+      });
+    }
+
+    const [result] = await pool.query(
+      `DELETE FROM ${config.table} WHERE ${config.idColumn} = ?`,
+      [id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "User account not found.",
+      });
+    }
+
+    await logAdminActivity(pool, {
+      action: "deleted_account",
+      targetType: role,
+      targetId: Number(id),
+      targetLabel: accountRows[0].name,
+      details: { email: accountRows[0].email, role: config.displayRole },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `${config.displayRole} account deleted successfully.`,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not delete user account.",
       error: error.message,
     });
   }
@@ -277,7 +560,10 @@ app.get("/api/admin/reports", async (_req, res) => {
     const pool = getPool();
 
     const [reports] = await pool.query(
-      "SELECT report_id as id, title, status, priority, value, created_at FROM reports ORDER BY created_at DESC"
+      `SELECT report_id as id, title, description, category, reporter_name as reporterName,
+              reporter_email as reporterEmail, status, priority, value, admin_note as adminNote,
+              created_at as createdAt, updated_at as updatedAt
+       FROM reports ORDER BY created_at DESC`
     );
 
     return res.status(200).json({
@@ -293,15 +579,119 @@ app.get("/api/admin/reports", async (_req, res) => {
   }
 });
 
+app.post("/api/reports", async (req, res) => {
+  try {
+    const cleanTitle = String(req.body?.title || "").trim();
+    const cleanDescription = String(req.body?.description || "").trim();
+    const cleanCategory = String(req.body?.category || "bug").trim().toLowerCase();
+    const cleanPriority = String(req.body?.priority || "medium").trim().toLowerCase();
+    const cleanReporterName = String(req.body?.reporterName || "").trim();
+    const cleanReporterEmail = String(req.body?.reporterEmail || "").trim().toLowerCase();
+
+    if (!cleanTitle || !cleanDescription) {
+      return res.status(422).json({
+        success: false,
+        message: "Report title and description are required.",
+      });
+    }
+
+    if (!["complaint", "bug", "content"].includes(cleanCategory)) {
+      return res.status(422).json({
+        success: false,
+        message: "Report category must be complaint, bug, or content.",
+      });
+    }
+
+    const pool = getPool();
+    const [result] = await pool.query(
+      `
+      INSERT INTO reports (title, description, category, reporter_name, reporter_email, status, priority, value)
+      VALUES (?, ?, ?, ?, ?, 'open', ?, ?)
+      `,
+      [
+        cleanTitle,
+        cleanDescription,
+        cleanCategory,
+        cleanReporterName || null,
+        cleanReporterEmail || null,
+        cleanPriority,
+        cleanCategory,
+      ]
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: "Report submitted successfully.",
+      data: { id: result.insertId },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not submit report.",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/admin/activity-logs", async (_req, res) => {
+  try {
+    const pool = getPool();
+    const [logs] = await pool.query(
+      `SELECT log_id as id, action, target_type as targetType, target_id as targetId,
+              target_label as targetLabel, details, created_at as createdAt
+       FROM admin_activity_logs ORDER BY created_at DESC LIMIT 30`
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: logs.map((log) => ({
+        ...log,
+        details: (() => {
+          try {
+            return log.details ? JSON.parse(log.details) : null;
+          } catch {
+            return null;
+          }
+        })(),
+      })),
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not fetch activity logs.",
+      error: error.message,
+    });
+  }
+});
+
 app.post("/api/admin/content/:id/approve", async (req, res) => {
   try {
     const { id } = req.params;
     const pool = getPool();
+    const [contentRows] = await pool.query(
+      "SELECT title, type FROM content_submissions WHERE submission_id = ? LIMIT 1",
+      [id]
+    );
 
-    await pool.query(
+    const [result] = await pool.query(
       "UPDATE content_submissions SET status = 'approved' WHERE submission_id = ?",
       [id]
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Content submission not found.",
+      });
+    }
+
+    await logAdminActivity(pool, {
+      action: "approved_content",
+      targetType: "content",
+      targetId: Number(id),
+      targetLabel: contentRows[0]?.title || `Submission #${id}`,
+      details: { type: contentRows[0]?.type || null },
+    });
 
     return res.status(200).json({
       success: true,
@@ -320,11 +710,30 @@ app.post("/api/admin/content/:id/deny", async (req, res) => {
   try {
     const { id } = req.params;
     const pool = getPool();
+    const [contentRows] = await pool.query(
+      "SELECT title, type FROM content_submissions WHERE submission_id = ? LIMIT 1",
+      [id]
+    );
 
-    await pool.query(
+    const [result] = await pool.query(
       "UPDATE content_submissions SET status = 'denied' WHERE submission_id = ?",
       [id]
     );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Content submission not found.",
+      });
+    }
+
+    await logAdminActivity(pool, {
+      action: "denied_content",
+      targetType: "content",
+      targetId: Number(id),
+      targetLabel: contentRows[0]?.title || `Submission #${id}`,
+      details: { type: contentRows[0]?.type || null },
+    });
 
     return res.status(200).json({
       success: true,
@@ -342,12 +751,32 @@ app.post("/api/admin/content/:id/deny", async (req, res) => {
 app.post("/api/admin/reports/:id/resolve", async (req, res) => {
   try {
     const { id } = req.params;
+    const adminNote = String(req.body?.note || "").trim();
     const pool = getPool();
-
-    await pool.query(
-      "UPDATE reports SET status = 'completed' WHERE report_id = ?",
+    const [reportRows] = await pool.query(
+      "SELECT title, category FROM reports WHERE report_id = ? LIMIT 1",
       [id]
     );
+
+    const [result] = await pool.query(
+      "UPDATE reports SET status = 'completed', admin_note = NULLIF(?, '') WHERE report_id = ?",
+      [adminNote, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found.",
+      });
+    }
+
+    await logAdminActivity(pool, {
+      action: "resolved_report",
+      targetType: "report",
+      targetId: Number(id),
+      targetLabel: reportRows[0]?.title || `Report #${id}`,
+      details: { category: reportRows[0]?.category || null, note: adminNote || null },
+    });
 
     return res.status(200).json({
       success: true,
@@ -365,12 +794,32 @@ app.post("/api/admin/reports/:id/resolve", async (req, res) => {
 app.post("/api/admin/reports/:id/deny", async (req, res) => {
   try {
     const { id } = req.params;
+    const adminNote = String(req.body?.note || "").trim();
     const pool = getPool();
-
-    await pool.query(
-      "UPDATE reports SET status = 'denied' WHERE report_id = ?",
+    const [reportRows] = await pool.query(
+      "SELECT title, category FROM reports WHERE report_id = ? LIMIT 1",
       [id]
     );
+
+    const [result] = await pool.query(
+      "UPDATE reports SET status = 'denied', admin_note = NULLIF(?, '') WHERE report_id = ?",
+      [adminNote, id]
+    );
+
+    if (result.affectedRows === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Report not found.",
+      });
+    }
+
+    await logAdminActivity(pool, {
+      action: "dismissed_report",
+      targetType: "report",
+      targetId: Number(id),
+      targetLabel: reportRows[0]?.title || `Report #${id}`,
+      details: { category: reportRows[0]?.category || null, note: adminNote || null },
+    });
 
     return res.status(200).json({
       success: true,

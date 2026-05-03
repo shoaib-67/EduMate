@@ -61,6 +61,7 @@ async function ensureRoleTable(pool, tableName, idColumn) {
       email VARCHAR(120) NOT NULL UNIQUE,
       phone_number VARCHAR(25) UNIQUE,
       password_hash VARCHAR(255) NOT NULL,
+      account_status VARCHAR(20) NOT NULL DEFAULT 'active',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
@@ -73,6 +74,12 @@ async function ensureRoleTable(pool, tableName, idColumn) {
     tableName,
     "password_hash",
     "password_hash VARCHAR(255) NOT NULL DEFAULT ''"
+  );
+  await ensureColumn(
+    pool,
+    tableName,
+    "account_status",
+    "account_status VARCHAR(20) NOT NULL DEFAULT 'active'"
   );
   await ensureColumn(
     pool,
@@ -107,11 +114,36 @@ async function ensureReportsTable(pool) {
       \`report_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       \`title\` VARCHAR(255) NOT NULL,
       \`description\` TEXT,
+      \`category\` VARCHAR(50) NOT NULL DEFAULT 'bug',
+      \`reporter_name\` VARCHAR(100),
+      \`reporter_email\` VARCHAR(120),
       \`status\` VARCHAR(50) DEFAULT 'open',
       \`priority\` VARCHAR(50) DEFAULT 'normal',
       \`value\` VARCHAR(100),
+      \`admin_note\` TEXT,
       \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await ensureColumn(pool, "reports", "category", "category VARCHAR(50) NOT NULL DEFAULT 'bug'");
+  await ensureColumn(pool, "reports", "reporter_name", "reporter_name VARCHAR(100) NULL");
+  await ensureColumn(pool, "reports", "reporter_email", "reporter_email VARCHAR(120) NULL");
+  await ensureColumn(pool, "reports", "admin_note", "admin_note TEXT NULL");
+}
+
+async function ensureAdminActivityLogsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`admin_activity_logs\` (
+      \`log_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`action\` VARCHAR(80) NOT NULL,
+      \`target_type\` VARCHAR(50) NOT NULL,
+      \`target_id\` INT UNSIGNED,
+      \`target_label\` VARCHAR(255),
+      \`details\` TEXT,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX \`idx_created\` (\`created_at\`),
+      INDEX \`idx_target\` (\`target_type\`, \`target_id\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 }
@@ -211,6 +243,7 @@ async function ensureSchema() {
   
   await ensureContentSubmissionsTable(pool);
   await ensureReportsTable(pool);
+  await ensureAdminActivityLogsTable(pool);
   await ensureStudentPerformanceTable(pool);
   await ensureDiscussionsTable(pool);
   await ensureDiscussionRepliesTable(pool);
@@ -285,21 +318,100 @@ async function seedDemoContentAndReports() {
 
   // Seed reports
   const reportsList = [
-    { title: "Login spike review", status: "completed", priority: "high", value: "18k logins" },
-    { title: "Content approval delay", status: "open", priority: "high", value: "3 pending" },
-    { title: "System warning alert", status: "open", priority: "high", value: "2 issues" },
+    {
+      title: "Student cannot access mock test",
+      description: "A student reported that the mock test page opens but the start button does not respond.",
+      category: "bug",
+      reporterName: "Demo Student",
+      reporterEmail: "demo@edumate.com",
+      status: "open",
+      priority: "high",
+      value: "Mock test",
+    },
+    {
+      title: "Incorrect content in chemistry worksheet",
+      description: "A content issue was reported for an instructor worksheet with mismatched answer options.",
+      category: "content",
+      reporterName: "Demo Instructor",
+      reporterEmail: "instructor@edumate.com",
+      status: "open",
+      priority: "medium",
+      value: "Worksheet",
+    },
+    {
+      title: "Account freeze request",
+      description: "A user complaint was submitted about suspicious activity from a shared account.",
+      category: "complaint",
+      reporterName: "Support Desk",
+      reporterEmail: "support@edumate.com",
+      status: "completed",
+      priority: "high",
+      value: "Account",
+    },
   ];
 
+  await pool.query(
+    `
+    DELETE old_reports FROM \`reports\` old_reports
+    JOIN \`reports\` newer_reports
+      ON old_reports.title = newer_reports.title
+     AND old_reports.report_id < newer_reports.report_id
+    WHERE old_reports.title IN (?, ?, ?, ?, ?, ?)
+    `,
+    [
+      "Login spike review",
+      "Content approval delay",
+      "System warning alert",
+      "Student cannot access mock test",
+      "Incorrect content in chemistry worksheet",
+      "Account freeze request",
+    ]
+  );
+
   for (const report of reportsList) {
-    await pool.query(
-      `
-      INSERT INTO \`reports\` (title, status, priority, value)
-      VALUES (?, ?, ?, ?)
-      ON DUPLICATE KEY UPDATE
-        title = VALUES(title)
-      `,
-      [report.title, report.status, report.priority, report.value]
+    const [existingReports] = await pool.query(
+      "SELECT report_id FROM `reports` WHERE title = ? LIMIT 1",
+      [report.title]
     );
+
+    if (existingReports.length > 0) {
+      await pool.query(
+        `
+        UPDATE \`reports\`
+        SET description = ?, category = ?, reporter_name = ?, reporter_email = ?,
+            status = ?, priority = ?, value = ?
+        WHERE report_id = ?
+        `,
+        [
+          report.description,
+          report.category,
+          report.reporterName,
+          report.reporterEmail,
+          report.status,
+          report.priority,
+          report.value,
+          existingReports[0].report_id,
+        ]
+      );
+    } else {
+      await pool.query(
+        `
+        INSERT INTO \`reports\`
+          (title, description, category, reporter_name, reporter_email, status, priority, value)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          report.title,
+          report.description,
+          report.category,
+          report.reporterName,
+          report.reporterEmail,
+          report.status,
+          report.priority,
+          report.value,
+        ]
+      );
+    }
   }
 
   // Seed student performance data

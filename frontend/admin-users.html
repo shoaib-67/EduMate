@@ -37,7 +37,7 @@
         <div class="topbar">
           <span class="topbar-title">User Management</span>
           <div class="topbar-right">
-            <a class="avatar logout-btn" href="admin-login.html" aria-label="Logout">Logout</a>
+            <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
           </div>
         </div>
 
@@ -49,10 +49,45 @@
 
           <section class="panel" id="users">
             <div class="panel-header">
-              <h2>Manage users</h2>
-              <button class="btn btn-small" id="refreshUsers">Refresh</button>
+              <div class="panel-title-group">
+                <h2>Manage users</h2>
+                <p>Add student and instructor accounts, freeze access, or remove accounts.</p>
+              </div>
+              <div class="panel-actions">
+                <button class="btn btn-small" id="toggleAddUserForm" type="button">Add account</button>
+              </div>
             </div>
-            <p>Review active users and account status.</p>
+            <form class="admin-user-form is-hidden" id="addUserForm">
+              <div class="form-grid">
+                <label>
+                  <span>Name</span>
+                  <input type="text" name="fullName" placeholder="Full name" required />
+                </label>
+                <label>
+                  <span>Email</span>
+                  <input type="email" name="email" placeholder="name@example.com" required />
+                </label>
+                <label>
+                  <span>Phone</span>
+                  <input type="tel" name="phone" placeholder="+880..." />
+                </label>
+                <label>
+                  <span>Role</span>
+                  <select name="role" required>
+                    <option value="student">Student</option>
+                    <option value="instructor">Instructor</option>
+                  </select>
+                </label>
+                <label>
+                  <span>Password</span>
+                  <input type="password" name="password" placeholder="At least 8 characters" required minlength="8" />
+                </label>
+              </div>
+              <div class="form-actions">
+                <p id="userFormMessage" class="form-message" aria-live="polite"></p>
+                <button class="btn btn-small" type="submit" id="addUserButton">Create account</button>
+              </div>
+            </form>
             <div class="panel-tools">
               <input type="search" id="userSearch" class="filter-input" placeholder="Search users by name or email" />
               <select id="userRoleFilter" class="filter-select">
@@ -66,6 +101,7 @@
                 <option value="Active">Active</option>
                 <option value="Pending">Pending</option>
                 <option value="Inactive">Inactive</option>
+                <option value="Frozen">Frozen</option>
               </select>
             </div>
             <div class="table-wrap">

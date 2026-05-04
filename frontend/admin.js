@@ -1,4 +1,20 @@
-const API_BASE_URL = "http://localhost:5000/api";
+const {
+  API_BASE_URL,
+  getStoredUser,
+  requireRole,
+  setupLogoutHandlers: setupSharedLogoutHandlers,
+  escapeHTML,
+} = window.EduMateShared;
+
+const isAdminUser = (user) => String(user?.role || "").toLowerCase() === "admin";
+
+const requireAdminAccess = () => {
+  return Boolean(requireRole("admin", { redirectTo: "admin-login.html" }));
+};
+
+const setupLogoutHandlers = () => {
+  setupSharedLogoutHandlers();
+};
 
 let users = [];
 let pendingContent = [];
@@ -10,14 +26,6 @@ const filters = {
   reports: { query: "", status: "open", priority: "all", category: "all" },
 };
 const MANAGEABLE_ROLES = new Set(["Student", "Instructor"]);
-
-const escapeHTML = (value) =>
-  String(value ?? "")
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;")
-    .replace(/'/g, "&#039;");
 
 const roleToApiParam = (role) => String(role || "").trim().toLowerCase();
 
@@ -55,6 +63,210 @@ const showToast = (message, type = "info") => {
     setTimeout(() => toast.remove(), 220);
   }, 3200);
 };
+
+const REPORT_ACTIONS = {
+  resolve: {
+    label: "Resolve report",
+    actionLabel: "Resolve",
+    busyLabel: "Resolving...",
+    endpoint: "resolve",
+    successMessage: "Report resolved.",
+  },
+  deny: {
+    label: "Dismiss report",
+    actionLabel: "Dismiss",
+    busyLabel: "Dismissing...",
+    endpoint: "deny",
+    successMessage: "Report dismissed.",
+  },
+};
+
+let reportNoteState = {
+  id: null,
+  action: null,
+  trigger: null,
+};
+
+function createReportNoteModal() {
+  const existing = document.getElementById("reportNoteModal");
+  if (existing) return;
+
+  const modal = document.createElement("div");
+  modal.id = "reportNoteModal";
+  modal.className = "user-modal";
+
+  modal.innerHTML = `
+    <div class="user-modal-dialog">
+      <div class="user-modal-header">
+        <h2 id="reportNoteTitle">Resolve report</h2>
+        <button class="modal-close-btn" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div class="user-modal-content">
+        <p id="reportNoteSummary" class="modal-summary">Add a note for this action.</p>
+        <label class="modal-field">
+          <span>Admin note (optional)</span>
+          <textarea id="reportNoteInput" rows="4" placeholder="Add context for the report owner..."></textarea>
+        </label>
+      </div>
+      <div class="user-modal-footer">
+        <button class="btn btn-small btn-secondary" type="button" id="reportNoteCancel">Cancel</button>
+        <button class="btn btn-small" type="button" id="reportNoteConfirm">Resolve report</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const closeModal = () => {
+    modal.style.display = "none";
+    modal.classList.remove("is-open");
+    reportNoteState = { id: null, action: null, trigger: null };
+  };
+
+  modal.querySelector(".modal-close-btn")?.addEventListener("click", closeModal);
+  modal.querySelector("#reportNoteCancel")?.addEventListener("click", closeModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeModal();
+  });
+
+  modal.querySelector("#reportNoteConfirm")?.addEventListener("click", async () => {
+    const { id, action, trigger } = reportNoteState;
+    if (!id || !action) return;
+    const config = REPORT_ACTIONS[action] || REPORT_ACTIONS.resolve;
+    const noteInput = document.getElementById("reportNoteInput");
+    const note = String(noteInput?.value || "").trim();
+    const confirmButton = document.getElementById("reportNoteConfirm");
+
+    if (confirmButton) {
+      confirmButton.disabled = true;
+      confirmButton.textContent = config.busyLabel;
+    }
+    if (trigger) {
+      trigger.disabled = true;
+      trigger.textContent = config.busyLabel;
+    }
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/admin/reports/${id}/${config.endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ note }),
+      });
+      const payload = await response.json();
+
+      if (!response.ok || !payload.success) {
+        showToast(payload.message || "Failed to update report.", "error");
+        return;
+      }
+
+      closeModal();
+      await loadReports();
+      await updateStats();
+      await loadActivityLogs();
+      showToast(payload.message || config.successMessage, "success");
+    } catch (error) {
+      showToast("Failed to update report: " + error.message, "error");
+    } finally {
+      if (confirmButton) {
+        confirmButton.disabled = false;
+        confirmButton.textContent = config.label;
+      }
+      if (trigger) {
+        trigger.disabled = false;
+        trigger.textContent = config.actionLabel;
+      }
+    }
+  });
+}
+
+function openReportNoteModal({ id, action, title, trigger }) {
+  const modal = document.getElementById("reportNoteModal");
+  if (!modal) return;
+  const config = REPORT_ACTIONS[action] || REPORT_ACTIONS.resolve;
+  const summary = document.getElementById("reportNoteSummary");
+  const titleElement = document.getElementById("reportNoteTitle");
+  const confirmButton = document.getElementById("reportNoteConfirm");
+  const noteInput = document.getElementById("reportNoteInput");
+
+  if (titleElement) titleElement.textContent = config.label;
+  if (confirmButton) confirmButton.textContent = config.label;
+  if (summary) {
+    summary.textContent = title
+      ? `${config.label} for "${title}".`
+      : `${config.label} for the selected report.`;
+  }
+  if (noteInput) noteInput.value = "";
+
+  reportNoteState = { id, action, trigger };
+  modal.style.display = "flex";
+  modal.classList.add("is-open");
+  noteInput?.focus();
+}
+
+function createContentModal() {
+  const existing = document.getElementById("contentDetailModal");
+  if (existing) return;
+
+  const modal = document.createElement("div");
+  modal.id = "contentDetailModal";
+  modal.className = "user-modal";
+
+  modal.innerHTML = `
+    <div class="user-modal-dialog">
+      <div class="user-modal-header">
+        <h2>Content details</h2>
+        <button class="modal-close-btn" type="button" aria-label="Close">&times;</button>
+      </div>
+      <div id="contentDetailBody" class="user-modal-content"></div>
+      <div class="user-modal-footer">
+        <button class="btn btn-small btn-secondary" type="button" id="contentDetailClose">Close</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(modal);
+
+  const closeModal = () => {
+    modal.style.display = "none";
+    modal.classList.remove("is-open");
+  };
+
+  modal.querySelector(".modal-close-btn")?.addEventListener("click", closeModal);
+  modal.querySelector("#contentDetailClose")?.addEventListener("click", closeModal);
+  modal.addEventListener("click", (event) => {
+    if (event.target === modal) closeModal();
+  });
+}
+
+function showContentDetail(item) {
+  const modal = document.getElementById("contentDetailModal");
+  const body = document.getElementById("contentDetailBody");
+  if (!modal || !body) return;
+
+  const createdAt = item?.created_at ? new Date(item.created_at).toLocaleString() : "Unknown";
+  const status = item?.status ? String(item.status).toUpperCase() : "PENDING";
+
+  body.innerHTML = `
+    <div class="modal-grid">
+      <div class="modal-block">
+        <p class="modal-label">Title</p>
+        <p class="modal-value">${escapeHTML(item?.title || "Untitled")}</p>
+      </div>
+      <div class="modal-block">
+        <p class="modal-label">Type</p>
+        <p class="modal-value">${escapeHTML(item?.type || "Unknown")}</p>
+      </div>
+      <div class="modal-block">
+        <p class="modal-label">Status</p>
+        <p class="modal-value">${escapeHTML(status)}</p>
+      </div>
+    </div>
+    <p class="modal-meta">Submitted: ${escapeHTML(createdAt)}</p>
+  `;
+
+  modal.style.display = "flex";
+  modal.classList.add("is-open");
+}
 
 // Create modal for user details
 function createUserModal() {
@@ -346,12 +558,21 @@ const renderContent = () => {
           <p>${item.type} submission awaiting review</p>
         </div>
         <div class="content-item-actions">
+          <button class="btn btn-small btn-quiet content-view-btn" data-id="${item.id}">Details</button>
           <button class="btn btn-small btn-approve approve-btn" data-id="${item.id}">Approve</button>
           <button class="btn btn-small btn-muted deny-btn" data-id="${item.id}">Deny</button>
         </div>
       </li>`
     )
     .join("");
+
+  contentList?.querySelectorAll(".content-view-btn").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const id = btn.getAttribute("data-id");
+      const item = pendingContent.find((entry) => String(entry.id) === String(id));
+      if (item) showContentDetail(item);
+    });
+  });
   
   // Add event listeners for approve buttons
   contentList?.querySelectorAll(".approve-btn").forEach((btn) => {
@@ -484,63 +705,21 @@ const renderReports = () => {
   
   // Add event listeners for resolve buttons
   reportCards?.querySelectorAll(".report-resolve-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
+    btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const id = btn.getAttribute("data-id");
-      btn.textContent = "Resolving...";
-      btn.disabled = true;
-      try {
-        const response = await fetch(`${API_BASE_URL}/admin/reports/${id}/resolve`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        const payload = await response.json();
-        if (response.ok && payload.success) {
-          await loadReports();
-          await updateStats();
-          await loadActivityLogs();
-          showToast(payload.message || "Report resolved.", "success");
-        } else {
-          showToast(payload.message || "Failed to resolve report.", "error");
-          btn.textContent = "Resolve";
-          btn.disabled = false;
-        }
-      } catch (_error) {
-        showToast("Failed to resolve report: " + _error.message, "error");
-        btn.textContent = "Resolve";
-        btn.disabled = false;
-      }
+      const report = reports.find((entry) => String(entry.id) === String(id));
+      openReportNoteModal({ id, action: "resolve", title: report?.title, trigger: btn });
     });
   });
   
   // Add event listeners for deny buttons
   reportCards?.querySelectorAll(".report-deny-btn").forEach((btn) => {
-    btn.addEventListener("click", async (e) => {
+    btn.addEventListener("click", (e) => {
       e.stopPropagation();
       const id = btn.getAttribute("data-id");
-      btn.textContent = "Dismissing...";
-      btn.disabled = true;
-      try {
-        const response = await fetch(`${API_BASE_URL}/admin/reports/${id}/deny`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-        });
-        const payload = await response.json();
-        if (response.ok && payload.success) {
-          await loadReports();
-          await updateStats();
-          await loadActivityLogs();
-          showToast(payload.message || "Report dismissed.", "success");
-        } else {
-          showToast(payload.message || "Failed to dismiss report.", "error");
-          btn.textContent = "Dismiss";
-          btn.disabled = false;
-        }
-      } catch (_error) {
-        showToast("Failed to dismiss report: " + _error.message, "error");
-        btn.textContent = "Dismiss";
-        btn.disabled = false;
-      }
+      const report = reports.find((entry) => String(entry.id) === String(id));
+      openReportNoteModal({ id, action: "deny", title: report?.title, trigger: btn });
     });
   });
 };
@@ -893,6 +1072,8 @@ const setupFilters = () => {
 
 // Load all data on page load
 async function initAdminDashboard() {
+  if (!requireAdminAccess()) return;
+
   // Get element references after DOM is ready
   const userTableBody = document.getElementById("userTableBody");
   const contentList = document.getElementById("contentList");
@@ -930,7 +1111,10 @@ async function initAdminDashboard() {
     setActiveAdminNav(currentPageLink);
   }
   
+  setupLogoutHandlers();
   createUserModal();
+  createReportNoteModal();
+  createContentModal();
   
   // Add update indicator
   const addUpdateIndicator = () => {

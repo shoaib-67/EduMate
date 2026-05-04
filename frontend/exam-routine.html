@@ -70,93 +70,103 @@
 
         <div class="content">
           <div class="page-header">
-            <h1>Upcoming routine</h1>
-            <p>Plan your week and stay ready for each test.</p>
+            <h1>Exam routine</h1>
+            <p>Track every scheduled exam, get reminders, and join right when the window opens.</p>
           </div>
+
+          <section class="routine-hero" aria-label="Exam routine overview">
+            <div class="routine-hero-main">
+              <p class="routine-kicker">Stay ready</p>
+              <h2 id="heroHeadline">Your next exam is being prepared</h2>
+              <p id="heroCopy">Keep an eye on the join window, read the instructions, and walk in feeling calm.</p>
+              <div class="routine-hero-pills">
+                <span class="routine-hero-pill" id="heroBatchPill">Batch loading...</span>
+                <span class="routine-hero-pill" id="heroStatusPill">Routine syncing</span>
+              </div>
+            </div>
+            <div class="routine-hero-side">
+              <div class="hero-focus-card">
+                <strong>Best move now</strong>
+                <span id="heroTip">Check the nearest exam and review its instructions before the window opens.</span>
+              </div>
+              <div class="hero-focus-card">
+                <strong>Quick reminder</strong>
+                <span>Join becomes active shortly before start time and stays open while the exam is ongoing.</span>
+              </div>
+            </div>
+          </section>
 
           <div class="stat-row">
             <div class="stat-card highlight">
               <p class="s-label">Next Exam</p>
-              <p class="s-val">Physics Mock</p>
-              <p class="s-sub">Saturday 9:00 AM</p>
+              <p class="s-val" id="nextExamTitle">No exam</p>
+              <p class="s-sub" id="nextExamMeta">No active schedule yet</p>
+            </div>
+            <div class="stat-card">
+              <p class="s-label">Countdown</p>
+              <p class="s-val" id="examCountdown">--:--:--</p>
+              <p class="s-sub" id="countdownLabel">Waiting for the next exam</p>
             </div>
             <div class="stat-card">
               <p class="s-label">This Week</p>
-              <p class="s-val">3 Exams</p>
-              <p class="s-sub">2 mocks, 1 interview prep</p>
+              <p class="s-val" id="weeklyExamCount">0 Exams</p>
+              <p class="s-sub" id="weeklyExamBreakdown">No exam due this week</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">Focus Area</p>
-              <p class="s-val">Chemistry</p>
-              <p class="s-sub">2 topics to revise</p>
-            </div>
-            <div class="stat-card">
-              <p class="s-label">Prep Hours</p>
-              <p class="s-val">6h</p>
-              <p class="s-sub">Goal: 8h</p>
+              <p class="s-label">Notifications</p>
+              <p class="s-val" id="reminderCount">0</p>
+              <p class="s-sub">Unread exam alerts</p>
             </div>
           </div>
 
-          <div class="panel-grid">
-            <section class="panel">
-              <h2>Upcoming schedule</h2>
-              <p>All scheduled tests and prep sessions.</p>
-              <div class="list">
-                <div class="list-item">
-                  <div>
-                    <h4>Physics Mock Test</h4>
-                    <span>Sat, 9:00 AM - 100 questions</span>
-                  </div>
-                  <span class="chip">High</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Chemistry Drill</h4>
-                    <span>Mon, 7:30 PM - 40 questions</span>
-                  </div>
-                  <span class="chip amber">Medium</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Admission Interview Prep</h4>
-                    <span>Wed, 5:00 PM - 20 prompts</span>
-                  </div>
-                  <span class="chip blue">Upcoming</span>
+          <div class="routine-toolbar">
+            <div class="view-toggle" role="tablist" aria-label="Routine views">
+              <button class="view-toggle-btn active" id="calendarViewBtn" type="button">Calendar</button>
+              <button class="view-toggle-btn" id="listViewBtn" type="button">List</button>
+            </div>
+            <div class="student-batch-badge" id="studentBatchBadge">Batch loading...</div>
+          </div>
+
+          <div class="panel-grid routine-layout">
+            <section class="panel panel-full view-panel" id="calendarView">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Calendar view</h2>
+                  <p>Color shows whether the exam is upcoming, ongoing, or missed/completed.</p>
                 </div>
               </div>
+              <div class="calendar-legend" aria-label="Routine legend">
+                <span><i class="legend-dot status-upcoming"></i>Upcoming</span>
+                <span><i class="legend-dot status-ongoing"></i>Ongoing</span>
+                <span><i class="legend-dot status-completed"></i>Completed</span>
+              </div>
+              <div class="calendar-grid" id="calendarGrid"></div>
+            </section>
+
+            <section class="panel panel-full view-panel is-hidden" id="listView">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>List view</h2>
+                  <p>Join is unlocked during the 10 to 15 minute entry window and while the exam is ongoing.</p>
+                </div>
+              </div>
+              <div class="routine-list" id="examRoutineList"></div>
             </section>
 
             <section class="panel">
-              <h2>Revision focus</h2>
-              <p>Suggested topics to revise this week.</p>
-              <div class="list">
-                <div class="list-item">
-                  <div>
-                    <h4>Acids and salts</h4>
-                    <span>Complete 2 practice sheets</span>
-                  </div>
-                  <span class="chip">Priority</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Motion and vectors</h4>
-                    <span>Review formulas and speed drills</span>
-                  </div>
-                  <span class="chip">Core</span>
-                </div>
-                <div class="list-item">
-                  <div>
-                    <h4>Algebra recap</h4>
-                    <span>30 minutes daily practice</span>
-                  </div>
-                  <span class="chip">Routine</span>
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Reminders</h2>
+                  <p>Latest in-app alerts from the scheduler.</p>
                 </div>
               </div>
+              <div class="list" id="notificationList"></div>
             </section>
           </div>
         </div>
       </div>
     </div>
+    <script src="shared.js"></script>
     <script src="exam-routine.js"></script>
   </body>
 </html>

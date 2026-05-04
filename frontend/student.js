@@ -1,6 +1,4 @@
-// Student dashboard page script.
-
-const API_BASE_URL = "http://localhost:5000/api";
+const { API_BASE_URL, getStoredUser, getStudentId, escapeHTML, requireRole, setupLogoutHandlers } = window.EduMateShared;
 
 function toDisplayPercent(value) {
   const num = Number(value);
@@ -8,91 +6,77 @@ function toDisplayPercent(value) {
   return Number.isInteger(num) ? String(num) : num.toFixed(1);
 }
 
-// Get student ID from localStorage
-function getStudentId() {
-  const user = JSON.parse(localStorage.getItem("edumateCurrentUser") || localStorage.getItem("user") || "{}");
-  return user.id;
+function formatDateTime(value) {
+  return new Date(value).toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
 }
 
-// Update page header with student name
 function updatePageHeader() {
-  const user = JSON.parse(localStorage.getItem("edumateCurrentUser") || localStorage.getItem("user") || "{}");
+  const user = getStoredUser();
   const heading = document.querySelector(".page-header h1");
-  if (heading && user.fullName) {
+  if (heading && user?.fullName) {
     heading.textContent = `Welcome back, ${user.fullName}`;
   }
 }
 
-// Fetch and display dashboard statistics
 async function loadDashboardStats() {
   try {
     const studentId = getStudentId();
-    if (!studentId) {
-      console.error("Student ID not found");
-      return;
-    }
+    if (!studentId) return;
 
     const response = await fetch(`${API_BASE_URL}/student/${studentId}/dashboard`);
     const result = await response.json();
+    if (!result.success || !result.data) return;
 
-    if (result.success && result.data) {
-      const data = result.data;
-      const statCards = document.querySelectorAll(".stat-row .stat-card");
+    const data = result.data;
+    const statCards = document.querySelectorAll(".stat-row .stat-card");
+    if (statCards.length < 4) return;
 
-      if (statCards.length >= 4) {
-        // Update Mock Tests stat
-        const mockTestCard = statCards[0];
-        mockTestCard.innerHTML = `
-          <p class="s-label">Mock Tests</p>
-          <p class="s-val">${Number(data.mockTestsCompleted || 0)} Completed</p>
-          <p class="s-sub">${Number(data.totalTests || 0)} total attempts</p>
-        `;
+    statCards[0].innerHTML = `
+      <p class="s-label">Mock Tests</p>
+      <p class="s-val">${Number(data.mockTestsCompleted || 0)} Completed</p>
+      <p class="s-sub">${Number(data.totalTests || 0)} total attempts</p>
+    `;
 
-        // Update Average Score stat
-        const avgScoreCard = statCards[1];
-        avgScoreCard.innerHTML = `
-          <p class="s-label">Average Score</p>
-          <p class="s-val text-primary">${toDisplayPercent(data.averageScore)}%</p>
-          <p class="s-sub">Best: ${toDisplayPercent(data.bestScore)}%</p>
-        `;
+    statCards[1].innerHTML = `
+      <p class="s-label">Average Score</p>
+      <p class="s-val text-primary">${toDisplayPercent(data.averageScore)}%</p>
+      <p class="s-sub">Best: ${toDisplayPercent(data.bestScore)}%</p>
+    `;
 
-        // Update Accuracy stat
-        const accuracyCard = statCards[2];
-        accuracyCard.innerHTML = `
-          <p class="s-label">Accuracy</p>
-          <p class="s-val">${toDisplayPercent(data.accuracy)}%</p>
-          <p class="s-sub">${Number(data.studyDays || 0)} study days</p>
-        `;
+    statCards[2].innerHTML = `
+      <p class="s-label">Accuracy</p>
+      <p class="s-val">${toDisplayPercent(data.accuracy)}%</p>
+      <p class="s-sub">${Number(data.studyDays || 0)} study days</p>
+    `;
 
-        // Update Last Test stat (always overwrite static placeholder)
-        const lastTestCard = statCards[3];
-        if (data.lastTest) {
-          lastTestCard.innerHTML = `
-            <p class="s-label">Last Test</p>
-            <p class="s-val">${data.lastTest.subject}</p>
-            <p class="s-sub">${data.lastTest.name || "Recent test"}</p>
-          `;
-        } else {
-          lastTestCard.innerHTML = `
-            <p class="s-label">Last Test</p>
-            <p class="s-val">No Data</p>
-            <p class="s-sub">Take a mock test to update this.</p>
-          `;
-        }
-      }
-    }
+    statCards[3].innerHTML = data.lastTest
+      ? `
+        <p class="s-label">Last Test</p>
+        <p class="s-val">${escapeHTML(data.lastTest.subject)}</p>
+        <p class="s-sub">${escapeHTML(data.lastTest.name || "Recent test")}</p>
+      `
+      : `
+        <p class="s-label">Last Test</p>
+        <p class="s-val">No Data</p>
+        <p class="s-sub">Take a mock test to update this.</p>
+      `;
   } catch (error) {
     console.error("Error loading dashboard stats:", error);
   }
 }
 
 function setupUpcomingExamCards() {
-  const upcomingExamCards = document.querySelectorAll(".upcoming-exam-item");
-  upcomingExamCards.forEach((card) => {
+  document.querySelectorAll(".upcoming-exam-item").forEach((card) => {
     const openExam = () => {
-      const mockTestId = card.getAttribute("data-mock-test-id");
-      if (!mockTestId) return;
-      window.location.href = `mock-test.html?openTest=${encodeURIComponent(mockTestId)}`;
+      const examId = card.getAttribute("data-exam-id") || card.getAttribute("data-mock-test-id");
+      if (!examId) return;
+      window.location.href = `exam-routine.html?examId=${encodeURIComponent(examId)}`;
     };
 
     card.style.cursor = "pointer";
@@ -106,6 +90,59 @@ function setupUpcomingExamCards() {
   });
 }
 
+async function loadBellNotifications() {
+  const studentId = getStudentId();
+  if (!studentId) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/student/${studentId}/notifications`);
+    const payload = await response.json();
+    if (!response.ok || !payload.success) return;
+
+    const items = payload.data?.items || [];
+    const unreadCount = Number(payload.data?.unreadCount || 0);
+    const bell = document.querySelector(".notif-btn");
+    const dot = document.querySelector(".notif-dot");
+    if (!bell) return;
+
+    let panel = bell.querySelector(".notif-panel");
+    if (!panel) {
+      panel = document.createElement("div");
+      panel.className = "notif-panel";
+      panel.innerHTML = `<h3>Notifications</h3><div class="notif-panel-list"></div>`;
+      bell.appendChild(panel);
+
+      bell.addEventListener("click", (event) => {
+        event.stopPropagation();
+        panel.classList.toggle("is-open");
+      });
+      document.addEventListener("click", () => panel.classList.remove("is-open"));
+    }
+
+    const list = panel.querySelector(".notif-panel-list");
+    list.innerHTML = items.length
+      ? items
+          .map(
+            (item) => `
+              <div class="list-item">
+                <div>
+                  <h4>${escapeHTML(item.title)}</h4>
+                  <span>${escapeHTML(item.message)}</span>
+                </div>
+              </div>
+            `
+          )
+          .join("")
+      : `<div class="empty-state">No notifications yet.</div>`;
+
+    if (dot) {
+      dot.style.display = unreadCount > 0 ? "block" : "none";
+    }
+  } catch (error) {
+    console.error("Error loading notifications:", error);
+  }
+}
+
 async function loadUpcomingAndInsights() {
   const studentId = getStudentId();
   if (!studentId) return;
@@ -115,80 +152,87 @@ async function loadUpcomingAndInsights() {
   const performanceSnapshotList = document.getElementById("performanceSnapshotList");
 
   try {
-    const [recentTestsRes, subjectsRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/student/${studentId}/performance/recent-tests`),
+    const [routineRes, subjectsRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/student/${studentId}/exams`),
       fetch(`${API_BASE_URL}/student/${studentId}/performance/subjects`),
     ]);
-    const recentTestsPayload = await recentTestsRes.json();
+    const routinePayload = await routineRes.json();
     const subjectsPayload = await subjectsRes.json();
 
-    const recentTests = recentTestsPayload.success ? (recentTestsPayload.data || []) : [];
-    const subjects = subjectsPayload.success ? (subjectsPayload.data || []) : [];
+    const routine = routinePayload.success ? routinePayload.data?.exams || [] : [];
+    const subjects = subjectsPayload.success ? subjectsPayload.data || [] : [];
 
     if (upcomingExamList) {
-      if (recentTests.length > 0) {
-        upcomingExamList.innerHTML = recentTests.slice(0, 3).map((test, index) => `
-          <div class="list-item upcoming-exam-item" data-mock-test-id="${index % 2 === 0 ? 2 : 8}" role="button" tabindex="0">
-            <div>
-              <h4>${test.test_name || `${test.subject} Mock Test`}</h4>
-              <span>${test.subject} · ${test.test_type || "mock"} · Score ${toDisplayPercent(test.score)}%</span>
-            </div>
-            <span class="chip">${index === 0 ? "High" : "Upcoming"}</span>
-          </div>
-        `).join("");
+      const activeExams = routine.filter((exam) => ["upcoming", "ongoing"].includes(String(exam.status || "").toLowerCase()));
+      if (activeExams.length > 0) {
+        upcomingExamList.innerHTML = activeExams
+          .slice(0, 3)
+          .map(
+            (exam) => `
+              <div class="list-item upcoming-exam-item" data-exam-id="${escapeHTML(String(exam.id))}" role="button" tabindex="0" aria-label="Open ${escapeHTML(exam.subject)}">
+                <div>
+                  <h4>${escapeHTML(exam.subject)}</h4>
+                  <span>${escapeHTML(formatDateTime(exam.startTime))} - ${escapeHTML(exam.batchName || "General")}</span>
+                </div>
+                <span class="chip">${escapeHTML(exam.status === "ongoing" ? "Live" : "Upcoming")}</span>
+              </div>
+            `
+          )
+          .join("");
       } else {
         upcomingExamList.innerHTML = `
           <div class="list-item">
-            <div><h4>No upcoming exams</h4><span>Take a mock test to generate recommendations.</span></div>
-            <span class="chip">New</span>
+            <div><h4>No upcoming exams</h4><span>Your routine is clear right now.</span></div>
+            <span class="chip">Free</span>
           </div>
         `;
       }
     }
 
-    if (courseProgressList) {
-      if (subjects.length > 0) {
-        courseProgressList.innerHTML = subjects.slice(0, 3).map((subject) => `
-          <div class="list-item">
-            <div>
-              <h4>${subject.subject} Practice Track</h4>
-              <span>${subject.test_count} tests completed</span>
+    if (courseProgressList && subjects.length > 0) {
+      courseProgressList.innerHTML = subjects
+        .slice(0, 3)
+        .map(
+          (subject) => `
+            <div class="list-item">
+              <div>
+                <h4>${escapeHTML(subject.subject)} Practice Track</h4>
+                <span>${escapeHTML(String(subject.test_count))} tests completed</span>
+              </div>
+              <span class="chip">${escapeHTML(toDisplayPercent(subject.accuracy))}%</span>
             </div>
-            <span class="chip">${toDisplayPercent(subject.accuracy)}%</span>
-          </div>
-        `).join("");
-      }
+          `
+        )
+        .join("");
     }
 
-    if (performanceSnapshotList) {
-      if (subjects.length > 0) {
-        const sorted = [...subjects].sort((a, b) => Number(b.accuracy) - Number(a.accuracy));
-        const top = sorted[0];
-        const weak = sorted[sorted.length - 1];
-        performanceSnapshotList.innerHTML = `
-          <div class="list-item">
-            <div>
-              <h4>Top subject</h4>
-              <span>${top.subject} - ${toDisplayPercent(top.accuracy)}% average</span>
-            </div>
-            <span class="chip">Strong</span>
+    if (performanceSnapshotList && subjects.length > 0) {
+      const sorted = [...subjects].sort((a, b) => Number(b.accuracy) - Number(a.accuracy));
+      const top = sorted[0];
+      const weak = sorted[sorted.length - 1];
+      performanceSnapshotList.innerHTML = `
+        <div class="list-item">
+          <div>
+            <h4>Top subject</h4>
+            <span>${escapeHTML(top.subject)} - ${escapeHTML(toDisplayPercent(top.accuracy))}% average</span>
           </div>
-          <div class="list-item">
-            <div>
-              <h4>Needs focus</h4>
-              <span>${weak.subject} - target +10% improvement</span>
-            </div>
-            <span class="chip amber">Priority</span>
+          <span class="chip">Strong</span>
+        </div>
+        <div class="list-item">
+          <div>
+            <h4>Needs focus</h4>
+            <span>${escapeHTML(weak.subject)} - target +10% improvement</span>
           </div>
-          <div class="list-item">
-            <div>
-              <h4>Recent streak</h4>
-              <span>${recentTests.length} tests recorded in history</span>
-            </div>
-            <span class="chip blue">On track</span>
+          <span class="chip amber">Priority</span>
+        </div>
+        <div class="list-item">
+          <div>
+            <h4>Routine load</h4>
+            <span>${escapeHTML(String(routine.length))} exams assigned in total</span>
           </div>
-        `;
-      }
+          <span class="chip blue">On track</span>
+        </div>
+      `;
     }
   } catch (error) {
     console.error("Error loading dashboard insights:", error);
@@ -197,10 +241,11 @@ async function loadUpcomingAndInsights() {
   }
 }
 
-// Initialize dashboard on page load
 document.addEventListener("DOMContentLoaded", () => {
+  if (!requireRole("student")) return;
+  setupLogoutHandlers();
   updatePageHeader();
   loadDashboardStats();
-  setupUpcomingExamCards();
   loadUpcomingAndInsights();
+  loadBellNotifications();
 });

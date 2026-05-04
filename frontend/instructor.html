@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Instructor Dashboard - EduMate</title>
+    <title>Instructor Workspace - EduMate</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
@@ -26,181 +26,421 @@
 
         <div class="nav-section">
           <p class="nav-label">Instructor</p>
-          <a class="nav-item active" href="#dashboard">
-            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
-            Dashboard
-          </a>
-          <a class="nav-item" href="#materialsSection">
-            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M7 8h10M7 12h10m-7 4h7M5 4h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z"/></svg>
-            Course Materials
-          </a>
-          <a class="nav-item" href="#marksSection">
-            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4V7m3 10H6a2 2 0 01-2-2V5a2 2 0 012-2h12a2 2 0 012 2v10a2 2 0 01-2 2z"/></svg>
-            Student Marks
-          </a>
-          <a class="nav-item" href="#questionsSection">
-            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M8 10h.01M12 10h.01M16 10h.01M9 16h6m-9 5l1.405-3.72A7.967 7.967 0 014 12c0-4.418 3.582-8 8-8s8 3.582 8 8-3.582 8-8 8a7.967 7.967 0 01-3.595-.82L3 20z"/></svg>
-            Exam Questions
-          </a>
+          <a class="nav-item active" href="#overviewSection">Overview</a>
+          <a class="nav-item" href="#coursesSection">Courses</a>
+          <a class="nav-item" href="#examSection">Exams & Mock Tests</a>
+          <a class="nav-item" href="#routineSection">Exam Routine</a>
+          <a class="nav-item" href="#studentsSection">Students</a>
+          <a class="nav-item" href="#resultsSection">Results & Analytics</a>
+          <a class="nav-item" href="#communicationSection">Communication</a>
+          <a class="nav-item" href="#alertsSection">Alerts</a>
         </div>
       </aside>
 
       <div class="main">
         <div class="topbar">
-          <span class="topbar-title" id="dashboard">Instructor Dashboard</span>
+          <span class="topbar-title">Instructor Workspace</span>
           <div class="topbar-right">
+            <span class="topbar-badge" id="workspaceHealthBadge">Syncing workspace</span>
             <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
           </div>
         </div>
 
         <div class="content">
-          <div class="page-header">
-            <h1>Welcome back, Instructor</h1>
-            <p>Manage learning resources, monitor marks, and build exam question sets.</p>
+          <div class="page-header" id="overviewSection">
+            <h1>Instructor command desk</h1>
+            <p>Manage your own courses, exams, students, and notices without touching platform-wide admin controls.</p>
+            <div class="page-actions">
+              <a class="btn btn-primary" href="#examSection">Create exam</a>
+              <a class="btn btn-light" href="#coursesSection">Upload content</a>
+              <a class="btn" href="#communicationSection">Send notice</a>
+            </div>
           </div>
+
+          <div class="workspace-banner" id="workspaceBanner" role="status" aria-live="polite"></div>
+
+          <section class="workspace-band" aria-label="Instructor overview">
+            <div class="workspace-card workspace-card-highlight">
+              <div>
+                <p class="workspace-eyebrow">Today</p>
+                <h2 id="workspaceHeadline">Workspace loading</h2>
+                <p id="workspaceSummary">Pulling the latest courses, exams, and student updates for this instructor.</p>
+              </div>
+              <div class="workspace-meta">
+                <span class="workspace-pill" id="nextExamPill">No exam data yet</span>
+                <span class="workspace-pill" id="attentionPill">No alerts yet</span>
+              </div>
+            </div>
+            <div class="workspace-card workspace-card-side">
+              <h2>Needs attention</h2>
+              <div class="attention-list" id="attentionList"></div>
+            </div>
+          </section>
 
           <div class="stat-row">
             <div class="stat-card highlight">
-              <p class="s-label">Published Materials</p>
-              <p class="s-val" id="materialCount">0</p>
-              <p class="s-sub">Visible to enrolled students</p>
+              <p class="s-label">Active Courses</p>
+              <p class="s-val" id="courseCount">0</p>
+              <p class="s-sub">Owned by this instructor</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">Question Bank</p>
-              <p class="s-val text-primary" id="questionCount">0</p>
-              <p class="s-sub">Ready for mock exams</p>
+              <p class="s-label">Published Exams</p>
+              <p class="s-val text-primary" id="publishedExamCount">0</p>
+              <p class="s-sub">Live for assigned batches</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">Students Evaluated</p>
-              <p class="s-val" id="studentCount">0</p>
-              <p class="s-sub">From active course sections</p>
+              <p class="s-label">Managed Students</p>
+              <p class="s-val" id="managedStudentCount">0</p>
+              <p class="s-sub">Across assigned batches</p>
             </div>
             <div class="stat-card">
-              <p class="s-label">Average Mark</p>
-              <p class="s-val" id="averageMark">0%</p>
-              <p class="s-sub">Across filtered students</p>
+              <p class="s-label">Average Batch Score</p>
+              <p class="s-val" id="batchAverageScore">0%</p>
+              <p class="s-sub">Auto + manual grading combined</p>
             </div>
           </div>
 
-          <div class="panel-grid panel-grid-spaced">
-            <section class="panel" id="materialsSection">
-              <h2>Add Course Material</h2>
-              <p>Create and publish new course resources for students.</p>
+          <div class="panel-grid panel-grid-spaced instructor-grid">
+            <section class="panel" id="coursesSection">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Course & content</h2>
+                  <p>Create subjects, upload resources, write lesson notes, and post assignments.</p>
+                </div>
+                <span class="panel-kicker">Resources</span>
+              </div>
 
-              <form id="materialForm" class="form-grid">
+              <form id="courseForm" class="form-grid">
                 <div class="form-group">
-                  <label for="materialTitle">Title</label>
-                  <input id="materialTitle" name="materialTitle" type="text" placeholder="Physics - Motion Chapter Notes" required />
+                  <label for="courseTitle">Course / Subject</label>
+                  <input id="courseTitle" name="courseTitle" type="text" placeholder="Engineering Physics" required />
                 </div>
                 <div class="form-group">
-                  <label for="materialSubject">Subject</label>
-                  <input id="materialSubject" name="materialSubject" type="text" placeholder="Physics" required />
+                  <label for="courseBatch">Assigned Batch</label>
+                  <input id="courseBatch" name="courseBatch" type="text" placeholder="Engineering A" required />
                 </div>
                 <div class="form-group">
-                  <label for="materialType">Material Type</label>
-                  <select id="materialType" name="materialType" required>
+                  <label for="contentType">Content Type</label>
+                  <select id="contentType" name="contentType" required>
                     <option value="">Select type</option>
-                    <option>PDF</option>
-                    <option>Video</option>
-                    <option>Slide</option>
-                    <option>Assignment</option>
+                    <option value="PDF">PDF</option>
+                    <option value="Video">Video</option>
+                    <option value="Slides">Slides</option>
+                    <option value="Notes">Notes</option>
+                    <option value="Assignment">Assignment</option>
+                    <option value="Announcement">Announcement</option>
+                    <option value="Lesson Summary">Lesson Summary</option>
                   </select>
                 </div>
                 <div class="form-group">
-                  <label for="materialLink">Resource Link</label>
-                  <input id="materialLink" name="materialLink" type="url" placeholder="https://example.com/material" required />
+                  <label for="contentDeadline">Deadline</label>
+                  <input id="contentDeadline" name="contentDeadline" type="date" />
                 </div>
                 <div class="form-group form-group-full">
-                  <label for="materialDescription">Short Description</label>
-                  <textarea id="materialDescription" name="materialDescription" rows="3" placeholder="What students will learn from this resource..." required></textarea>
+                  <label for="contentTitle">Content Title</label>
+                  <input id="contentTitle" name="contentTitle" type="text" placeholder="Motion chapter formula sheet" required />
                 </div>
-                <button class="btn btn-primary" type="submit">Add Material</button>
+                <div class="form-group form-group-full">
+                  <label for="contentSummary">Summary / instructions</label>
+                  <textarea id="contentSummary" name="contentSummary" rows="3" placeholder="Short description, assignment brief, or announcement message" required></textarea>
+                </div>
+                <div class="form-footer form-group-full">
+                  <p>Use this for notes, slides, assignments, and announcements tied to one batch.</p>
+                  <button class="btn btn-primary" type="submit">Save content item</button>
+                </div>
               </form>
 
-              <div class="list compact-list" id="materialList"></div>
+              <div class="list compact-list" id="courseContentList"></div>
             </section>
 
-            <section class="panel" id="marksSection">
-              <h2>Check Student Marks</h2>
-              <p>Review marks by subject and monitor performance trends.</p>
-
-              <div class="filters">
-                <button type="button" class="filter-btn active" data-subject="all">All</button>
-                <button type="button" class="filter-btn" data-subject="Physics">Physics</button>
-                <button type="button" class="filter-btn" data-subject="Chemistry">Chemistry</button>
-                <button type="button" class="filter-btn" data-subject="Math">Math</button>
-                <button type="button" class="filter-btn" data-subject="Biology">Biology</button>
+            <section class="panel" id="examSection">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Exam & mock test management</h2>
+                  <p>Create exams, question-bank items, access windows, and publishing states.</p>
+                </div>
+                <span class="panel-kicker">Assessment</span>
               </div>
+
+              <form id="examForm" class="form-grid">
+                <div class="form-group">
+                  <label for="examTitle">Exam Title</label>
+                  <input id="examTitle" name="examTitle" type="text" placeholder="Physics Weekly Mock 3" required />
+                </div>
+                <div class="form-group">
+                  <label for="examBatch">Batch</label>
+                  <input id="examBatch" name="examBatch" type="text" placeholder="Engineering A" required />
+                </div>
+                <div class="form-group">
+                  <label for="examDate">Date</label>
+                  <input id="examDate" name="examDate" type="date" required />
+                </div>
+                <div class="form-group">
+                  <label for="examTime">Start Time</label>
+                  <input id="examTime" name="examTime" type="time" required />
+                </div>
+                <div class="form-group">
+                  <label for="examDuration">Duration (minutes)</label>
+                  <input id="examDuration" name="examDuration" type="number" min="15" step="15" value="60" required />
+                </div>
+                <div class="form-group">
+                  <label for="joinWindow">Join Window</label>
+                  <select id="joinWindow" name="joinWindow">
+                    <option value="10">10 minutes</option>
+                    <option value="15" selected>15 minutes</option>
+                    <option value="20">20 minutes</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="negativeMarking">Negative Marking</label>
+                  <input id="negativeMarking" name="negativeMarking" type="text" placeholder="-0.25 per MCQ" />
+                </div>
+                <div class="form-group">
+                  <label for="shuffleMode">Shuffle Options</label>
+                  <select id="shuffleMode" name="shuffleMode">
+                    <option value="None">None</option>
+                    <option value="Questions">Questions only</option>
+                    <option value="Questions and options">Questions and options</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="examType">Exam Type</label>
+                  <select id="examType" name="examType" required>
+                    <option value="Mock Test">Mock Test</option>
+                    <option value="Batch Exam">Batch Exam</option>
+                    <option value="Assignment Quiz">Assignment Quiz</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="publishState">Publish State</label>
+                  <select id="publishState" name="publishState">
+                    <option value="Draft">Draft</option>
+                    <option value="Published">Published</option>
+                    <option value="Unpublished">Unpublished</option>
+                  </select>
+                </div>
+                <div class="form-group form-group-full">
+                  <label for="examRules">Rules / preview notes</label>
+                  <textarea id="examRules" name="examRules" rows="3" placeholder="Access rules, proctoring note, preview note, short-answer grading note"></textarea>
+                </div>
+                <div class="form-footer form-group-full">
+                  <p>We will warn you before saving if the same batch already has an overlapping exam.</p>
+                  <button class="btn btn-primary" type="submit">Create exam</button>
+                </div>
+              </form>
+
+              <div class="split-block">
+                <div>
+                  <h3 class="subsection-title">Upcoming exam board</h3>
+                  <div class="list compact-list" id="examList"></div>
+                </div>
+                <div>
+                  <h3 class="subsection-title">Question bank</h3>
+                  <form id="questionBankForm" class="form-grid form-grid-tight">
+                    <div class="form-group">
+                      <label for="questionSubject">Subject</label>
+                      <input id="questionSubject" name="questionSubject" type="text" placeholder="Physics" required />
+                    </div>
+                    <div class="form-group">
+                      <label for="questionType">Question Type</label>
+                      <select id="questionType" name="questionType" required>
+                        <option value="MCQ">MCQ</option>
+                        <option value="Short Answer">Short Answer</option>
+                        <option value="Essay">Essay</option>
+                      </select>
+                    </div>
+                    <div class="form-group form-group-full">
+                      <label for="questionText">Question</label>
+                      <textarea id="questionText" name="questionText" rows="3" placeholder="Write the question here..." required></textarea>
+                    </div>
+                    <div class="form-group">
+                      <label for="optionSet">Options / prompt</label>
+                      <input id="optionSet" name="optionSet" type="text" placeholder="A) ... | B) ... | C) ... | D) ..." required />
+                    </div>
+                    <div class="form-group">
+                      <label for="answerKey">Answer Key</label>
+                      <input id="answerKey" name="answerKey" type="text" placeholder="B / key point list" required />
+                    </div>
+                    <div class="form-footer form-group-full">
+                      <p>Keep reusable items here before attaching them to a published exam.</p>
+                      <button class="btn btn-secondary" type="submit">Add to bank</button>
+                    </div>
+                  </form>
+                  <div class="list compact-list" id="questionBankList"></div>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel" id="routineSection">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Exam routine & schedule</h2>
+                  <p>See upcoming, ongoing, and completed exams with overlap warnings before publishing.</p>
+                </div>
+                <span class="panel-kicker">Schedule</span>
+              </div>
+
+              <div class="status-strip">
+                <div class="mini-status">
+                  <span>Upcoming</span>
+                  <strong id="upcomingRoutineCount">0</strong>
+                </div>
+                <div class="mini-status">
+                  <span>Ongoing</span>
+                  <strong id="ongoingRoutineCount">0</strong>
+                </div>
+                <div class="mini-status">
+                  <span>Completed</span>
+                  <strong id="completedRoutineCount">0</strong>
+                </div>
+              </div>
+
+              <div class="status-banner status-banner-warning is-hidden" id="conflictBanner"></div>
+              <div class="list compact-list" id="routineList"></div>
+            </section>
+
+            <section class="panel" id="studentsSection">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Student management</h2>
+                  <p>Track batch members, progress, and notices for enrolled students.</p>
+                </div>
+                <span class="panel-kicker">Batch</span>
+              </div>
+
+              <form id="studentActionForm" class="form-grid form-grid-tight">
+                <div class="form-group">
+                  <label for="studentName">Student Name</label>
+                  <input id="studentName" name="studentName" type="text" placeholder="Farzana Islam" required />
+                </div>
+                <div class="form-group">
+                  <label for="studentBatch">Batch</label>
+                  <input id="studentBatch" name="studentBatch" type="text" placeholder="Engineering A" required />
+                </div>
+                <div class="form-group">
+                  <label for="studentAction">Action</label>
+                  <select id="studentAction" name="studentAction" required>
+                    <option value="Enroll">Enroll</option>
+                    <option value="Remove">Remove</option>
+                    <option value="Notice">Send Notice</option>
+                  </select>
+                </div>
+                <div class="form-group">
+                  <label for="studentProgress">Progress</label>
+                  <input id="studentProgress" name="studentProgress" type="text" placeholder="72% complete" />
+                </div>
+                <div class="form-group form-group-full">
+                  <label for="studentMessage">Message / note</label>
+                  <textarea id="studentMessage" name="studentMessage" rows="3" placeholder="Specific note for this student or batch"></textarea>
+                </div>
+                <div class="form-footer form-group-full">
+                  <p>Use notices for a whole batch, or keep private notes on a single student profile.</p>
+                  <button class="btn btn-primary" type="submit">Apply action</button>
+                </div>
+              </form>
 
               <div class="table-wrap">
                 <table class="marks-table">
                   <thead>
                     <tr>
                       <th>Student</th>
-                      <th>Subject</th>
-                      <th>Exam</th>
-                      <th>Mark</th>
-                      <th>Status</th>
+                      <th>Batch</th>
+                      <th>Progress</th>
+                      <th>Latest Score</th>
+                      <th>Profile Note</th>
                     </tr>
                   </thead>
-                  <tbody id="marksTableBody"></tbody>
+                  <tbody id="studentTableBody"></tbody>
                 </table>
               </div>
             </section>
 
-            <section class="panel panel-full" id="questionsSection">
-              <h2>Add Exam Question</h2>
-              <p>Build your question bank for upcoming mock tests.</p>
+            <section class="panel panel-full" id="resultsSection">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Results & analytics</h2>
+                  <p>View auto-graded results, manual-review workload, and batch performance snapshots.</p>
+                </div>
+                <span class="panel-kicker">Insights</span>
+              </div>
 
-              <form id="questionForm" class="form-grid">
-                <div class="form-group">
-                  <label for="questionSubject">Subject</label>
-                  <input id="questionSubject" name="questionSubject" type="text" placeholder="Chemistry" required />
+              <div class="analytics-grid">
+                <div class="analytics-card">
+                  <h3>Score distribution</h3>
+                  <div class="list compact-list" id="distributionList"></div>
                 </div>
-                <div class="form-group">
-                  <label for="questionTopic">Topic</label>
-                  <input id="questionTopic" name="questionTopic" type="text" placeholder="Atomic Structure" required />
+                <div class="analytics-card">
+                  <h3>Manual grading queue</h3>
+                  <div class="list compact-list" id="gradingQueueList"></div>
                 </div>
-                <div class="form-group form-group-full">
-                  <label for="questionText">Question</label>
-                  <textarea id="questionText" name="questionText" rows="3" placeholder="Write the full question here..." required></textarea>
+                <div class="analytics-card">
+                  <h3>Topic performance</h3>
+                  <div class="list compact-list" id="topicPerformanceList"></div>
                 </div>
-                <div class="form-group">
-                  <label for="optionA">Option A</label>
-                  <input id="optionA" name="optionA" type="text" required />
+                <div class="analytics-card">
+                  <h3>Export center</h3>
+                  <div class="list compact-list" id="exportList"></div>
                 </div>
-                <div class="form-group">
-                  <label for="optionB">Option B</label>
-                  <input id="optionB" name="optionB" type="text" required />
+              </div>
+            </section>
+
+            <section class="panel" id="communicationSection">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Communication hub</h2>
+                  <p>Post announcements, discussion threads, direct notices, and exam feedback.</p>
                 </div>
+                <span class="panel-kicker">Messages</span>
+              </div>
+
+              <form id="communicationForm" class="form-grid">
                 <div class="form-group">
-                  <label for="optionC">Option C</label>
-                  <input id="optionC" name="optionC" type="text" required />
-                </div>
-                <div class="form-group">
-                  <label for="optionD">Option D</label>
-                  <input id="optionD" name="optionD" type="text" required />
-                </div>
-                <div class="form-group">
-                  <label for="correctOption">Correct Option</label>
-                  <select id="correctOption" name="correctOption" required>
-                    <option value="">Select</option>
-                    <option value="A">A</option>
-                    <option value="B">B</option>
-                    <option value="C">C</option>
-                    <option value="D">D</option>
+                  <label for="messageType">Message Type</label>
+                  <select id="messageType" name="messageType" required>
+                    <option value="Announcement">Announcement</option>
+                    <option value="Discussion Thread">Discussion Thread</option>
+                    <option value="Direct Message">Direct Message</option>
+                    <option value="Exam Feedback">Exam Feedback</option>
                   </select>
                 </div>
-                <button class="btn btn-primary" type="submit">Add Question</button>
+                <div class="form-group">
+                  <label for="messageAudience">Audience</label>
+                  <input id="messageAudience" name="messageAudience" type="text" placeholder="Engineering A / specific student" required />
+                </div>
+                <div class="form-group form-group-full">
+                  <label for="messageTitle">Title</label>
+                  <input id="messageTitle" name="messageTitle" type="text" placeholder="Organic chemistry class moved to 7 PM" required />
+                </div>
+                <div class="form-group form-group-full">
+                  <label for="messageBody">Body</label>
+                  <textarea id="messageBody" name="messageBody" rows="3" placeholder="Write the announcement, thread opener, or feedback..." required></textarea>
+                </div>
+                <div class="form-footer form-group-full">
+                  <p>Announcements work best for batches. Direct messages are better for one student follow-up.</p>
+                  <button class="btn btn-primary" type="submit">Send / post</button>
+                </div>
               </form>
 
-              <div class="list compact-list" id="questionList"></div>
+              <div class="list compact-list" id="communicationList"></div>
+            </section>
+
+            <section class="panel" id="alertsSection">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Instructor alerts</h2>
+                  <p>Incoming events for submissions, exam starts, violations, and student questions.</p>
+                </div>
+                <span class="panel-kicker">Activity</span>
+              </div>
+
+              <div class="list compact-list" id="alertList"></div>
             </section>
           </div>
         </div>
       </div>
     </div>
 
+    <script src="shared.js"></script>
     <script src="instructor.js"></script>
   </body>
 </html>

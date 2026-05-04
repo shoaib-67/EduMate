@@ -21,7 +21,7 @@
   <body class="home-page">
     <header class="top-nav" id="home">
       <div class="container nav-inner">
-        <a class="brand" href="#">
+        <a class="brand" href="#home">
           <span class="brand-mark" aria-hidden="true">
             <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
           </span>
@@ -36,7 +36,7 @@
           <a href="#packages">প্যাকেজসমূহ</a>
           <a href="#contact">যোগাযোগ</a>
         </nav>
-        <a class="nav-cta" href="signup.html">সাইন আপ</a>
+        <a class="nav-cta" href="signup.html">শুরু করুন</a>
       </div>
       <nav class="mobile-menu" id="mobileMenu" aria-label="Mobile navigation">
         <a href="#home">হোম</a>
@@ -49,31 +49,51 @@
     <main>
       <section class="hero container">
         <div class="hero-left reveal">
-          <p class="hero-tag">সঠিক প্রস্তুতি, সহজ প্রিলি</p>
-          <h1>ঘরে বসেই ভর্তি পরীক্ষার প্রস্তুতি</h1>
+          <p class="hero-tag">নিয়মিত প্রস্তুতি, স্পষ্ট অগ্রগতি, স্থির আত্মবিশ্বাস</p>
+          <h1>প্রতিদিনের চর্চাকে আত্মবিশ্বাসী প্রস্তুতিতে বদলে দিন</h1>
           <p class="hero-copy">
-            প্রতিদিন মডেল টেস্ট, রিয়েল টাইম র‌্যাঙ্কিং, ভিডিও ক্লাস এবং নোটস দিয়ে
-            নিজের প্রস্তুতি যাচাই করুন।
+            EduMate আপনার মক টেস্ট, নোট, রুটিন, র‍্যাঙ্কিং এবং রিভিশন টুল এক জায়গায় এনে দেয়,
+            যাতে প্রতিটি স্টাডি সেশন হয় গোছানো, লক্ষ্যভিত্তিক এবং ফলপ্রসূ।
           </p>
           <div class="hero-cta-row">
-            <a class="primary-btn" href="signup.html">লগইন করুন</a>
+            <a class="primary-btn" href="signup.html">শেখা শুরু করুন</a>
             <a class="ghost-btn" href="#packages">প্যাকেজ দেখুন</a>
           </div>
+
+          <div class="motivation-strip">
+            <div class="motivation-card">
+              <strong>আজকের লক্ষ্য ঠিক করুন</strong>
+              <span>এলোমেলো পরিশ্রমের চেয়ে একটি স্পষ্ট লক্ষ্য বেশি কার্যকর।</span>
+            </div>
+            <div class="motivation-card">
+              <strong>পুনরাবৃত্তিকে বিশ্বাস করুন</strong>
+              <span>প্রতিদিনের ছোট অগ্রগতি বড় পরীক্ষার শক্ত ভিত তৈরি করে।</span>
+            </div>
+            <div class="motivation-card">
+              <strong>প্রমাণসহ শিখুন</strong>
+              <span>মক, সময় এবং টপিকভিত্তিক দক্ষতায় নিজের উন্নতি দেখুন।</span>
+            </div>
+          </div>
+
           <blockquote class="quote-box" id="quoteBox">
-            <span id="quoteText">"অধ্যবসায়ের কোন বিকল্প নেই।"</span>
-            <button type="button" class="small-btn" id="nextQuote">আরও উক্তি</button>
+            <span id="quoteText">"নিয়মিত চর্চাই আত্মবিশ্বাসকে সত্যিকারের প্রাপ্য করে তোলে।"</span>
+            <button type="button" class="small-btn" id="nextQuote">আরও অনুপ্রেরণা</button>
           </blockquote>
+
           <div class="hero-stats">
-            <div class="mini-stat"><strong data-count="525">0</strong><span>হাজার+ প্রশ্ন</span></div>
-            <div class="mini-stat"><strong data-count="1300">0</strong><span>ভিডিও লেকচার</span></div>
-            <div class="mini-stat"><strong data-count="1800">0</strong><span>হাজার+ ব্যবহারকারী</span></div>
+            <div class="mini-stat"><strong data-count="525">0</strong><span>প্র্যাকটিস সেট</span></div>
+            <div class="mini-stat"><strong data-count="1300">0</strong><span>ভিডিও লেসন</span></div>
+            <div class="mini-stat"><strong data-count="1800">0</strong><span>সক্রিয় শিক্ষার্থী</span></div>
           </div>
         </div>
 
         <section class="login-card reveal" aria-label="Login form">
           <header class="login-header">
             <div class="login-header-top">
-              <h2 id="loginTitle">Student Login</h2>
+              <div>
+                <p class="login-eyebrow">পরের সেশনের জন্য প্রস্তুত?</p>
+                <h2 id="loginTitle">স্টুডেন্ট লগইন</h2>
+              </div>
               <div class="login-header-actions">
                 <button
                   type="button"
@@ -86,15 +106,33 @@
                 </button>
               </div>
             </div>
-            <p id="loginSubtitle">Login to your account to continue your preparation.</p>
+            <p id="loginSubtitle">আপনার একাউন্টে লগইন করে প্রস্তুতিকে এগিয়ে নিন।</p>
           </header>
+
+          <div class="login-status" id="loginStatus" role="status" aria-live="polite"></div>
 
           <form class="login-form" id="loginForm" action="student.html">
             <div class="demo-box">
-              <p><strong id="demoTitle">Demo account</strong></p>
+              <p><strong id="demoTitle">ডেমো একাউন্ট</strong></p>
               <p id="demoEmail">Email: demo@edumate.com</p>
               <p id="demoPassword">Password: EduMate@123</p>
             </div>
+
+            <div class="login-plan">
+              <div class="login-plan-item">
+                <strong>১. লগইন করুন</strong>
+                <span>আপনার ভূমিকা বেছে নিয়ে নিজের ওয়ার্কস্পেস খুলুন।</span>
+              </div>
+              <div class="login-plan-item">
+                <strong>২. লক্ষ্য ঠিক করুন</strong>
+                <span>মক টেস্ট, নোট, রুটিন বা প্রগ্রেস রিভিউ থেকে একটি বেছে নিন।</span>
+              </div>
+              <div class="login-plan-item">
+                <strong>৩. ফলপ্রসূ সেশন শেষ করুন</strong>
+                <span>চাপ নয়, নিয়মিত চর্চার মাধ্যমেই অগ্রগতি গড়ে তুলুন।</span>
+              </div>
+            </div>
+
             <label class="input-group">
               <span id="loginIdentifierLabel">ইমেইল বা ফোন</span>
               <input
@@ -112,17 +150,11 @@
                 <input
                   type="password"
                   name="password"
-                  placeholder="৮+ অক্ষর লিখুন"
+                  placeholder="কমপক্ষে ৮ অক্ষর লিখুন"
                   minlength="8"
                   required
                 />
-                <button
-                  type="button"
-                  class="toggle-btn"
-                  id="togglePassword"
-                >
-                  Show
-                </button>
+                <button type="button" class="toggle-btn" id="togglePassword">দেখুন</button>
               </div>
             </label>
 
@@ -135,14 +167,14 @@
             </div>
 
             <div>
-              <button class="submit-btn" type="submit" id="loginSubmitBtn">Login</button>
+              <button class="submit-btn" type="submit" id="loginSubmitBtn">লগইন</button>
             </div>
           </form>
 
           <footer class="login-footer">
             <div id="accountCreateRow">
-              <span>New?</span>
-              <a href="signup.html">Open a new account</a>
+              <span>নতুন এখানে?</span>
+              <a href="signup.html">নতুন একাউন্ট খুলুন</a>
             </div>
           </footer>
         </section>
@@ -152,7 +184,7 @@
         <div class="container band-grid">
           <div class="band-item">
             <strong data-count="1800000">0</strong>
-            <span>লগইন</span>
+            <span>প্র্যাকটিস অ্যাটেম্পট</span>
           </div>
           <div class="band-item">
             <strong data-count="400">0</strong>
@@ -160,7 +192,7 @@
           </div>
           <div class="band-item">
             <strong data-count="1000">0</strong>
-            <span>ফ্রি PDF</span>
+            <span>ফ্রি PDF নোট</span>
           </div>
           <div class="band-item">
             <strong data-count="7">0</strong>
@@ -169,28 +201,56 @@
         </div>
       </section>
 
+      <section class="focus-section reveal">
+        <div class="container focus-grid">
+          <div class="focus-lead">
+            <p class="section-kicker">গতি ধরে রাখুন</p>
+            <h3>পড়ার পথ পরিষ্কার হলে অনুপ্রেরণাও দীর্ঘস্থায়ী হয়</h3>
+            <p>
+              EduMate এমনভাবে তৈরি, যাতে আপনি জানেন কী পড়বেন, কোথায় দুর্বল, কখন পরের
+              পরীক্ষা শুরু হবে, আর দিনের শেষে নিজের অগ্রগতি কীভাবে মাপবেন।
+            </p>
+          </div>
+          <div class="focus-stack">
+            <article class="focus-card">
+              <strong>সকালের শুরু</strong>
+              <span>রুটিন দেখে আজকের একটি লক্ষ্যভিত্তিক টপিক ঠিক করুন।</span>
+            </article>
+            <article class="focus-card">
+              <strong>প্র্যাকটিস ব্লক</strong>
+              <span>মক দিন, প্রশ্ন সমাধান করুন, আর ভুলগুলো দ্রুত ধরে ফেলুন।</span>
+            </article>
+            <article class="focus-card">
+              <strong>সন্ধ্যার রিভিউ</strong>
+              <span>পারফরম্যান্স দেখে পরের দিনের পরিকল্পনা করুন, কম চাপ নিয়ে।</span>
+            </article>
+          </div>
+        </div>
+      </section>
+
       <section class="feature-section" id="features">
         <div class="container">
           <div class="section-head reveal">
-            <h3>গুরুত্বপূর্ণ ফিচারসমূহ</h3>
-            <p>যা আপনার প্রস্তুতিকে আরও স্মার্ট ও কার্যকর করবে।</p>
+            <p class="section-kicker">কেন EduMate</p>
+            <h3>গুরুত্বপূর্ণ প্রস্তুতির জন্য একটি ফোকাসড সিস্টেম</h3>
+            <p>প্রতিটি ফিচার আপনাকে দিকনির্দেশনা, স্থিরতা এবং মাপা যায় এমন উন্নতি দিতে তৈরি।</p>
           </div>
           <div class="feature-grid">
             <article class="feature-card reveal">
-              <h4>স্মার্ট সার্চ</h4>
-              <p>পুরনো প্রশ্ন, টপিক ও রেফারেন্স দ্রুত খুঁজে নিন।</p>
+              <h4>স্মার্ট স্টাডি ফ্লো</h4>
+              <p>নোট থেকে প্র্যাকটিস, প্র্যাকটিস থেকে রিভিউ — সবকিছু বড় লক্ষ্যের সঙ্গে যুক্ত থাকে।</p>
             </article>
             <article class="feature-card reveal">
-              <h4>টপিক গুরু</h4>
-              <p>টপিকভিত্তিক প্রশ্ন সমাধান করে দুর্বলতা কাটিয়ে উঠুন।</p>
+              <h4>পারফরম্যান্সের স্বচ্ছতা</h4>
+              <p>কোন বিষয়ে উন্নতি হচ্ছে, কোথায় আরও কাজ দরকার, সবকিছু স্পষ্টভাবে দেখুন।</p>
             </article>
             <article class="feature-card reveal">
-              <h4>কুইজ মাস্টার</h4>
-              <p>পছন্দের টপিকে আনলিমিটেড কুইজ তৈরি করে অনুশীলন করুন।</p>
+              <h4>অনুপ্রেরণামূলক রুটিন</h4>
+              <p>কাউন্টডাউন, রিমাইন্ডার, শিডিউল এবং দৈনিক লক্ষ্য আপনাকে ধারাবাহিক রাখে।</p>
             </article>
             <article class="feature-card reveal">
-              <h4>সেন্ট্রাল আর্কাইভ</h4>
-              <p>সব পরীক্ষা ও প্রশ্ন এক জায়গায়, যেকোন সময় অ্যাক্সেসযোগ্য।</p>
+              <h4>একটি শেখার কেন্দ্র</h4>
+              <p>কোর্স, পরীক্ষা, আলোচনা এবং ইন্সট্রাক্টর আপডেট এক জায়গায় সংযুক্ত থাকে।</p>
             </article>
           </div>
         </div>
@@ -199,24 +259,25 @@
       <section class="packages-section" id="packages">
         <div class="container">
           <div class="section-head reveal">
-            <h3>প্যাকেজসমূহ</h3>
-            <p>আপনার প্রয়োজন অনুযায়ী প্ল্যান বেছে নিন।</p>
+            <p class="section-kicker">নিজের গতিতে এগোন</p>
+            <h3>আপনার প্রস্তুতির সময় অনুযায়ী পরিকল্পনা বেছে নিন</h3>
+            <p>হালকা শুরু করুন, গতি তৈরি করুন, আর দরকার হলে আরও গাইডেড প্ল্যানে যান।</p>
           </div>
           <div class="packages-grid">
+            <div class="package-card reveal">
+              <h4>স্টার্টার প্ল্যান</h4>
+              <p class="package-price">BDT 0 / 7 days</p>
+              <p>কোর মক, স্টাডি ম্যাটেরিয়াল এবং নির্বাচিত ভিডিও লেসনে ফ্রি ট্রায়াল অ্যাক্সেস।</p>
+            </div>
             <div class="package-card highlight reveal">
-              <h4>ফ্রি প্ল্যান</h4>
-              <p class="package-price">৳০ / ৭ দিন</p>
-              <p>ফ্রি এক্সাম,মেটেরিয়াল,ফ্রি ক্লাস</p>
+              <h4>মাসিক প্ল্যান</h4>
+              <p class="package-price">BDT 199 / 30 days</p>
+              <p>টেস্ট, র‍্যাঙ্কিং, রিভিশন টুল, পেইড ক্লাস এবং নিয়মিত প্রগ্রেস ট্র্যাকিংসহ পূর্ণ অ্যাক্সেস।</p>
             </div>
             <div class="package-card reveal">
-              <h4>মাসিক প্যাকেজ</h4>
-              <p class="package-price">৳১৯৯ / ৩০ দিন</p>
-              <p>ফুল এক্সেস + র‌্যাঙ্কিং + রিভিশন টুলস,পেইড ক্লাস</p>
-            </div>
-            <div class="package-card reveal">
-              <h4>সেমিস্টার প্যাকেজ</h4>
-              <p class="package-price">৳৭৯৯ / ৬ মাস</p>
-              <p>দীর্ঘমেয়াদি প্রস্তুতির জন্য সেরা ভ্যালু প্ল্যান,আনলিমিটেড এক্সাম,পেইড ক্লাস</p>
+              <h4>সেমিস্টার প্ল্যান</h4>
+              <p class="package-price">BDT 799 / 6 months</p>
+              <p>দীর্ঘমেয়াদি প্রস্তুতির জন্য সেরা — আনলিমিটেড মক, ক্লাস সাপোর্ট এবং গভীর পারফরম্যান্স রিভিউ।</p>
             </div>
           </div>
         </div>
@@ -225,21 +286,22 @@
       <section class="faq-section">
         <div class="container">
           <div class="section-head reveal">
-            <h3>সাধারণ জিজ্ঞাসা</h3>
-            <p>শিক্ষার্থীরা আমাদের কাছে সবচেয়ে বেশি যা জানতে চায়।</p>
+            <p class="section-kicker">সাধারণ জিজ্ঞাসা</p>
+            <h3>শিক্ষার্থীরা শুরুতে যা জানতে চায়</h3>
+            <p>প্রয়োজনীয় উত্তরগুলো এক জায়গায়, সহজভাবে।</p>
           </div>
           <div class="faq-list">
             <article class="faq-item reveal">
-              <button class="faq-question" type="button">ফ্রি ট্রায়াল কীভাবে পাবো?</button>
-              <p class="faq-answer">লগইন করার পর প্রোফাইল থেকে ৭ দিনের ফ্রি ট্রায়াল সক্রিয় করতে পারবেন।</p>
+              <button class="faq-question" type="button">ফ্রি ট্রায়াল কীভাবে কাজ করে?</button>
+              <p class="faq-answer">একাউন্ট খুলে ৭ দিনের ট্রায়াল শুরু করুন, তারপর প্ল্যান নেওয়ার আগে কোর টেস্ট, নোট এবং ক্লাস ঘুরে দেখুন।</p>
             </article>
             <article class="faq-item reveal">
-              <button class="faq-question" type="button">মডেল টেস্টের রেজাল্ট কখন পাবো?</button>
-              <p class="faq-answer">প্রতিটি টেস্ট শেষ হওয়ার সাথে সাথেই স্কোর, র‌্যাঙ্ক এবং ব্যাখ্যা দেখতে পারবেন।</p>
+              <button class="faq-question" type="button">মক টেস্টের রেজাল্ট কখন পাব?</button>
+              <p class="faq-answer">অবজেক্টিভ মক জমা দেওয়ার সঙ্গে সঙ্গেই স্কোর, র‍্যাঙ্কিং এবং পারফরম্যান্স ইনসাইট দেখা যাবে।</p>
             </article>
             <article class="faq-item reveal">
-              <button class="faq-question" type="button">মোবাইলে এবং ওয়েবে একই একাউন্ট ব্যবহার করা যাবে?</button>
-              <p class="faq-answer">হ্যাঁ, একই একাউন্ট দিয়ে সব ডিভাইসে লগইন করা যাবে।</p>
+              <button class="faq-question" type="button">ওয়েব আর মোবাইলে কি একই একাউন্ট ব্যবহার করা যাবে?</button>
+              <p class="faq-answer">হ্যাঁ। একই EduMate একাউন্ট দিয়ে সব ডিভাইসে লগইন করলে আপনার প্রস্তুতি সিঙ্ক থাকবে।</p>
             </article>
           </div>
         </div>
@@ -248,13 +310,15 @@
       <section class="address-section" id="contact">
         <div class="container address-grid">
           <div class="reveal">
-            <h3>যোগাযোগের ঠিকানা</h3>
-            <p>EduMate Learning Center</p>
+            <p class="section-kicker">ঠিকানা</p>
+            <h3>EduMate Learning Center</h3>
             <p>House 23, Road 10, Dhanmondi, Dhaka 1209</p>
             <p>Bangladesh</p>
+            <p>মনোযোগী শিক্ষার্থী এবং সহায়ক ইন্সট্রাক্টরদের জন্য একটি নির্ভরযোগ্য শেখার পরিবেশ।</p>
           </div>
           <div class="reveal">
-            <h3>সরাসরি যোগাযোগ</h3>
+            <p class="section-kicker">সাপোর্ট</p>
+            <h3>আমরা আছি সাহায্যের জন্য</h3>
             <p>Phone: +880 1701-123456</p>
             <p>Email: <span id="supportEmail">support@edumate.com</span></p>
             <p>Hours: Sat-Thu, 9:00 AM - 8:00 PM</p>
@@ -268,23 +332,23 @@
       <div class="container footer-grid">
         <div>
           <h4>EduMate</h4>
-          <p>ভর্তি পরীক্ষার প্রস্তুতির জন্য প্রয়োজনীয় সবকিছু এক জায়গায়।</p>
+          <p>কোর্স, রুটিন, পরীক্ষা এবং মাপা যায় এমন অগ্রগতির জন্য আপনার প্রস্তুতির ওয়ার্কস্পেস।</p>
         </div>
         <div>
-          <h4>কুইক লিংক</h4>
+          <h4>দ্রুত লিংক</h4>
           <a href="#home">হোম</a>
           <a href="#features">ফিচারসমূহ</a>
           <a href="#packages">প্যাকেজসমূহ</a>
         </div>
         <div>
           <h4>সাপোর্ট</h4>
-          <a href="#">সাধারণ জিজ্ঞাসা</a>
+          <a href="#contact">যোগাযোগ</a>
           <a href="#">প্রাইভেসি পলিসি</a>
           <a href="#">টার্মস</a>
         </div>
       </div>
       <div class="container footer-bottom">
-        <p>© 2026 EduMate. সর্বস্বত্ব সংরক্ষিত।</p>
+        <p>&copy; 2026 EduMate. নিয়মিত পড়াশোনাকে আরও হালকা, সুন্দর এবং কার্যকর করতে তৈরি।</p>
       </div>
     </footer>
 
@@ -292,6 +356,7 @@
       <i class="fa-solid fa-arrow-up"></i>
     </button>
 
+    <script src="shared.js"></script>
     <script src="index.js"></script>
   </body>
 </html>

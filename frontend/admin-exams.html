@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Admin Exams - EduMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="shared.css" />
+    <link rel="stylesheet" href="admin.css" />
+  </head>
+  <body>
+    <div class="layout admin-layout">
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <span class="logo-text">Edu<span>Mate</span></span>
+        </div>
+
+        <div class="nav-section">
+          <p class="nav-label">Admin Panel</p>
+          <a class="nav-item" href="admin.html">Overview</a>
+          <a class="nav-item" href="admin-users.html">Users</a>
+          <a class="nav-item active" href="admin-exams.html">Exams</a>
+          <a class="nav-item" href="admin-content.html">Content</a>
+          <a class="nav-item" href="admin-reports.html">Reports</a>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <span class="topbar-title">Exam Management</span>
+          <div class="topbar-right">
+            <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
+          </div>
+        </div>
+
+        <div class="content admin-content">
+          <div class="page-header">
+            <h1>Build and manage exam routine</h1>
+            <p>Create batch or student-specific exams, catch overlaps early, and keep reminders automated.</p>
+          </div>
+
+          <div class="dashboard-grid exams-admin-grid">
+            <section class="panel">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Create exam</h2>
+                  <p>Schedule by batch or assign only selected students.</p>
+                </div>
+              </div>
+
+              <form class="admin-user-form exam-form" id="examForm">
+                <div class="form-grid">
+                  <label>
+                    <span>Subject</span>
+                    <input type="text" name="subject" placeholder="Physics Mock" required />
+                  </label>
+                  <label>
+                    <span>Batch / group</span>
+                    <select name="batchName" id="examBatchSelect" required></select>
+                  </label>
+                  <label>
+                    <span>Date</span>
+                    <input type="date" name="date" required />
+                  </label>
+                  <label>
+                    <span>Time</span>
+                    <input type="time" name="time" required />
+                  </label>
+                  <label>
+                    <span>Duration (minutes)</span>
+                    <input type="number" name="duration" min="15" step="15" value="60" required />
+                  </label>
+                  <label>
+                    <span>Join window</span>
+                    <select name="joinWindowMinutes">
+                      <option value="10">10 minutes</option>
+                      <option value="15" selected>15 minutes</option>
+                    </select>
+                  </label>
+                </div>
+
+                <div class="assignment-mode-row">
+                  <label class="assignment-option">
+                    <input type="radio" name="assignmentType" value="batch" checked />
+                    <span>Entire batch</span>
+                  </label>
+                  <label class="assignment-option">
+                    <input type="radio" name="assignmentType" value="specific" />
+                    <span>Specific students</span>
+                  </label>
+                </div>
+
+                <label class="exam-student-picker" id="studentPickerBlock">
+                  <span>Assign students</span>
+                  <div class="student-checklist" id="studentChecklist"></div>
+                </label>
+
+                <label>
+                  <span>Instructions</span>
+                  <textarea name="instructions" rows="4" placeholder="Exam rules, materials, or join notes"></textarea>
+                </label>
+
+                <div class="status-banner status-banner-neutral" id="examFormMessage">
+                  Reminders are generated automatically for in-app, email, and SMS channels when the student has contact details.
+                </div>
+                <div class="status-banner status-banner-danger is-hidden" id="examConflictMessage"></div>
+
+                <div class="panel-actions">
+                  <button class="btn btn-small" type="submit" id="createExamButton">Create exam</button>
+                </div>
+              </form>
+            </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Scheduled exams</h2>
+                  <p>Live status is updated automatically.</p>
+                </div>
+                <div class="panel-actions">
+                  <button class="btn btn-small btn-secondary" id="refreshExamList" type="button">Refresh</button>
+                </div>
+              </div>
+
+              <div class="status-cards">
+                <article class="mini-status-card">
+                  <span>Upcoming</span>
+                  <strong id="upcomingExamCount">0</strong>
+                </article>
+                <article class="mini-status-card">
+                  <span>Ongoing</span>
+                  <strong id="ongoingExamCount">0</strong>
+                </article>
+                <article class="mini-status-card">
+                  <span>Completed</span>
+                  <strong id="completedExamCount">0</strong>
+                </article>
+              </div>
+
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Subject</th>
+                      <th>Schedule</th>
+                      <th>Batch</th>
+                      <th>Audience</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="examTableBody"></tbody>
+                </table>
+              </div>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="admin-exams.js"></script>
+  </body>
+</html>

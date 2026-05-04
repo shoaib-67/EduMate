@@ -1,5 +1,6 @@
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => root.querySelectorAll(selector);
+const { API_BASE_URL, setStoredUser } = window.EduMateShared;
 
 const loginForm = $("#loginForm");
 const loginToggle = $("#togglePassword");
@@ -14,63 +15,71 @@ const loginIdentifierLabel = $("#loginIdentifierLabel");
 const loginIdentifierInput = $("#loginIdentifierInput");
 const loginSubmitBtn = $("#loginSubmitBtn");
 const accountCreateRow = $("#accountCreateRow");
-const API_BASE_URL = "http://localhost:5000/api";
+const loginStatus = $("#loginStatus");
+function showLoginStatus(message, type = "info") {
+  if (!loginStatus) return;
+  loginStatus.textContent = message;
+  loginStatus.className = `login-status is-visible is-${type}`;
+}
+
+function clearLoginStatus() {
+  if (!loginStatus) return;
+  loginStatus.textContent = "";
+  loginStatus.className = "login-status";
+}
 
 if (loginToggle && loginPassword) {
   loginToggle.addEventListener("click", () => {
     const isHidden = loginPassword.type === "password";
     loginPassword.type = isHidden ? "text" : "password";
-    loginToggle.textContent = isHidden ? "Hide" : "Show";
+    loginToggle.textContent = isHidden ? "লুকান" : "দেখুন";
   });
 }
 
 const roleConfig = {
   student: {
-    title: "Student Login",
-    subtitle: "Login to your account to continue your preparation.",
-    demoTitle: "Demo account",
+    title: "স্টুডেন্ট লগইন",
+    subtitle: "আপনার একাউন্টে লগইন করে প্রস্তুতিকে এগিয়ে নিন।",
+    demoTitle: "ডেমো একাউন্ট",
     email: "Email: demo@edumate.com",
     password: "Password: EduMate@123",
-    identifierLabel: "Email or phone",
+    identifierLabel: "ইমেইল বা ফোন",
     identifierPlaceholder: "name@email.com",
-    submitText: "Login",
+    submitText: "লগইন",
     action: "student.html",
-    toggleTitle: "Switch to Instructor Login",
     showCreateAccount: true,
   },
   instructor: {
-    title: "Instructor Login",
-    subtitle: "",
-    demoTitle: "Instructor demo account",
+    title: "ইন্সট্রাক্টর লগইন",
+    subtitle: "আপনার ক্লাস, রুটিন, শিক্ষার্থী এবং এক্সাম ওয়ার্কস্পেস খুলুন।",
+    demoTitle: "ইন্সট্রাক্টর ডেমো একাউন্ট",
     email: "Email: instructor@edumate.com",
     password: "Password: EduMate@123",
-    identifierLabel: "Instructor email",
+    identifierLabel: "ইন্সট্রাক্টর ইমেইল",
     identifierPlaceholder: "instructor@edumate.com",
-    submitText: "Login as Instructor",
+    submitText: "ইন্সট্রাক্টর হিসেবে লগইন",
     action: "instructor.html",
-    toggleTitle: "Switch to Admin Login",
     showCreateAccount: false,
   },
   admin: {
-    title: "Admin Login",
-    subtitle: "Login to manage users, content, and reports.",
-    demoTitle: "Admin demo account",
+    title: "অ্যাডমিন লগইন",
+    subtitle: "ইউজার, রিপোর্ট এবং প্ল্যাটফর্মের শেয়ারড কন্ট্রোল পরিচালনা করুন।",
+    demoTitle: "অ্যাডমিন ডেমো একাউন্ট",
     email: "Email: admin@edumate.com",
     password: "Password: Admin@123",
-    identifierLabel: "Admin email",
+    identifierLabel: "অ্যাডমিন ইমেইল",
     identifierPlaceholder: "admin@edumate.com",
-    submitText: "Login as Admin",
+    submitText: "অ্যাডমিন হিসেবে লগইন",
     action: "admin.html",
-    toggleTitle: "Switch to Student Login",
     showCreateAccount: false,
   },
 };
 
 const roleOrder = ["student", "instructor", "admin"];
 const roleLabels = {
-  student: "Student",
-  instructor: "Instructor",
-  admin: "Admin",
+  student: "স্টুডেন্ট",
+  instructor: "ইন্সট্রাক্টর",
+  admin: "অ্যাডমিন",
 };
 
 let activeRole = "student";
@@ -78,14 +87,13 @@ let activeRole = "student";
 const getNextRole = (role) => {
   const currentIndex = roleOrder.indexOf(role);
   if (currentIndex === -1) return "student";
-  const nextIndex = (currentIndex + 1) % roleOrder.length;
-  return roleOrder[nextIndex];
+  return roleOrder[(currentIndex + 1) % roleOrder.length];
 };
 
 const updateRoleToggleMeta = () => {
   if (!roleToggleBtn) return;
   const nextRole = getNextRole(activeRole);
-  const toggleTitle = `Switch to ${roleLabels[nextRole]} Login`;
+  const toggleTitle = `${roleLabels[nextRole]} লগইনে যান`;
   roleToggleBtn.title = toggleTitle;
   roleToggleBtn.setAttribute("aria-label", toggleTitle);
 };
@@ -107,8 +115,10 @@ const applyLoginRole = (role) => {
   if (loginIdentifierInput) loginIdentifierInput.placeholder = config.identifierPlaceholder;
   if (loginSubmitBtn) loginSubmitBtn.textContent = config.submitText;
   if (loginForm) loginForm.action = config.action;
-  updateRoleToggleMeta();
   if (accountCreateRow) accountCreateRow.hidden = !config.showCreateAccount;
+
+  clearLoginStatus();
+  updateRoleToggleMeta();
 };
 
 if (roleToggleBtn) {
@@ -127,9 +137,16 @@ if (loginForm) {
     const password = (loginPassword?.value || "").trim();
 
     if (!identifier || !password) {
-      alert("Please enter both identifier and password.");
+      showLoginStatus("অনুগ্রহ করে ইমেইল/ফোন এবং পাসওয়ার্ড দুটোই লিখুন।", "error");
       return;
     }
+
+    const originalLabel = loginSubmitBtn?.textContent || "লগইন";
+    if (loginSubmitBtn) {
+      loginSubmitBtn.disabled = true;
+      loginSubmitBtn.textContent = "লগইন হচ্ছে...";
+    }
+    showLoginStatus("আপনার একাউন্ট যাচাই করে ওয়ার্কস্পেস খোলা হচ্ছে।", "info");
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
@@ -147,26 +164,31 @@ if (loginForm) {
       const payload = await response.json();
 
       if (!response.ok || !payload.success) {
-        alert(payload.message || "Login failed.");
+        showLoginStatus(payload.message || "লগইন ব্যর্থ হয়েছে। তথ্যগুলো যাচাই করে আবার চেষ্টা করুন।", "error");
         return;
       }
 
-      localStorage.setItem("edumateCurrentUser", JSON.stringify(payload.user || {}));
-      // Backward compatibility for pages still reading legacy key.
-      localStorage.setItem("user", JSON.stringify(payload.user || {}));
+      showLoginStatus("লগইন সফল হয়েছে। আপনাকে ওয়ার্কস্পেসে নেওয়া হচ্ছে।", "success");
+      setStoredUser(payload.user || {});
       window.location.href = (roleConfig[activeRole] || roleConfig.student).action;
     } catch (_error) {
-      alert("Cannot connect to backend. Run node server.js and try again.");
+      showLoginStatus("এখন ব্যাকএন্ডে সংযোগ করা যাচ্ছে না। সার্ভার চালু করে আবার চেষ্টা করুন।", "error");
+    } finally {
+      if (loginSubmitBtn) {
+        loginSubmitBtn.disabled = false;
+        loginSubmitBtn.textContent = originalLabel;
+      }
     }
   });
 }
 
-const quoteText = document.getElementById("quoteText");
-const nextQuoteBtn = document.getElementById("nextQuote");
+const quoteText = $("#quoteText");
+const nextQuoteBtn = $("#nextQuote");
 const quotes = [
-  "\"অধ্যবসায়ের কোন বিকল্প নেই।\"",
-  "\"প্রতিদিনের ছোট উন্নতিই বড় সাফল্য আনে।\"",
-  "\"প্রস্তুতি যত নিয়মিত, আত্মবিশ্বাস তত শক্তিশালী।\"",
+  "\"নিয়মিত চর্চাই আত্মবিশ্বাসকে সত্যিকারের প্রাপ্য করে তোলে।\"",
+  "\"ছোট অগ্রগতি সবচেয়ে বেশি মূল্য পায় যখন তা প্রতিদিনের অভ্যাস হয়।\"",
+  "\"পরের ধাপ পরিষ্কার থাকলে শৃঙ্খলাও অনেক সহজ লাগে।\"",
+  "\"শান্ত পরিকল্পনা অনেক সময় চাপের দৌড়কে হারিয়ে দেয়।\"",
 ];
 
 if (quoteText && nextQuoteBtn) {
@@ -208,9 +230,9 @@ const createObserver = (callback, options) =>
 
 const counters = $$("[data-count]");
 const counterObserver = createObserver(
-  (entries, observer) => {
-    if (!entries.isIntersecting) return;
-    const el = entries.target;
+  (entry, observer) => {
+    if (!entry.isIntersecting) return;
+    const el = entry.target;
     const target = Number(el.getAttribute("data-count")) || 0;
     const duration = 1200;
     const start = performance.now();
@@ -220,6 +242,7 @@ const counterObserver = createObserver(
       el.textContent = Math.floor(progress * target).toLocaleString();
       if (progress < 1) requestAnimationFrame(tick);
     };
+
     requestAnimationFrame(tick);
     observer.unobserve(el);
   },
@@ -247,8 +270,7 @@ const sectionObserver = createObserver(
     if (!entry.isIntersecting) return;
     const id = entry.target.getAttribute("id");
     allNavLinks.forEach((link) => {
-      const isActive = link.getAttribute("href") === `#${id}`;
-      link.classList.toggle("active", isActive);
+      link.classList.toggle("active", link.getAttribute("href") === `#${id}`);
     });
   },
   { threshold: 0.4 }
@@ -259,8 +281,7 @@ sectionIds.forEach((id) => {
   if (section) sectionObserver.observe(section);
 });
 
-const faqItems = $$(".faq-item");
-faqItems.forEach((item, index) => {
+$$(".faq-item").forEach((item, index) => {
   const button = item.querySelector(".faq-question");
   if (!button) return;
   if (index === 0) item.classList.add("open");

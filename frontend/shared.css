@@ -320,6 +320,44 @@ body {
   box-shadow: var(--shadow-panel);
 }
 
+.notif-panel {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: min(340px, calc(100vw - 40px));
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: #fff;
+  box-shadow: 0 18px 38px rgba(8, 59, 94, 0.14);
+  padding: 0.85rem;
+  display: none;
+  z-index: 20;
+}
+
+.notif-panel.is-open {
+  display: block;
+}
+
+.notif-panel h3 {
+  font-size: 14px;
+  margin-bottom: 0.6rem;
+  color: #14385b;
+}
+
+.notif-panel-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.empty-state {
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  color: var(--muted);
+  font-size: 13px;
+  background: #fbfdff;
+}
+
 .panel h2 {
   font-size: 18px;
   margin-bottom: 4px;
@@ -530,6 +568,77 @@ body {
 
 .text-primary {
   color: var(--primary);
+}
+
+.page-stack {
+  display: grid;
+  gap: 1.25rem;
+}
+
+.section-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.surface-band {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: linear-gradient(165deg, #ffffff 0%, #f6fbff 100%);
+  box-shadow: var(--shadow-soft);
+}
+
+.soft-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 0.8rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: #eff7ff;
+  color: #1f4b72;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-banner-info {
+  background: #eef7ff;
+  border-color: #c9dff4;
+  color: #1c5889;
+}
+
+.status-banner-success {
+  background: #edf9f2;
+  border-color: #b9e0c7;
+  color: #21633d;
+}
+
+.status-banner-error {
+  background: #fff1f3;
+  border-color: #f1c2cb;
+  color: #9b3345;
+}
+
+.empty-card {
+  padding: 1rem;
+  border: 1px dashed var(--border);
+  border-radius: 12px;
+  background: #fbfdff;
+}
+
+.empty-card strong {
+  display: block;
+  margin-bottom: 0.2rem;
+  font-size: 13px;
+  color: #173f65;
+}
+
+.empty-card span {
+  font-size: 12px;
+  color: var(--muted);
 }
 
 .u-flex { display: flex; }

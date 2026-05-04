@@ -83,6 +83,168 @@
   grid-column: 1 / -1;
 }
 
+.exams-admin-grid {
+  grid-template-columns: minmax(360px, 1fr) minmax(420px, 1.2fr);
+  align-items: start;
+}
+
+.exam-form {
+  display: grid;
+  gap: 1rem;
+}
+
+.assignment-mode-row {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.assignment-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.7rem 0.9rem;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: #f8fbff;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.exam-student-picker {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.exam-student-picker.is-disabled {
+  opacity: 0.58;
+  pointer-events: none;
+}
+
+.student-checklist {
+  display: grid;
+  gap: 0.65rem;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #fbfdff;
+}
+
+.student-check-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  font-size: 13px;
+}
+
+.student-check-item strong {
+  display: block;
+  color: var(--text);
+}
+
+.student-check-item small {
+  display: block;
+  color: var(--muted);
+}
+
+.status-banner {
+  padding: 0.85rem 0.95rem;
+  border-radius: 12px;
+  font-size: 13px;
+  border: 1px solid transparent;
+}
+
+.status-banner-neutral {
+  background: #eff7ff;
+  border-color: #c7ddf4;
+  color: #21496d;
+}
+
+.status-banner-success {
+  background: #edf9f2;
+  border-color: #cbe9d6;
+  color: #186742;
+}
+
+.status-banner-warning {
+  background: #fff7e9;
+  border-color: #f2d8a6;
+  color: #8a5c00;
+}
+
+.status-banner-danger {
+  background: #fff0f2;
+  border-color: #f2c2cb;
+  color: #9f3347;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.status-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.mini-status-card {
+  padding: 0.95rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8fbff;
+}
+
+.mini-status-card span {
+  display: block;
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 0.35rem;
+}
+
+.mini-status-card strong {
+  font-size: 24px;
+  color: var(--text);
+}
+
+.empty-inline-note {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.badge-info,
+.badge-success,
+.badge-danger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88px;
+  padding: 0.3rem 0.6rem;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.badge-info {
+  color: #0d62a0;
+  background: #eaf4ff;
+}
+
+.badge-success {
+  color: #177245;
+  background: #e7f8ed;
+}
+
+.badge-danger {
+  color: #a53a4e;
+  background: #ffe8ec;
+}
+
 .panel-header {
   display: flex;
   justify-content: space-between;
@@ -499,6 +661,67 @@ tbody tr:hover {
   cursor: pointer;
   font-size: 1.25rem;
   line-height: 1;
+}
+
+.modal-summary {
+  margin: 0 0 0.85rem;
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.modal-field {
+  display: grid;
+  gap: 0.45rem;
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.85rem;
+}
+
+.modal-field textarea {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 12px;
+  border: 1px solid rgba(207, 225, 240, 0.95);
+  padding: 0.75rem 0.9rem;
+  font: inherit;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: #fff;
+  resize: vertical;
+}
+
+.modal-grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.modal-block {
+  background: #f7fbff;
+  border: 1px solid rgba(207, 225, 240, 0.95);
+  border-radius: 12px;
+  padding: 0.75rem 0.9rem;
+}
+
+.modal-label {
+  margin: 0;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.modal-value {
+  margin: 0.35rem 0 0;
+  font-weight: 600;
+  color: var(--text);
+  word-break: break-word;
+}
+
+.modal-meta {
+  margin-top: 0.85rem;
+  color: var(--muted);
+  font-size: 0.85rem;
 }
 
 .content-list h3 {

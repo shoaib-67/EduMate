@@ -234,13 +234,261 @@ async function ensureStudyCircleMembersTable(pool) {
   `);
 }
 
+async function ensureStudentProfileColumns(pool) {
+  await ensureColumn(
+    pool,
+    "students",
+    "batch_name",
+    "batch_name VARCHAR(80) NULL"
+  );
+  await ensureColumn(
+    pool,
+    "students",
+    "course_track",
+    "course_track VARCHAR(80) NULL"
+  );
+}
+
+async function ensureExamSchedulesTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`exam_schedules\` (
+      \`exam_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`subject\` VARCHAR(120) NOT NULL,
+      \`exam_date\` DATE NOT NULL,
+      \`start_time\` DATETIME NOT NULL,
+      \`end_time\` DATETIME NOT NULL,
+      \`duration_minutes\` INT UNSIGNED NOT NULL,
+      \`batch_name\` VARCHAR(80),
+      \`instructions\` TEXT,
+      \`audience_type\` VARCHAR(20) NOT NULL DEFAULT 'batch',
+      \`status\` VARCHAR(20) NOT NULL DEFAULT 'upcoming',
+      \`join_window_minutes\` INT UNSIGNED NOT NULL DEFAULT 15,
+      \`created_by_admin_id\` INT UNSIGNED,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      INDEX \`idx_exam_batch_time\` (\`batch_name\`, \`start_time\`, \`end_time\`),
+      INDEX \`idx_exam_status\` (\`status\`),
+      FOREIGN KEY (\`created_by_admin_id\`) REFERENCES \`admins\`(\`admin_id\`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureExamAssignmentsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`exam_assignments\` (
+      \`assignment_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`exam_id\` INT UNSIGNED NOT NULL,
+      \`student_id\` INT UNSIGNED NOT NULL,
+      \`assigned_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY \`unique_exam_student\` (\`exam_id\`, \`student_id\`),
+      INDEX \`idx_student_exam\` (\`student_id\`, \`exam_id\`),
+      FOREIGN KEY (\`exam_id\`) REFERENCES \`exam_schedules\`(\`exam_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureNotificationsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`notifications\` (
+      \`notification_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`student_id\` INT UNSIGNED NOT NULL,
+      \`exam_id\` INT UNSIGNED NULL,
+      \`channel\` VARCHAR(20) NOT NULL DEFAULT 'in_app',
+      \`type\` VARCHAR(40) NOT NULL DEFAULT 'exam_reminder',
+      \`title\` VARCHAR(160) NOT NULL,
+      \`message\` TEXT NOT NULL,
+      \`status\` VARCHAR(20) NOT NULL DEFAULT 'unread',
+      \`scheduled_for\` DATETIME NULL,
+      \`sent_at\` DATETIME NULL,
+      \`read_at\` DATETIME NULL,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX \`idx_student_status\` (\`student_id\`, \`status\`),
+      INDEX \`idx_scheduled\` (\`scheduled_for\`, \`status\`),
+      UNIQUE KEY \`unique_exam_channel_notice\` (\`student_id\`, \`exam_id\`, \`channel\`, \`title\`),
+      FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`exam_id\`) REFERENCES \`exam_schedules\`(\`exam_id\`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorCourseItemsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_course_items\` (
+      \`item_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`course_title\` VARCHAR(150) NOT NULL,
+      \`batch_name\` VARCHAR(80) NOT NULL,
+      \`content_type\` VARCHAR(60) NOT NULL,
+      \`title\` VARCHAR(255) NOT NULL,
+      \`summary\` TEXT,
+      \`deadline\` DATE NULL,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      INDEX \`idx_instructor_course_items\` (\`instructor_id\`, \`created_at\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorQuestionBankTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_question_bank\` (
+      \`question_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`subject\` VARCHAR(120) NOT NULL,
+      \`question_type\` VARCHAR(40) NOT NULL,
+      \`question_text\` TEXT NOT NULL,
+      \`options_text\` TEXT,
+      \`answer_key\` TEXT,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      INDEX \`idx_instructor_question_bank\` (\`instructor_id\`, \`created_at\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorExamSchedulesTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_exam_schedules\` (
+      \`instructor_exam_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`title\` VARCHAR(180) NOT NULL,
+      \`batch_name\` VARCHAR(80) NOT NULL,
+      \`exam_date\` DATE NOT NULL,
+      \`start_time\` DATETIME NOT NULL,
+      \`duration_minutes\` INT UNSIGNED NOT NULL,
+      \`join_window_minutes\` INT UNSIGNED NOT NULL DEFAULT 15,
+      \`negative_marking\` VARCHAR(60),
+      \`shuffle_mode\` VARCHAR(80),
+      \`exam_type\` VARCHAR(60) NOT NULL,
+      \`publish_state\` VARCHAR(30) NOT NULL DEFAULT 'Draft',
+      \`rules\` TEXT,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      INDEX \`idx_instructor_exam_schedule\` (\`instructor_id\`, \`batch_name\`, \`start_time\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorStudentAssignmentsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_student_assignments\` (
+      \`assignment_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`student_id\` INT UNSIGNED NOT NULL,
+      \`assigned_batch\` VARCHAR(80) NOT NULL,
+      \`is_active\` BOOLEAN NOT NULL DEFAULT TRUE,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`unique_instructor_student\` (\`instructor_id\`, \`student_id\`),
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE,
+      INDEX \`idx_instructor_batch\` (\`instructor_id\`, \`assigned_batch\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorStudentNotesTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_student_notes\` (
+      \`note_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`student_id\` INT UNSIGNED NOT NULL,
+      \`progress_label\` VARCHAR(120),
+      \`note\` TEXT,
+      \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`unique_instructor_student_note\` (\`instructor_id\`, \`student_id\`),
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorMessagesTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_messages\` (
+      \`message_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`message_type\` VARCHAR(50) NOT NULL,
+      \`audience\` VARCHAR(150) NOT NULL,
+      \`title\` VARCHAR(255) NOT NULL,
+      \`body\` TEXT NOT NULL,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      INDEX \`idx_instructor_messages\` (\`instructor_id\`, \`created_at\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorAlertsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_alerts\` (
+      \`alert_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`level\` VARCHAR(20) NOT NULL DEFAULT 'info',
+      \`title\` VARCHAR(255) NOT NULL,
+      \`note\` TEXT NOT NULL,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      INDEX \`idx_instructor_alerts\` (\`instructor_id\`, \`created_at\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorGradingQueueTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_grading_queue\` (
+      \`queue_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`exam_title\` VARCHAR(180) NOT NULL,
+      \`queue_item\` VARCHAR(255) NOT NULL,
+      \`owner_label\` VARCHAR(120),
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      INDEX \`idx_instructor_grading_queue\` (\`instructor_id\`, \`created_at\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorExportJobsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_export_jobs\` (
+      \`export_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`label\` VARCHAR(180) NOT NULL,
+      \`format\` VARCHAR(20) NOT NULL,
+      \`status\` VARCHAR(40) NOT NULL,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      INDEX \`idx_instructor_exports\` (\`instructor_id\`, \`created_at\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureInstructorTopicPerformanceTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`instructor_topic_performance\` (
+      \`topic_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`topic\` VARCHAR(150) NOT NULL,
+      \`score\` DECIMAL(5,2) NOT NULL DEFAULT 0,
+      \`note\` TEXT,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
+      INDEX \`idx_instructor_topic_performance\` (\`instructor_id\`, \`created_at\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureSchema() {
   const pool = getPool();
 
   for (const config of roleTableConfig) {
     await ensureRoleTable(pool, config.tableName, config.idColumn);
   }
-  
+
+  await ensureStudentProfileColumns(pool);
   await ensureContentSubmissionsTable(pool);
   await ensureReportsTable(pool);
   await ensureAdminActivityLogsTable(pool);
@@ -249,6 +497,19 @@ async function ensureSchema() {
   await ensureDiscussionRepliesTable(pool);
   await ensureStudyCirclesTable(pool);
   await ensureStudyCircleMembersTable(pool);
+  await ensureExamSchedulesTable(pool);
+  await ensureExamAssignmentsTable(pool);
+  await ensureNotificationsTable(pool);
+  await ensureInstructorCourseItemsTable(pool);
+  await ensureInstructorQuestionBankTable(pool);
+  await ensureInstructorExamSchedulesTable(pool);
+  await ensureInstructorStudentAssignmentsTable(pool);
+  await ensureInstructorStudentNotesTable(pool);
+  await ensureInstructorMessagesTable(pool);
+  await ensureInstructorAlertsTable(pool);
+  await ensureInstructorGradingQueueTable(pool);
+  await ensureInstructorExportJobsTable(pool);
+  await ensureInstructorTopicPerformanceTable(pool);
 }
 
 async function seedDemoAccounts() {
@@ -281,16 +542,460 @@ async function seedDemoAccounts() {
   for (const account of demoAccounts) {
     const passwordHash = await bcrypt.hash(account.password, 10);
 
+    if (account.tableName === "students") {
+      await pool.query(
+        `
+        INSERT INTO \`students\` (name, email, phone_number, password_hash, batch_name, course_track)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          name = VALUES(name),
+          password_hash = VALUES(password_hash),
+          batch_name = VALUES(batch_name),
+          course_track = VALUES(course_track)
+        `,
+        [
+          account.name,
+          account.email,
+          account.phoneNumber,
+          passwordHash,
+          "Engineering A",
+          "Engineering",
+        ]
+      );
+    } else {
+      await pool.query(
+        `
+        INSERT INTO \`${account.tableName}\` (name, email, phone_number, password_hash)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          name = VALUES(name),
+          password_hash = VALUES(password_hash)
+        `,
+        [account.name, account.email, account.phoneNumber, passwordHash]
+      );
+    }
+  }
+}
+
+async function seedDemoExamSchedules() {
+  const pool = getPool();
+
+  const [students] = await pool.query(
+    `SELECT student_id, batch_name FROM students ORDER BY student_id ASC LIMIT 3`
+  );
+
+  if (students.length === 0) return;
+
+  const primaryStudent = students[0];
+  const now = new Date();
+
+  const createExamDate = (dayOffset, hour, minute, durationMinutes) => {
+    const start = new Date(now);
+    start.setSeconds(0, 0);
+    start.setDate(start.getDate() + dayOffset);
+    start.setHours(hour, minute, 0, 0);
+    const end = new Date(start.getTime() + durationMinutes * 60000);
+    return {
+      examDate: start.toISOString().slice(0, 10),
+      startTime: start.toISOString().slice(0, 19).replace("T", " "),
+      endTime: end.toISOString().slice(0, 19).replace("T", " "),
+    };
+  };
+
+  const createRelativeExamDate = (minutesFromNow, durationMinutes) => {
+    const start = new Date(now.getTime() + minutesFromNow * 60000);
+    start.setSeconds(0, 0);
+    const end = new Date(start.getTime() + durationMinutes * 60000);
+    return {
+      examDate: start.toISOString().slice(0, 10),
+      startTime: start.toISOString().slice(0, 19).replace("T", " "),
+      endTime: end.toISOString().slice(0, 19).replace("T", " "),
+    };
+  };
+
+  const physics = createExamDate(1, 9, 0, 90);
+  const chemistry = createRelativeExamDate(12, 60);
+  const biology = createExamDate(-1, 18, 0, 45);
+
+  const exams = [
+    {
+      subject: "Physics Mock",
+      ...physics,
+      duration: 90,
+      batchName: primaryStudent.batch_name || "Engineering A",
+      instructions: "Join 15 minutes early with calculator and rough sheet.",
+      audienceType: "batch",
+      studentIds: [],
+    },
+    {
+      subject: "Chemistry Drill",
+      ...chemistry,
+      duration: 60,
+      batchName: primaryStudent.batch_name || "Engineering A",
+      instructions: "Focus on reaction balancing and organic MCQ speed.",
+      audienceType: "specific",
+      studentIds: [primaryStudent.student_id],
+    },
+    {
+      subject: "Biology Viva",
+      ...biology,
+      duration: 45,
+      batchName: "Medical A",
+      instructions: "Completed sample oral assessment for revision.",
+      audienceType: "specific",
+      studentIds: [primaryStudent.student_id],
+    },
+  ];
+
+  for (const exam of exams) {
+    const [existing] = await pool.query(
+      `SELECT exam_id FROM exam_schedules WHERE subject = ? AND start_time = ? LIMIT 1`,
+      [exam.subject, exam.startTime]
+    );
+
+    let examId = existing[0]?.exam_id;
+
+    if (examId) {
+      await pool.query(
+        `
+        UPDATE exam_schedules
+        SET exam_date = ?, end_time = ?, duration_minutes = ?, batch_name = ?,
+            instructions = ?, audience_type = ?
+        WHERE exam_id = ?
+        `,
+        [
+          exam.examDate,
+          exam.endTime,
+          exam.duration,
+          exam.batchName,
+          exam.instructions,
+          exam.audienceType,
+          examId,
+        ]
+      );
+    } else {
+      const [result] = await pool.query(
+        `
+        INSERT INTO exam_schedules
+          (subject, exam_date, start_time, end_time, duration_minutes, batch_name, instructions, audience_type)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [
+          exam.subject,
+          exam.examDate,
+          exam.startTime,
+          exam.endTime,
+          exam.duration,
+          exam.batchName,
+          exam.instructions,
+          exam.audienceType,
+        ]
+      );
+      examId = result.insertId;
+    }
+
+    if (exam.audienceType === "specific" && exam.studentIds.length > 0) {
+      for (const studentId of exam.studentIds) {
+        await pool.query(
+          `
+          INSERT IGNORE INTO exam_assignments (exam_id, student_id)
+          VALUES (?, ?)
+          `,
+          [examId, studentId]
+        );
+      }
+    }
+  }
+}
+
+async function seedDemoInstructorWorkspace() {
+  const pool = getPool();
+  const demoStudentPassword = await bcrypt.hash("EduMate@123", 10);
+  const demoStudents = [
+    { name: "Farzana Islam", email: "farzana@edumate.com", phone: "+8801000000001", batch: "Engineering A", track: "Engineering" },
+    { name: "Nabil Hossain", email: "nabil@edumate.com", phone: "+8801000000002", batch: "Engineering A", track: "Engineering" },
+    { name: "Sadia Rahman", email: "sadia@edumate.com", phone: "+8801000000003", batch: "Medical+Versity", track: "Medical+Versity" },
+    { name: "Tanvir Alam", email: "tanvir@edumate.com", phone: "+8801000000004", batch: "Medical+Versity", track: "Medical+Versity" },
+  ];
+
+  for (const student of demoStudents) {
     await pool.query(
       `
-      INSERT INTO \`${account.tableName}\` (name, email, phone_number, password_hash)
-      VALUES (?, ?, ?, ?)
+      INSERT INTO students (name, email, phone_number, password_hash, batch_name, course_track)
+      VALUES (?, ?, ?, ?, ?, ?)
       ON DUPLICATE KEY UPDATE
         name = VALUES(name),
-        password_hash = VALUES(password_hash)
+        password_hash = VALUES(password_hash),
+        batch_name = VALUES(batch_name),
+        course_track = VALUES(course_track)
       `,
-      [account.name, account.email, account.phoneNumber, passwordHash]
+      [student.name, student.email, student.phone, demoStudentPassword, student.batch, student.track]
     );
+  }
+
+  const [instructorRows] = await pool.query(
+    `SELECT instructor_id, name FROM instructors WHERE email = 'instructor@edumate.com' LIMIT 1`
+  );
+  if (!instructorRows.length) return;
+  const instructorId = instructorRows[0].instructor_id;
+
+  const [studentRows] = await pool.query(
+    `SELECT student_id, name, batch_name FROM students WHERE email IN (?, ?, ?, ?) ORDER BY student_id ASC`,
+    demoStudents.map((student) => student.email)
+  );
+
+  for (const student of studentRows) {
+    await pool.query(
+      `
+      INSERT INTO instructor_student_assignments (instructor_id, student_id, assigned_batch, is_active)
+      VALUES (?, ?, ?, TRUE)
+      ON DUPLICATE KEY UPDATE
+        assigned_batch = VALUES(assigned_batch),
+        is_active = TRUE
+      `,
+      [instructorId, student.student_id, student.batch_name]
+    );
+  }
+
+  const courseItems = [
+    ["Engineering Physics", "Engineering A", "PDF", "Motion chapter formula sheet", "Core equations, solved examples, and quick revision table.", "2026-05-10"],
+    ["Organic Chemistry", "Medical+Versity", "Announcement", "Live revision class moved to 7:00 PM", "Topic focus: reaction mechanisms and naming shortcuts.", null],
+  ];
+  for (const item of courseItems) {
+    const [existing] = await pool.query(
+      `SELECT item_id FROM instructor_course_items WHERE instructor_id = ? AND title = ? AND batch_name = ? LIMIT 1`,
+      [instructorId, item[3], item[1]]
+    );
+    if (existing.length > 0) {
+      await pool.query(
+        `UPDATE instructor_course_items SET course_title = ?, content_type = ?, summary = ?, deadline = ? WHERE item_id = ?`,
+        [item[0], item[2], item[4], item[5], existing[0].item_id]
+      );
+    } else {
+      await pool.query(
+        `
+        INSERT INTO instructor_course_items (instructor_id, course_title, batch_name, content_type, title, summary, deadline)
+        VALUES (?, ?, ?, ?, ?, ?, ?)
+        `,
+        [instructorId, ...item]
+      );
+    }
+  }
+
+  const questionItems = [
+    ["Physics", "MCQ", "A body starts from rest and accelerates uniformly. Which graph becomes linear?", "A) v-t | B) s-t^2 | C) a-v | D) s-v", "A"],
+    ["Biology", "Essay", "Explain the role of mitochondria in aerobic respiration.", "Long answer prompt", "ATP production, Krebs cycle linkage, membrane role"],
+  ];
+  for (const item of questionItems) {
+    const [existing] = await pool.query(
+      `SELECT question_id FROM instructor_question_bank WHERE instructor_id = ? AND question_text = ? LIMIT 1`,
+      [instructorId, item[2]]
+    );
+    if (existing.length > 0) {
+      await pool.query(
+        `UPDATE instructor_question_bank SET subject = ?, question_type = ?, options_text = ?, answer_key = ? WHERE question_id = ?`,
+        [item[0], item[1], item[3], item[4], existing[0].question_id]
+      );
+    } else {
+      await pool.query(
+        `
+        INSERT INTO instructor_question_bank (instructor_id, subject, question_type, question_text, options_text, answer_key)
+        VALUES (?, ?, ?, ?, ?, ?)
+        `,
+        [instructorId, ...item]
+      );
+    }
+  }
+
+  const examItems = [
+    ["Physics Weekly Mock 3", "Engineering A", "2026-05-06", "2026-05-06 09:00:00", 90, 15, "-0.25 per MCQ", "Questions and options", "Mock Test", "Published", "Calculator allowed. No retake after submission."],
+    ["Medical Biology Short Test", "Medical+Versity", "2026-05-06", "2026-05-06 10:00:00", 60, 10, "None", "Questions only", "Batch Exam", "Draft", "Short-answer review needed before final publish."],
+    ["Engineering Math Speed Quiz", "Engineering A", "2026-05-04", "2026-05-04 18:30:00", 45, 10, "-0.25 per MCQ", "Questions only", "Assignment Quiz", "Published", "Fast drill for algebra and trigonometry."],
+  ];
+  for (const item of examItems) {
+    const [existing] = await pool.query(
+      `SELECT instructor_exam_id FROM instructor_exam_schedules WHERE instructor_id = ? AND title = ? AND batch_name = ? LIMIT 1`,
+      [instructorId, item[0], item[1]]
+    );
+    if (existing.length > 0) {
+      await pool.query(
+        `
+        UPDATE instructor_exam_schedules
+        SET exam_date = ?, start_time = ?, duration_minutes = ?, join_window_minutes = ?, negative_marking = ?,
+            shuffle_mode = ?, exam_type = ?, publish_state = ?, rules = ?
+        WHERE instructor_exam_id = ?
+        `,
+        [item[2], item[3], item[4], item[5], item[6], item[7], item[8], item[9], item[10], existing[0].instructor_exam_id]
+      );
+    } else {
+      await pool.query(
+        `
+        INSERT INTO instructor_exam_schedules
+          (instructor_id, title, batch_name, exam_date, start_time, duration_minutes, join_window_minutes, negative_marking, shuffle_mode, exam_type, publish_state, rules)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [instructorId, ...item]
+      );
+    }
+  }
+
+  const studentMeta = {
+    "Farzana Islam": ["72% complete", "Needs more chemistry review"],
+    "Nabil Hossain": ["58% complete", "Often late to mock exams"],
+    "Sadia Rahman": ["84% complete", "Strong in biology essays"],
+    "Tanvir Alam": ["63% complete", "Manual grading pending for short answers"],
+  };
+  for (const student of studentRows) {
+    const [progressLabel, note] = studentMeta[student.name] || ["Pending update", "No note yet"];
+    await pool.query(
+      `
+      INSERT INTO instructor_student_notes (instructor_id, student_id, progress_label, note)
+      VALUES (?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+        progress_label = VALUES(progress_label),
+        note = VALUES(note)
+      `,
+      [instructorId, student.student_id, progressLabel, note]
+    );
+  }
+
+  const messages = [
+    ["Announcement", "Engineering A", "New assignment uploaded", "Solve the motion chapter worksheet before Friday night."],
+    ["Exam Feedback", "Sadia Rahman", "Biology viva feedback", "Excellent structure. Add clearer examples in the final answer."],
+  ];
+  for (const message of messages) {
+    const [existing] = await pool.query(
+      `SELECT message_id FROM instructor_messages WHERE instructor_id = ? AND title = ? AND audience = ? LIMIT 1`,
+      [instructorId, message[2], message[1]]
+    );
+    if (existing.length > 0) {
+      await pool.query(
+        `UPDATE instructor_messages SET message_type = ?, body = ? WHERE message_id = ?`,
+        [message[0], message[3], existing[0].message_id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO instructor_messages (instructor_id, message_type, audience, title, body) VALUES (?, ?, ?, ?, ?)`,
+        [instructorId, ...message]
+      );
+    }
+  }
+
+  const alerts = [
+    ["urgent", "Proctoring violation flagged", "Engineering Math Speed Quiz - tab switch detected for Nabil Hossain."],
+    ["info", "Student submitted exam", "Farzana Islam submitted Physics Weekly Mock 3."],
+    ["info", "Exam reminder", "Physics Weekly Mock 3 starts in 30 minutes."],
+    ["info", "New student question", "Sadia Rahman asked about essay grading rubric."],
+  ];
+  for (const alert of alerts) {
+    const [existing] = await pool.query(
+      `SELECT alert_id FROM instructor_alerts WHERE instructor_id = ? AND title = ? LIMIT 1`,
+      [instructorId, alert[1]]
+    );
+    if (existing.length > 0) {
+      await pool.query(
+        `UPDATE instructor_alerts SET level = ?, note = ? WHERE alert_id = ?`,
+        [alert[0], alert[2], existing[0].alert_id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, ?, ?, ?)`,
+        [instructorId, ...alert]
+      );
+    }
+  }
+
+  const gradingQueue = [
+    ["Medical Biology Short Test", "4 short answers pending", "Medical+Versity"],
+    ["Engineering Physics Assignment", "12 manual comments pending", "Engineering A"],
+  ];
+  for (const queueItem of gradingQueue) {
+    const [existing] = await pool.query(
+      `SELECT queue_id FROM instructor_grading_queue WHERE instructor_id = ? AND exam_title = ? LIMIT 1`,
+      [instructorId, queueItem[0]]
+    );
+    if (existing.length > 0) {
+      await pool.query(
+        `UPDATE instructor_grading_queue SET queue_item = ?, owner_label = ? WHERE queue_id = ?`,
+        [queueItem[1], queueItem[2], existing[0].queue_id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO instructor_grading_queue (instructor_id, exam_title, queue_item, owner_label) VALUES (?, ?, ?, ?)`,
+        [instructorId, ...queueItem]
+      );
+    }
+  }
+
+  const exportJobs = [
+    ["Batch A result sheet", "CSV", "Ready"],
+    ["Biology essay review pack", "PDF", "Needs grading"],
+  ];
+  for (const exportJob of exportJobs) {
+    const [existing] = await pool.query(
+      `SELECT export_id FROM instructor_export_jobs WHERE instructor_id = ? AND label = ? LIMIT 1`,
+      [instructorId, exportJob[0]]
+    );
+    if (existing.length > 0) {
+      await pool.query(
+        `UPDATE instructor_export_jobs SET format = ?, status = ? WHERE export_id = ?`,
+        [exportJob[1], exportJob[2], existing[0].export_id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO instructor_export_jobs (instructor_id, label, format, status) VALUES (?, ?, ?, ?)`,
+        [instructorId, ...exportJob]
+      );
+    }
+  }
+
+  const topicItems = [
+    ["Kinematics", 82, "Strong pace and formula recall"],
+    ["Organic Naming", 69, "More drills needed"],
+    ["Cell Respiration", 76, "Good concept clarity"],
+  ];
+  for (const topicItem of topicItems) {
+    const [existing] = await pool.query(
+      `SELECT topic_id FROM instructor_topic_performance WHERE instructor_id = ? AND topic = ? LIMIT 1`,
+      [instructorId, topicItem[0]]
+    );
+    if (existing.length > 0) {
+      await pool.query(
+        `UPDATE instructor_topic_performance SET score = ?, note = ? WHERE topic_id = ?`,
+        [topicItem[1], topicItem[2], existing[0].topic_id]
+      );
+    } else {
+      await pool.query(
+        `INSERT INTO instructor_topic_performance (instructor_id, topic, score, note) VALUES (?, ?, ?, ?)`,
+        [instructorId, ...topicItem]
+      );
+    }
+  }
+
+  const performanceRows = [
+    ["Farzana Islam", "Physics", "mock", 81, 50, 41, "Physics Weekly Mock 3", 14, 120],
+    ["Nabil Hossain", "Math", "mock", 67, 40, 27, "Engineering Math Speed Quiz", 29, 120],
+    ["Sadia Rahman", "Biology", "mock", 88, 45, 40, "Medical Biology Short Test", 8, 95],
+    ["Tanvir Alam", "Chemistry", "mock", 74, 40, 30, "Organic Chemistry Drill", 19, 95],
+  ];
+  const studentIdByName = Object.fromEntries(studentRows.map((row) => [row.name, row.student_id]));
+  for (const performance of performanceRows) {
+    const studentId = studentIdByName[performance[0]];
+    if (!studentId) continue;
+    const [existingRows] = await pool.query(
+      `SELECT performance_id FROM student_performance WHERE student_id = ? AND test_name = ? LIMIT 1`,
+      [studentId, performance[6]]
+    );
+    if (existingRows.length === 0) {
+      await pool.query(
+        `
+        INSERT INTO student_performance
+          (student_id, subject, test_type, score, total_questions, correct_answers, test_name, rank, total_participants)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        `,
+        [studentId, performance[1], performance[2], performance[3], performance[4], performance[5], performance[6], performance[7], performance[8]]
+      );
+    }
   }
 }
 
@@ -543,4 +1248,6 @@ module.exports = {
   seedDemoContentAndReports,
   seedDemoDiscussions,
   seedDemoStudyCircles,
+  seedDemoExamSchedules,
+  seedDemoInstructorWorkspace,
 };

@@ -1,3 +1,28 @@
 .panel-grid-spaced {
 	margin-top: 1.25rem;
 }
+
+.panel .list-item {
+	align-items: center;
+}
+
+.panel .list-item > div {
+	display: grid;
+	gap: 4px;
+}
+
+.upcoming-exam-item {
+	border-left: 4px solid rgba(12, 122, 167, 0.35);
+	padding-left: 12px;
+}
+
+.upcoming-exam-item:focus-visible {
+	outline: 3px solid rgba(12, 122, 167, 0.28);
+	outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+	.panel .list-item {
+		align-items: flex-start;
+	}
+}

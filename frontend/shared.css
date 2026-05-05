@@ -10,31 +10,34 @@
   --primary-dark: #075d88;
   --amber: #ec9f1f;
   --amber-light: #fff1d8;
+  --green: #23966f;
+  --green-light: #e9f8f1;
   --blue: #1f77b6;
   --blue-light: #eaf4ff;
   --red: #d95b6e;
   --red-light: #ffe8ec;
-  --bg: #eaf5ff;
+  --bg: #f3f7fb;
   --surface: #ffffff;
-  --surface-soft: #f4f9ff;
-  --border: #cfe1f0;
+  --surface-soft: #f7fafc;
+  --border: #d6e2ee;
   --text: #12253f;
-  --muted: #5f7895;
-  --radius: 16px;
-  --radius-sm: 11px;
-  --shadow-soft: 0 14px 32px rgba(15, 62, 104, 0.08);
-  --shadow-panel: 0 18px 38px rgba(8, 59, 94, 0.11);
+  --muted: #607086;
+  --radius: 12px;
+  --radius-sm: 9px;
+  --shadow-soft: 0 10px 26px rgba(18, 37, 63, 0.07);
+  --shadow-panel: 0 16px 36px rgba(18, 37, 63, 0.1);
 }
 
 body {
   font-family: "Manrope", sans-serif;
-  background:
-    radial-gradient(900px 500px at -8% -10%, rgba(12, 122, 167, 0.18), transparent 64%),
-    radial-gradient(800px 460px at 108% 4%, rgba(236, 159, 31, 0.18), transparent 62%),
-    linear-gradient(180deg, #f7fcff 0%, #edf5ff 55%, #f4f8ff 100%);
+  background: linear-gradient(180deg, #f8fbff 0%, #f1f6fb 46%, #f6f8fb 100%);
   color: var(--text);
   min-height: 100vh;
   line-height: 1.5;
+}
+
+::selection {
+  background: rgba(12, 122, 167, 0.18);
 }
 
 html {
@@ -60,7 +63,7 @@ textarea::placeholder {
 
 .sidebar {
   width: 240px;
-  background: linear-gradient(175deg, rgba(255, 255, 255, 0.96) 0%, rgba(242, 250, 255, 0.95) 100%);
+  background: rgba(255, 255, 255, 0.96);
   border-right: 1px solid rgba(207, 225, 240, 0.9);
   padding: 1.5rem 1rem;
   display: flex;
@@ -71,7 +74,7 @@ textarea::placeholder {
   height: 100vh;
   z-index: 10;
   backdrop-filter: blur(4px);
-  box-shadow: 10px 0 30px rgba(15, 62, 104, 0.05);
+  box-shadow: 10px 0 30px rgba(18, 37, 63, 0.045);
   overflow-y: auto;
 }
 
@@ -126,6 +129,7 @@ textarea::placeholder {
 }
 
 .nav-item {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -137,7 +141,7 @@ textarea::placeholder {
   cursor: pointer;
   text-decoration: none;
   font-weight: 600;
-  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
+  transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease, box-shadow 0.2s ease;
 }
 
 .nav-item svg {
@@ -153,9 +157,10 @@ textarea::placeholder {
 }
 
 .nav-item.active {
-  background: linear-gradient(135deg, rgba(12, 122, 167, 0.17) 0%, rgba(7, 93, 136, 0.14) 100%);
+  background: #eef7ff;
   color: var(--primary-dark);
   font-weight: 700;
+  box-shadow: inset 3px 0 0 var(--primary);
 }
 
 .nav-item.active svg {
@@ -165,6 +170,7 @@ textarea::placeholder {
 .main {
   margin-left: 240px;
   flex: 1;
+  min-width: 0;
 }
 
 .topbar {
@@ -180,6 +186,7 @@ textarea::placeholder {
   top: 0;
   z-index: 5;
   gap: 1rem;
+  box-shadow: 0 8px 24px rgba(18, 37, 63, 0.04);
 }
 
 .topbar-title {
@@ -260,17 +267,19 @@ textarea::placeholder {
 }
 
 .content {
+  max-width: 1320px;
+  margin: 0 auto;
   padding: 2rem;
   width: 100%;
 }
 
 .page-header {
-  margin-bottom: 1.85rem;
+  margin-bottom: 1.6rem;
 }
 
 .page-header h1 {
   font-family: "Playfair Display", serif;
-  font-size: 29px;
+  font-size: clamp(1.75rem, 2.2vw, 2.35rem);
   font-weight: 700;
   color: #11375b;
   margin-bottom: 6px;
@@ -289,11 +298,22 @@ textarea::placeholder {
 }
 
 .stat-card {
-  background: linear-gradient(165deg, #ffffff 0%, #f2f9ff 100%);
-  border: 1px solid var(--border);
+  background: #ffffff;
+  border: 1px solid rgba(214, 226, 238, 0.95);
   border-radius: 12px;
   padding: 1.25rem;
   box-shadow: var(--shadow-soft);
+  position: relative;
+  overflow: hidden;
+}
+
+.stat-card::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--primary) 0%, var(--green) 52%, var(--amber) 100%);
+  opacity: 0.72;
 }
 
 .stat-card .s-label {
@@ -323,6 +343,10 @@ textarea::placeholder {
   box-shadow: 0 16px 32px rgba(7, 93, 136, 0.24);
 }
 
+.stat-card.highlight::before {
+  background: rgba(255, 255, 255, 0.52);
+}
+
 .stat-card.highlight .s-label,
 .stat-card.highlight .s-val,
 .stat-card.highlight .s-sub {
@@ -336,9 +360,9 @@ textarea::placeholder {
 }
 
 .panel {
-  background: linear-gradient(165deg, #ffffff 0%, #f5faff 100%);
-  border: 1px solid var(--border);
-  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid rgba(214, 226, 238, 0.95);
+  border-radius: 12px;
   padding: 1.45rem;
   box-shadow: var(--shadow-panel);
 }
@@ -357,7 +381,7 @@ textarea::placeholder {
   top: calc(100% + 8px);
   right: 0;
   width: min(340px, calc(100vw - 40px));
-  border-radius: 14px;
+  border-radius: 10px;
   border: 1px solid var(--border);
   background: #fff;
   box-shadow: 0 18px 38px rgba(8, 59, 94, 0.14);
@@ -408,9 +432,9 @@ textarea::placeholder {
 }
 
 .list-item {
-  border: 1px solid var(--border);
-  background: linear-gradient(145deg, #ffffff 0%, #f6fbff 100%);
-  border-radius: 12px;
+  border: 1px solid rgba(214, 226, 238, 0.95);
+  background: #ffffff;
+  border-radius: 10px;
   padding: 12px 14px;
   display: flex;
   align-items: flex-start;
@@ -421,7 +445,7 @@ textarea::placeholder {
 
 .list-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 10px 22px rgba(8, 59, 94, 0.1);
+  box-shadow: 0 12px 24px rgba(18, 37, 63, 0.09);
 }
 
 .list-item h4 {
@@ -446,11 +470,11 @@ textarea::placeholder {
 .filter-btn {
   min-height: 38px;
   padding: 8px 16px;
-  border-radius: 10px;
+  border-radius: 9px;
   font-size: 13px;
   font-family: "Manrope", sans-serif;
   border: 1px solid var(--border);
-  background: linear-gradient(160deg, #ffffff 0%, #f4f9ff 100%);
+  background: #ffffff;
   color: var(--muted);
   cursor: pointer;
   transition: all 0.2s ease;
@@ -473,9 +497,9 @@ textarea::placeholder {
   display: flex;
   align-items: center;
   gap: 8px;
-  background: linear-gradient(160deg, #ffffff 0%, #f4f9ff 100%);
+  background: #ffffff;
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 9px;
   padding: 8px 12px;
   min-height: 40px;
 }
@@ -524,11 +548,11 @@ textarea::placeholder {
   font-size: 13px;
   font-weight: 700;
   padding: 8px 18px;
-  border-radius: 10px;
+  border-radius: 9px;
   cursor: pointer;
   white-space: nowrap;
   border: 1px solid var(--border);
-  background: linear-gradient(160deg, #ffffff 0%, #f4f9ff 100%);
+  background: #ffffff;
   color: var(--text);
   text-decoration: none;
   display: inline-flex;
@@ -594,6 +618,7 @@ textarea::placeholder {
   background: var(--primary-light);
   color: var(--primary-dark);
   font-weight: 700;
+  border: 1px solid rgba(12, 122, 167, 0.08);
 }
 
 .chip.blue {
@@ -609,6 +634,11 @@ textarea::placeholder {
 .chip.red {
   background: var(--red-light);
   color: #a23e4d;
+}
+
+.chip.green {
+  background: var(--green-light);
+  color: #1e6b4f;
 }
 
 .text-primary {
@@ -630,8 +660,8 @@ textarea::placeholder {
 
 .surface-band {
   border: 1px solid var(--border);
-  border-radius: 14px;
-  background: linear-gradient(165deg, #ffffff 0%, #f6fbff 100%);
+  border-radius: 12px;
+  background: #ffffff;
   box-shadow: var(--shadow-soft);
 }
 
@@ -670,7 +700,7 @@ textarea::placeholder {
 .empty-card {
   padding: 1rem;
   border: 1px dashed var(--border);
-  border-radius: 12px;
+  border-radius: 10px;
   background: #fbfdff;
 }
 
@@ -706,12 +736,76 @@ textarea::placeholder {
   fill: none;
 }
 
+select,
+input,
+textarea {
+  max-width: 100%;
+}
+
 a:focus-visible,
 button:focus-visible,
 input:focus-visible,
-textarea:focus-visible {
+textarea:focus-visible,
+select:focus-visible {
   outline: 3px solid rgba(12, 122, 167, 0.28);
   outline-offset: 2px;
+}
+
+@media (max-width: 700px) {
+  .table-wrap {
+    border: 0;
+    background: transparent;
+  }
+
+  table {
+    min-width: 0;
+  }
+
+  thead {
+    display: none;
+  }
+
+  tbody,
+  tr,
+  td {
+    display: block;
+    width: 100%;
+  }
+
+  tbody {
+    display: grid;
+    gap: 0.85rem;
+  }
+
+  tr {
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    background: #ffffff;
+    box-shadow: var(--shadow-soft);
+    overflow: hidden;
+  }
+
+  td {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.75rem 0.9rem;
+    border-bottom: 1px solid rgba(214, 226, 238, 0.85);
+  }
+
+  td::before {
+    content: attr(data-label);
+    flex: 0 0 42%;
+    color: var(--muted);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+  }
+
+  td:last-child {
+    border-bottom: 0;
+  }
 }
 
 @media (max-width: 1100px) {
@@ -748,7 +842,16 @@ textarea:focus-visible {
     overflow-y: hidden;
     border-right: 0;
     border-bottom: 1px solid rgba(207, 225, 240, 0.9);
-    box-shadow: 0 10px 24px rgba(15, 62, 104, 0.07);
+    box-shadow: 0 10px 24px rgba(18, 37, 63, 0.07);
+  }
+
+  .sidebar::-webkit-scrollbar {
+    height: 4px;
+  }
+
+  .sidebar::-webkit-scrollbar-thumb {
+    background: rgba(12, 122, 167, 0.24);
+    border-radius: 999px;
   }
 
   .sidebar .logo {
@@ -771,6 +874,10 @@ textarea:focus-visible {
     white-space: nowrap;
     min-height: 40px;
     padding: 9px 11px;
+  }
+
+  .nav-item.active {
+    box-shadow: inset 0 -3px 0 var(--primary);
   }
 
   .main {

@@ -189,8 +189,15 @@ async function loadStudyCircles() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  if (!requireRole("student")) return;
-  setupLogoutHandlers();
+  const user = requireRole("student", { allowAnonymous: true });
+  if (user) {
+    setupLogoutHandlers();
+  } else {
+    document.querySelectorAll(".logout-btn").forEach((link) => {
+      link.textContent = "Login";
+      link.setAttribute("aria-label", "Login");
+    });
+  }
   loadDiscussions();
   loadStudyCircles();
 

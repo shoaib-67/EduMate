@@ -5,8 +5,8 @@
 }
 
 .test-card {
-  background: linear-gradient(165deg, #ffffff 0%, #f3f9ff 100%);
-  border: 1px solid var(--border);
+  background: #ffffff;
+  border: 1px solid rgba(214, 226, 238, 0.95);
   border-radius: var(--radius);
   padding: 1.25rem;
   min-height: 250px;
@@ -19,7 +19,7 @@
 }
 
 .test-card:hover {
-  box-shadow: 0 18px 38px rgba(8, 59, 94, 0.16);
+  box-shadow: 0 18px 38px rgba(18, 37, 63, 0.13);
   transform: translateY(-3px);
   border-color: #b9d8ee;
 }
@@ -30,7 +30,7 @@
 
 .test-card.featured {
   border-left: 3px solid var(--primary);
-  background: linear-gradient(165deg, #ffffff 0%, #eaf6ff 100%);
+  background: #f8fcff;
 }
 
 .tc-top {
@@ -92,7 +92,7 @@
   font-size: 11px;
   padding: 4px 9px;
   border-radius: 999px;
-  background: linear-gradient(145deg, #f7fbff 0%, #eef6ff 100%);
+  background: #f7fbff;
   color: #48627c;
   border: 1px solid var(--border);
   font-weight: 600;
@@ -255,8 +255,8 @@
 }
 
 .modal {
-  background: linear-gradient(165deg, #ffffff 0%, #f0f8ff 100%);
-  border-radius: 20px;
+  background: #ffffff;
+  border-radius: 12px;
   width: 100%;
   max-width: 860px;
   max-height: 92vh;
@@ -791,7 +791,7 @@
   flex-shrink: 0;
   font-size: 11px;
   padding: 2px 8px;
-  border-radius: 20px;
+  border-radius: 999px;
 }
 
 .review-state-skipped {

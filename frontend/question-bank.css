@@ -5,8 +5,8 @@
 }
 
 .bank-card {
-  background: linear-gradient(165deg, #ffffff 0%, #f2f9ff 100%);
-  border: 1px solid var(--border);
+  background: #ffffff;
+  border: 1px solid rgba(214, 226, 238, 0.95);
   border-radius: var(--radius);
   padding: 1.25rem;
   min-height: 225px;
@@ -27,7 +27,7 @@
 
 .bank-card:hover {
   transform: translateY(-3px);
-  box-shadow: 0 16px 30px rgba(8, 59, 94, 0.14);
+  box-shadow: 0 16px 30px rgba(18, 37, 63, 0.12);
   border-color: #b8d8ee;
 }
 

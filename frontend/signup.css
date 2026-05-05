@@ -12,8 +12,8 @@
 
 .benefit {
   border: 1px solid var(--border);
-  background: linear-gradient(145deg, #ffffff 0%, #f3f9ff 100%);
-  border-radius: 12px;
+  background: #ffffff;
+  border-radius: 10px;
   padding: 12px 14px;
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
@@ -51,8 +51,8 @@
 .form-group input {
   width: 100%;
   border: 1px solid var(--border);
-  background: linear-gradient(160deg, #ffffff 0%, #f6fbff 100%);
-  border-radius: 10px;
+  background: #ffffff;
+  border-radius: 9px;
   padding: 10px 12px;
   font-size: 14px;
   color: var(--text);
@@ -78,7 +78,7 @@
   border: 1px solid #b7d8ee;
   background: linear-gradient(135deg, var(--primary-light) 0%, #d9ecfa 100%);
   color: var(--primary-dark);
-  border-radius: 10px;
+  border-radius: 9px;
   padding: 8px 12px;
   font-weight: 700;
   cursor: pointer;

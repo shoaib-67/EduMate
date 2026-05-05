@@ -5,9 +5,9 @@
 }
 
 .thread {
-  border: 1px solid var(--border);
-  background: linear-gradient(145deg, #ffffff 0%, #f5faff 100%);
-  border-radius: 12px;
+  border: 1px solid rgba(214, 226, 238, 0.95);
+  background: #ffffff;
+  border-radius: 10px;
   padding: 12px 14px;
   display: grid;
   gap: 6px;
@@ -33,7 +33,7 @@
 .discussion-filters input,
 .discussion-filters select {
   border: 1px solid var(--border);
-  border-radius: 10px;
+  border-radius: 9px;
   min-height: 40px;
   padding: 8px 10px;
   font-size: 13px;
@@ -86,9 +86,9 @@
 .input-row { display: grid; gap: 8px; margin-top: 1rem; }
 .discussion-input {
   padding: 10px 12px;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: linear-gradient(160deg, #ffffff 0%, #f6fbff 100%);
+  background: #ffffff;
   font-size: 14px;
 }
 
@@ -96,8 +96,8 @@
   width: 100%;
   min-height: 110px;
   border: 1px solid var(--border);
-  background: linear-gradient(160deg, #ffffff 0%, #f6fbff 100%);
-  border-radius: 12px;
+  background: #ffffff;
+  border-radius: 10px;
   padding: 10px 12px;
   font-size: 14px;
   color: var(--text);

@@ -24,10 +24,7 @@
   font-family: "Manrope", sans-serif;
   color: var(--ink-900);
   min-height: 100vh;
-  background:
-    radial-gradient(900px 460px at 8% -8%, rgba(12, 122, 167, 0.16), transparent 62%),
-    radial-gradient(880px 520px at 102% 4%, rgba(245, 159, 10, 0.14), transparent 64%),
-    linear-gradient(180deg, #f8fcff 0%, #eff6ff 52%, #f5f9ff 100%);
+  background: linear-gradient(180deg, #f9fcff 0%, #f0f6fb 52%, #f7f9fc 100%);
 }
 
 .container {
@@ -220,9 +217,9 @@
 
 .motivation-card {
   padding: 14px 15px;
-  border-radius: 16px;
+  border-radius: 12px;
   border: 1px solid #d9e7f4;
-  background: rgba(255, 255, 255, 0.9);
+  background: #ffffff;
   box-shadow: 0 10px 24px rgba(12, 71, 110, 0.06);
 }
 
@@ -337,9 +334,9 @@
 }
 
 .login-card {
-  background: linear-gradient(160deg, #ffffff 0%, #f2f9ff 100%);
+  background: #ffffff;
   border: 1px solid #cee3f5;
-  border-radius: var(--radius-xl);
+  border-radius: 12px;
   padding: 24px;
   box-shadow: var(--shadow-pop);
   position: sticky;
@@ -411,7 +408,7 @@
   margin-top: 13px;
   padding: 5px;
   border: 1px solid #d5e5f1;
-  border-radius: 14px;
+  border-radius: 10px;
   background: #edf6ff;
 }
 
@@ -631,7 +628,7 @@
   display: grid;
   grid-template-columns: repeat(4, 1fr);
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   background: var(--surface);
   box-shadow: var(--shadow-soft);
   overflow: hidden;
@@ -701,8 +698,8 @@
 .focus-lead,
 .focus-stack {
   border: 1px solid var(--line);
-  border-radius: 22px;
-  background: linear-gradient(160deg, #ffffff 0%, #f6fbff 100%);
+  border-radius: 12px;
+  background: #ffffff;
   box-shadow: var(--shadow-soft);
 }
 
@@ -733,7 +730,7 @@
   display: grid;
   gap: 4px;
   padding: 15px 16px;
-  border-radius: 16px;
+  border-radius: 10px;
   background: #ffffff;
   border: 1px solid #dce8f4;
 }
@@ -763,9 +760,9 @@
 .feature-card,
 .package-card,
 .faq-item {
-  background: linear-gradient(160deg, #ffffff 0%, #f5faff 100%);
+  background: #ffffff;
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   padding: 18px;
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
@@ -874,7 +871,7 @@
 .address-grid > div {
   background: #fff;
   border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
+  border-radius: 12px;
   padding: 20px;
 }
 
@@ -1037,7 +1034,7 @@ input:focus-visible {
   }
 
   .login-card {
-    border-radius: 18px;
+    border-radius: 12px;
     padding: 18px;
   }
 

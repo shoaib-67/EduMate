@@ -16,7 +16,7 @@
   padding: 0 0.8rem;
   border-radius: 999px;
   border: 1px solid rgba(183, 216, 238, 0.9);
-  background: linear-gradient(160deg, #ffffff 0%, #eef7ff 100%);
+  background: #ffffff;
   color: #1a5b8c;
   font-size: 12px;
   font-weight: 700;
@@ -63,9 +63,9 @@
 
 .workspace-card {
   border: 1px solid var(--border);
-  border-radius: 14px;
+  border-radius: 12px;
   padding: 1.2rem;
-  background: linear-gradient(165deg, #ffffff 0%, #f5faff 100%);
+  background: #ffffff;
   box-shadow: var(--shadow-soft);
 }
 
@@ -73,9 +73,7 @@
   display: flex;
   justify-content: space-between;
   gap: 1rem;
-  background:
-    radial-gradient(260px 120px at 100% 0%, rgba(255, 255, 255, 0.22), transparent 60%),
-    linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
   color: #ffffff;
   border-color: transparent;
 }
@@ -122,7 +120,7 @@
   align-items: center;
   justify-content: center;
   padding: 0.7rem 0.85rem;
-  border-radius: 12px;
+  border-radius: 10px;
   background: rgba(255, 255, 255, 0.16);
   border: 1px solid rgba(255, 255, 255, 0.18);
   color: #ffffff;
@@ -140,9 +138,9 @@
   display: grid;
   gap: 0.18rem;
   padding: 0.8rem 0.9rem;
-  border-radius: 12px;
+  border-radius: 10px;
   border: 1px solid var(--border);
-  background: linear-gradient(160deg, #ffffff 0%, #f7fbff 100%);
+  background: #ffffff;
 }
 
 .attention-item strong {
@@ -237,8 +235,8 @@
 .form-group textarea {
   width: 100%;
   border: 1px solid var(--border);
-  background: linear-gradient(160deg, #ffffff 0%, #f6fbff 100%);
-  border-radius: 10px;
+  background: #ffffff;
+  border-radius: 9px;
   padding: 10px 12px;
   font-size: 14px;
   color: var(--text);
@@ -392,7 +390,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   padding: 1rem;
-  background: linear-gradient(165deg, #ffffff 0%, #f7fbff 100%);
+  background: #ffffff;
 }
 
 .analytics-card h3 {

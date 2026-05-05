@@ -1782,7 +1782,9 @@ app.get("/api/student/:studentId/assignments", async (req, res) => {
       LEFT JOIN instructors i ON i.instructor_id = cs.instructor_id
       WHERE cs.status = 'approved'
         AND LOWER(cs.type) = 'assignment'
-        AND (cs.batch_name IS NULL OR cs.batch_name = '' OR LOWER(cs.batch_name) = LOWER(?))
+        AND cs.batch_name IS NOT NULL
+        AND cs.batch_name <> ''
+        AND LOWER(cs.batch_name) = LOWER(?)
       ORDER BY
         CASE WHEN cs.deadline IS NULL THEN 1 ELSE 0 END,
         cs.deadline ASC,

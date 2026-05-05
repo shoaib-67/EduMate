@@ -101,6 +101,21 @@
                 <strong id="assignmentCourseCount">--</strong>
               </div>
             </div>
+            <div class="assignment-toolbar" aria-label="Assignment filters">
+              <label class="assignment-search">
+                <span>Search assignments</span>
+                <input id="assignmentSearch" type="search" placeholder="Search title, course, or instructions" />
+              </label>
+              <label class="assignment-filter">
+                <span>Due status</span>
+                <select id="assignmentDueFilter">
+                  <option value="all">All assignments</option>
+                  <option value="soon">Due soon</option>
+                  <option value="overdue">Overdue</option>
+                  <option value="open">No deadline</option>
+                </select>
+              </label>
+            </div>
             <div class="assignment-list" id="assignmentList">
               <div class="empty-card">
                 <strong>Loading assignments</strong>

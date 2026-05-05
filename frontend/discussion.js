@@ -190,6 +190,7 @@ async function loadStudyCircles() {
 
 document.addEventListener("DOMContentLoaded", () => {
   const user = requireRole("student", { allowAnonymous: true });
+  const postButton = document.querySelector(".input-row .btn-primary");
   if (user) {
     setupLogoutHandlers();
   } else {
@@ -197,11 +198,21 @@ document.addEventListener("DOMContentLoaded", () => {
       link.textContent = "Login";
       link.setAttribute("aria-label", "Login");
     });
+    showDiscussionStatus("You can read discussions without logging in. Log in as a student to post.", "info");
+    if (postButton) {
+      postButton.textContent = "Login to post";
+    }
   }
   loadDiscussions();
   loadStudyCircles();
 
-  document.querySelector(".input-row .btn-primary")?.addEventListener("click", handlePostDiscussion);
+  postButton?.addEventListener("click", () => {
+    if (!user) {
+      window.location.href = "index.html";
+      return;
+    }
+    handlePostDiscussion();
+  });
 
   document.getElementById("discussionSearch")?.addEventListener("input", (event) => {
     discussionFilter.query = event.target.value || "";

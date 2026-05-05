@@ -57,3 +57,18 @@
   font-size: 12px;
   font-weight: 700;
 }
+
+@media (max-width: 700px) {
+  .trend-row {
+    grid-template-columns: 1fr;
+    gap: 0.35rem;
+  }
+
+  .trend-label {
+    white-space: normal;
+  }
+
+  .metric {
+    width: 100%;
+  }
+}

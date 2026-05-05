@@ -947,7 +947,22 @@ app.get("/api/admin/content", async (_req, res) => {
     const pool = getPool();
 
     const [content] = await pool.query(
-      "SELECT submission_id as id, title, type, status, created_at FROM content_submissions ORDER BY created_at DESC"
+      `
+      SELECT
+        cs.submission_id as id,
+        cs.title,
+        cs.type,
+        cs.description,
+        cs.course_title as courseTitle,
+        cs.batch_name as batchName,
+        cs.deadline,
+        cs.status,
+        cs.created_at,
+        i.name as instructorName
+      FROM content_submissions cs
+      LEFT JOIN instructors i ON i.instructor_id = cs.instructor_id
+      ORDER BY cs.created_at DESC
+      `
     );
 
     return res.status(200).json({
@@ -1471,11 +1486,20 @@ app.post("/api/instructor/:instructorId/course-items", async (req, res) => {
     );
 
     await pool.query(
-      `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New study material uploaded', ?)`,
-      [instructorId, `${title} was added for ${batch}.`]
+      `
+      INSERT INTO content_submissions
+        (instructor_id, course_title, batch_name, title, type, description, deadline, status)
+      VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), 'pending')
+      `,
+      [instructorId, course, batch, title, type, summary, deadline]
     );
 
-    return sendSuccess(res, { status: 201, message: "Course content saved." });
+    await pool.query(
+      `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New study material uploaded', ?)`,
+      [instructorId, `${title} was added for ${batch} and sent for admin approval.`]
+    );
+
+    return sendSuccess(res, { status: 201, message: "Course content saved and sent for admin approval." });
   } catch (error) {
     return sendError(res, { message: "Could not save course content.", error: error.message });
   }
@@ -1720,6 +1744,62 @@ app.get("/api/student/:studentId/exams", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Could not fetch exam routine.",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/student/:studentId/assignments", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const pool = getPool();
+
+    const [studentRows] = await pool.query(
+      `SELECT student_id, batch_name FROM students WHERE student_id = ? LIMIT 1`,
+      [studentId]
+    );
+
+    if (studentRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found.",
+      });
+    }
+
+    const batchName = studentRows[0].batch_name || "";
+    const [assignments] = await pool.query(
+      `
+      SELECT
+        cs.submission_id AS id,
+        cs.course_title AS courseTitle,
+        cs.batch_name AS batchName,
+        cs.title,
+        cs.description,
+        cs.deadline,
+        cs.created_at AS createdAt,
+        i.name AS instructorName
+      FROM content_submissions cs
+      LEFT JOIN instructors i ON i.instructor_id = cs.instructor_id
+      WHERE cs.status = 'approved'
+        AND LOWER(cs.type) = 'assignment'
+        AND (cs.batch_name IS NULL OR cs.batch_name = '' OR LOWER(cs.batch_name) = LOWER(?))
+      ORDER BY
+        CASE WHEN cs.deadline IS NULL THEN 1 ELSE 0 END,
+        cs.deadline ASC,
+        cs.created_at DESC
+      LIMIT 12
+      `,
+      [batchName]
+    );
+
+    return res.status(200).json({
+      success: true,
+      data: assignments,
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not fetch assignments.",
       error: error.message,
     });
   }

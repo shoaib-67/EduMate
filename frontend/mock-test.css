@@ -1,6 +1,6 @@
 .tests-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
   gap: 1.25rem;
 }
 
@@ -9,6 +9,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius);
   padding: 1.25rem;
+  min-height: 250px;
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -21,6 +22,10 @@
   box-shadow: 0 18px 38px rgba(8, 59, 94, 0.16);
   transform: translateY(-3px);
   border-color: #b9d8ee;
+}
+
+.test-card[hidden] {
+  display: none;
 }
 
 .test-card.featured {
@@ -845,9 +850,44 @@
   .palette-panel {
     display: none;
   }
+
+  .modal-body {
+    display: block;
+    overflow-y: auto;
+  }
+
+  .question-panel,
+  .result-panel {
+    overflow: visible;
+  }
 }
 
 @media (max-width: 520px) {
+  .test-card {
+    min-height: auto;
+  }
+
+  .tc-top,
+  .tc-footer,
+  .q-nav,
+  .confirm-actions,
+  .review-item-top {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .tc-meta,
+  .q-nav-left,
+  .q-nav-right {
+    flex-wrap: wrap;
+  }
+
+  .summary-grid,
+  .result-stats-grid,
+  .confirm-meta-grid {
+    grid-template-columns: 1fr;
+  }
+
   .modal-header {
     flex-direction: column;
     align-items: flex-start;

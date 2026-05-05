@@ -406,7 +406,7 @@ async function handleCourseSubmit(event) {
     });
     event.currentTarget.reset();
     await loadWorkspace();
-    showBanner("Course content saved for the assigned batch.", "success");
+    showBanner("Course content saved and sent to admin for approval.", "success");
   });
 }
 

@@ -57,64 +57,103 @@
                 </div>
               </div>
 
-              <form class="admin-user-form exam-form" id="examForm">
-                <div class="form-grid">
-                  <label>
-                    <span>Subject</span>
-                    <input type="text" name="subject" placeholder="Physics Mock" required />
+              <form class="exam-form" id="examForm">
+                <section class="exam-form-section">
+                  <div class="exam-section-head">
+                    <span class="exam-step">1</span>
+                    <div>
+                      <h3>Exam details</h3>
+                      <p>Set the subject, batch, and start time.</p>
+                    </div>
+                  </div>
+
+                  <div class="exam-form-grid">
+                    <label class="exam-field exam-field-wide">
+                      <span>Subject</span>
+                      <input type="text" name="subject" placeholder="Physics Mock" required />
+                    </label>
+                    <label class="exam-field">
+                      <span>Batch / group</span>
+                      <select name="batchName" id="examBatchSelect" required></select>
+                    </label>
+                    <label class="exam-field">
+                      <span>Date</span>
+                      <input type="date" name="date" required />
+                    </label>
+                    <label class="exam-field">
+                      <span>Time</span>
+                      <input type="time" name="time" required />
+                    </label>
+                    <label class="exam-field">
+                      <span>Duration</span>
+                      <input type="number" name="duration" min="15" step="15" value="60" required />
+                    </label>
+                    <label class="exam-field">
+                      <span>Join window</span>
+                      <select name="joinWindowMinutes">
+                        <option value="10">10 minutes</option>
+                        <option value="15" selected>15 minutes</option>
+                      </select>
+                    </label>
+                  </div>
+                </section>
+
+                <section class="exam-form-section">
+                  <div class="exam-section-head">
+                    <span class="exam-step">2</span>
+                    <div>
+                      <h3>Audience</h3>
+                      <p>Assign the exam to everyone in the batch or pick students.</p>
+                    </div>
+                  </div>
+
+                  <div class="assignment-mode-row">
+                    <label class="assignment-option">
+                      <input type="radio" name="assignmentType" value="batch" checked />
+                      <span>
+                        <strong>Entire batch</strong>
+                        <small>Every student in the selected batch</small>
+                      </span>
+                    </label>
+                    <label class="assignment-option">
+                      <input type="radio" name="assignmentType" value="specific" />
+                      <span>
+                        <strong>Specific students</strong>
+                        <small>Choose individual students below</small>
+                      </span>
+                    </label>
+                  </div>
+
+                  <label class="exam-student-picker" id="studentPickerBlock">
+                    <span>Assign students</span>
+                    <div class="student-checklist" id="studentChecklist"></div>
                   </label>
-                  <label>
-                    <span>Batch / group</span>
-                    <select name="batchName" id="examBatchSelect" required></select>
+                </section>
+
+                <section class="exam-form-section">
+                  <div class="exam-section-head">
+                    <span class="exam-step">3</span>
+                    <div>
+                      <h3>Instructions</h3>
+                      <p>Optional notes students will see before joining.</p>
+                    </div>
+                  </div>
+
+                  <label class="exam-field">
+                    <span>Instructions</span>
+                    <textarea name="instructions" rows="4" placeholder="Exam rules, materials, or join notes"></textarea>
                   </label>
-                  <label>
-                    <span>Date</span>
-                    <input type="date" name="date" required />
-                  </label>
-                  <label>
-                    <span>Time</span>
-                    <input type="time" name="time" required />
-                  </label>
-                  <label>
-                    <span>Duration (minutes)</span>
-                    <input type="number" name="duration" min="15" step="15" value="60" required />
-                  </label>
-                  <label>
-                    <span>Join window</span>
-                    <select name="joinWindowMinutes">
-                      <option value="10">10 minutes</option>
-                      <option value="15" selected>15 minutes</option>
-                    </select>
-                  </label>
+                </section>
+
+                <div class="exam-form-feedback">
+                  <div class="status-banner status-banner-neutral" id="examFormMessage">
+                    Reminders are generated automatically for in-app, email, and SMS channels when the student has contact details.
+                  </div>
+                  <div class="status-banner status-banner-danger is-hidden" id="examConflictMessage"></div>
                 </div>
 
-                <div class="assignment-mode-row">
-                  <label class="assignment-option">
-                    <input type="radio" name="assignmentType" value="batch" checked />
-                    <span>Entire batch</span>
-                  </label>
-                  <label class="assignment-option">
-                    <input type="radio" name="assignmentType" value="specific" />
-                    <span>Specific students</span>
-                  </label>
-                </div>
-
-                <label class="exam-student-picker" id="studentPickerBlock">
-                  <span>Assign students</span>
-                  <div class="student-checklist" id="studentChecklist"></div>
-                </label>
-
-                <label>
-                  <span>Instructions</span>
-                  <textarea name="instructions" rows="4" placeholder="Exam rules, materials, or join notes"></textarea>
-                </label>
-
-                <div class="status-banner status-banner-neutral" id="examFormMessage">
-                  Reminders are generated automatically for in-app, email, and SMS channels when the student has contact details.
-                </div>
-                <div class="status-banner status-banner-danger is-hidden" id="examConflictMessage"></div>
-
-                <div class="panel-actions">
+                <div class="exam-form-actions">
+                  <button class="btn btn-small btn-secondary" type="reset">Clear form</button>
                   <button class="btn btn-small" type="submit" id="createExamButton">Create exam</button>
                 </div>
               </form>

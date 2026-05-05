@@ -257,11 +257,27 @@ function showContentDetail(item) {
         <p class="modal-value">${escapeHTML(item?.type || "Unknown")}</p>
       </div>
       <div class="modal-block">
+        <p class="modal-label">Batch</p>
+        <p class="modal-value">${escapeHTML(item?.batchName || "All batches")}</p>
+      </div>
+      <div class="modal-block">
+        <p class="modal-label">Course</p>
+        <p class="modal-value">${escapeHTML(item?.courseTitle || "General")}</p>
+      </div>
+      <div class="modal-block">
+        <p class="modal-label">Deadline</p>
+        <p class="modal-value">${escapeHTML(item?.deadline ? new Date(item.deadline).toLocaleDateString() : "No deadline")}</p>
+      </div>
+      <div class="modal-block">
         <p class="modal-label">Status</p>
         <p class="modal-value">${escapeHTML(status)}</p>
       </div>
+      <div class="modal-block">
+        <p class="modal-label">Instructions</p>
+        <p class="modal-value">${escapeHTML(item?.description || "No description provided.")}</p>
+      </div>
     </div>
-    <p class="modal-meta">Submitted: ${escapeHTML(createdAt)}</p>
+    <p class="modal-meta">Submitted: ${escapeHTML(createdAt)}${item?.instructorName ? ` by ${escapeHTML(item.instructorName)}` : ""}</p>
   `;
 
   modal.style.display = "flex";
@@ -554,8 +570,8 @@ const renderContent = () => {
       (item) => `
       <li>
         <div class="content-item-body">
-          <h3>${item.title}</h3>
-          <p>${item.type} submission awaiting review</p>
+          <h3>${escapeHTML(item.title)}</h3>
+          <p>${escapeHTML(item.type)} submission awaiting review${item.batchName ? ` · ${escapeHTML(item.batchName)}` : ""}</p>
         </div>
         <div class="content-item-actions">
           <button class="btn btn-small btn-quiet content-view-btn" data-id="${item.id}">Details</button>

@@ -131,10 +131,20 @@
 .routine-layout {
   grid-template-columns: minmax(0, 1.5fr) minmax(280px, 0.8fr);
   align-items: start;
+  grid-template-areas: "routine reminders";
 }
 
 .view-panel {
-  min-height: 260px;
+  grid-area: routine;
+  min-height: 0;
+}
+
+.routine-layout > .panel:not(.view-panel) {
+  grid-area: reminders;
+}
+
+.routine-layout .is-hidden {
+  display: none;
 }
 
 .calendar-legend {
@@ -427,7 +437,50 @@
     grid-template-columns: 1fr;
   }
 
+  .routine-layout {
+    grid-template-areas:
+      "routine"
+      "reminders";
+  }
+
   .routine-card-meta {
     grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .routine-hero-main,
+  .routine-hero-side,
+  .calendar-day,
+  .routine-card {
+    border-radius: 12px;
+  }
+
+  .routine-hero-main,
+  .routine-hero-side {
+    padding: 1rem;
+  }
+
+  .routine-toolbar,
+  .view-toggle {
+    width: 100%;
+  }
+
+  .view-toggle-btn {
+    flex: 1;
+  }
+
+  .student-batch-badge {
+    width: 100%;
+    border-radius: 12px;
+    text-align: center;
+  }
+
+  .calendar-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-day {
+    min-height: 0;
   }
 }

@@ -16,11 +16,78 @@ function formatDateTime(value) {
   });
 }
 
+function formatDate(value) {
+  if (!value) return "No deadline";
+  return new Date(value).toLocaleDateString([], {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 function updatePageHeader() {
   const user = getStoredUser();
   const heading = document.querySelector(".page-header h1");
   if (heading && user?.fullName) {
     heading.textContent = `Welcome back, ${user.fullName}`;
+  }
+}
+
+async function loadAssignments() {
+  const studentId = getStudentId();
+  const assignmentList = document.getElementById("assignmentList");
+  const assignmentCount = document.getElementById("assignmentCount");
+  if (!studentId || !assignmentList) return;
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/student/${studentId}/assignments`);
+    const payload = await response.json();
+    if (!response.ok || !payload.success) {
+      throw new Error(payload.message || "Could not load assignments.");
+    }
+
+    const assignments = payload.data || [];
+    if (assignmentCount) {
+      assignmentCount.textContent = `${assignments.length} active`;
+    }
+
+    assignmentList.innerHTML = assignments.length
+      ? assignments
+          .map(
+            (assignment) => `
+              <article class="assignment-card">
+                <div class="assignment-card-head">
+                  <div>
+                    <h3>${escapeHTML(assignment.title || "Untitled assignment")}</h3>
+                    <span>${escapeHTML(assignment.courseTitle || "General assignment")}</span>
+                  </div>
+                  <span class="chip assignment-due">${escapeHTML(formatDate(assignment.deadline))}</span>
+                </div>
+                <p>${escapeHTML(assignment.description || "No instructions provided.")}</p>
+                <div class="assignment-meta">
+                  <span class="chip">Assignment</span>
+                </div>
+              </article>
+            `
+          )
+          .join("")
+      : `
+        <div class="empty-card">
+          <strong>No assignments yet</strong>
+          <span>Your assigned tasks will appear here.</span>
+        </div>
+      `;
+  } catch (error) {
+    console.error("Error loading assignments:", error);
+    if (assignmentCount) {
+      assignmentCount.textContent = "Unavailable";
+    }
+    assignmentList.innerHTML = `
+      <div class="empty-card">
+        <strong>Could not load assignments</strong>
+        <span>Try refreshing the dashboard after the server is ready.</span>
+      </div>
+    `;
   }
 }
 
@@ -246,6 +313,7 @@ document.addEventListener("DOMContentLoaded", () => {
   setupLogoutHandlers();
   updatePageHeader();
   loadDashboardStats();
+  loadAssignments();
   loadUpcomingAndInsights();
   loadBellNotifications();
 });

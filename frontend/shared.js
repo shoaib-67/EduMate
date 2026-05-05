@@ -77,6 +77,66 @@
       .replace(/'/g, "&#039;");
   }
 
+  function enhanceResponsiveTables(root = document) {
+    root.querySelectorAll("table").forEach((table) => {
+      const headers = Array.from(table.querySelectorAll("thead th")).map((header) =>
+        header.textContent.trim()
+      );
+      if (!headers.length) return;
+      table.querySelectorAll("tbody tr").forEach((row) => {
+        Array.from(row.children).forEach((cell, index) => {
+          if (!cell.hasAttribute("data-label") && headers[index]) {
+            cell.setAttribute("data-label", headers[index]);
+          }
+        });
+      });
+    });
+  }
+
+  function setupFilterButtonGroups(root = document) {
+    root.querySelectorAll(".filters").forEach((group) => {
+      const buttons = Array.from(group.querySelectorAll(".filter-btn"));
+      buttons.forEach((button) => {
+        if (button.dataset.filterReady === "true") return;
+        button.dataset.filterReady = "true";
+        button.addEventListener("click", () => {
+          buttons.forEach((item) => item.classList.toggle("active", item === button));
+        });
+      });
+    });
+  }
+
+  function setupCommonUiEnhancements(root = document) {
+    enhanceResponsiveTables(root);
+    setupFilterButtonGroups(root);
+  }
+
+  function observeTableChanges() {
+    if (!windowObject.MutationObserver) return;
+    const observer = new MutationObserver((mutations) => {
+      if (
+        mutations.some((mutation) =>
+          Array.from(mutation.addedNodes).some(
+            (node) => node.nodeType === 1 && (node.matches?.("tr, td, table") || node.querySelector?.("tr, td, table"))
+          )
+        )
+      ) {
+        enhanceResponsiveTables();
+      }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", () => {
+      setupCommonUiEnhancements();
+      observeTableChanges();
+    });
+  } else {
+    setupCommonUiEnhancements();
+    observeTableChanges();
+  }
+
   windowObject.EduMateShared = {
     API_BASE_URL,
     STORAGE_KEY,
@@ -90,5 +150,7 @@
     setupLogoutHandlers,
     getStudentId,
     escapeHTML,
+    enhanceResponsiveTables,
+    setupCommonUiEnhancements,
   };
 })(window);

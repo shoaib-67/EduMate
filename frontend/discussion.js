@@ -2,6 +2,13 @@ const { API_BASE_URL, getStudentId, escapeHTML, requireRole, setupLogoutHandlers
 let allDiscussions = [];
 const discussionFilter = { query: "", subject: "all" };
 
+function showDiscussionStatus(message, type = "info") {
+  const status = document.getElementById("discussionStatus");
+  if (!status) return;
+  status.textContent = message;
+  status.className = `discussion-status is-visible is-${type}`;
+}
+
 function getTagChipClass(tag) {
   const cleanTag = String(tag || "").toLowerCase();
   if (cleanTag === "trending") return "blue";
@@ -106,15 +113,17 @@ async function handlePostDiscussion() {
     const title = titleInput.value.trim();
     const content = contentTextarea.value.trim();
     if (!title || !content) {
-      alert("Please enter both title and content.");
+      showDiscussionStatus("Please enter both title and content.", "error");
       return;
     }
 
     const studentId = getStudentId();
     if (!studentId) {
-      alert("Please log in first.");
+      showDiscussionStatus("Please log in first.", "error");
       return;
     }
+
+    showDiscussionStatus("Posting your discussion...", "info");
 
     const response = await fetch(`${API_BASE_URL}/discussions`, {
       method: "POST",
@@ -129,17 +138,17 @@ async function handlePostDiscussion() {
 
     const result = await response.json();
     if (!result.success) {
-      alert("Error posting discussion: " + (result.message || "Unknown error"));
+      showDiscussionStatus(`Error posting discussion: ${result.message || "Unknown error"}`, "error");
       return;
     }
 
     titleInput.value = "";
     contentTextarea.value = "";
-    alert("Discussion posted successfully!");
+    showDiscussionStatus("Discussion posted successfully.", "success");
     await loadDiscussions();
   } catch (error) {
     console.error("Error posting discussion:", error);
-    alert("Could not post discussion.");
+    showDiscussionStatus("Could not post discussion.", "error");
   }
 }
 

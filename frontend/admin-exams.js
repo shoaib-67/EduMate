@@ -46,9 +46,11 @@ function collectBatchOptions() {
   const select = document.getElementById("examBatchSelect");
   if (!select) return;
 
-  select.innerHTML = batches
-    .map((batch, index) => `<option value="${escapeHTML(batch)}"${index === 0 ? " selected" : ""}>${escapeHTML(batch)}</option>`)
-    .join("");
+  select.innerHTML = batches.length
+    ? batches
+        .map((batch, index) => `<option value="${escapeHTML(batch)}"${index === 0 ? " selected" : ""}>${escapeHTML(batch)}</option>`)
+        .join("")
+    : `<option value="">No batches available</option>`;
 }
 
 function renderStudentChecklist() {
@@ -82,6 +84,7 @@ function syncAssignmentMode() {
   const block = document.getElementById("studentPickerBlock");
   if (!block) return;
   block.classList.toggle("is-disabled", assignmentType !== "specific");
+  block.setAttribute("aria-disabled", String(assignmentType !== "specific"));
 }
 
 async function loadStudents() {
@@ -153,10 +156,17 @@ async function handleCreateExam(event) {
   const submitButton = document.getElementById("createExamButton");
   const formData = new FormData(form);
   const assignmentType = formData.get("assignmentType") || "batch";
+  const selectedStudentIds = assignmentType === "specific" ? getSelectedStudentIds(form) : [];
 
   setMessage("examConflictMessage", "", "danger", true);
   setMessage("examFormMessage", "Saving exam schedule...", "neutral", false);
   submitButton.disabled = true;
+
+  if (assignmentType === "specific" && selectedStudentIds.length === 0) {
+    setMessage("examFormMessage", "Select at least one student for a specific-student exam.", "warning", false);
+    submitButton.disabled = false;
+    return;
+  }
 
   const payload = {
     subject: String(formData.get("subject") || "").trim(),
@@ -167,7 +177,7 @@ async function handleCreateExam(event) {
     joinWindowMinutes: Number(formData.get("joinWindowMinutes")),
     instructions: String(formData.get("instructions") || "").trim(),
     assignmentType,
-    specificStudentIds: assignmentType === "specific" ? getSelectedStudentIds(form) : [],
+    specificStudentIds: selectedStudentIds,
     adminId: state.admin?.id,
   };
 
@@ -211,6 +221,19 @@ function bindEvents() {
   document.getElementById("examBatchSelect")?.addEventListener("change", renderStudentChecklist);
   document.querySelectorAll('input[name="assignmentType"]').forEach((input) => {
     input.addEventListener("change", syncAssignmentMode);
+  });
+  document.getElementById("examForm")?.addEventListener("reset", () => {
+    setTimeout(() => {
+      setMessage("examConflictMessage", "", "danger", true);
+      setMessage(
+        "examFormMessage",
+        "Reminders are generated automatically for in-app, email, and SMS channels when the student has contact details.",
+        "neutral",
+        false
+      );
+      renderStudentChecklist();
+      syncAssignmentMode();
+    }, 0);
   });
   document.getElementById("refreshExamList")?.addEventListener("click", () => {
     loadExams().catch((error) => setMessage("examFormMessage", error.message, "danger", false));

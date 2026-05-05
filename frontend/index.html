@@ -27,7 +27,7 @@
           </span>
           <span>EduMate</span>
         </a>
-        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Toggle menu">
+        <button class="menu-toggle" id="menuToggle" type="button" aria-label="Toggle menu" aria-expanded="false">
           <i class="fa-solid fa-bars"></i>
         </button>
         <nav class="nav-links" aria-label="Main navigation">
@@ -107,6 +107,7 @@
               </div>
             </div>
             <p id="loginSubtitle">আপনার একাউন্টে লগইন করে প্রস্তুতিকে এগিয়ে নিন।</p>
+            <div class="role-tabs" id="roleTabs" aria-label="Choose login role"></div>
           </header>
 
           <div class="login-status" id="loginStatus" role="status" aria-live="polite"></div>
@@ -116,21 +117,6 @@
               <p><strong id="demoTitle">ডেমো একাউন্ট</strong></p>
               <p id="demoEmail">Email: demo@edumate.com</p>
               <p id="demoPassword">Password: EduMate@123</p>
-            </div>
-
-            <div class="login-plan">
-              <div class="login-plan-item">
-                <strong>১. লগইন করুন</strong>
-                <span>আপনার ভূমিকা বেছে নিয়ে নিজের ওয়ার্কস্পেস খুলুন।</span>
-              </div>
-              <div class="login-plan-item">
-                <strong>২. লক্ষ্য ঠিক করুন</strong>
-                <span>মক টেস্ট, নোট, রুটিন বা প্রগ্রেস রিভিউ থেকে একটি বেছে নিন।</span>
-              </div>
-              <div class="login-plan-item">
-                <strong>৩. ফলপ্রসূ সেশন শেষ করুন</strong>
-                <span>চাপ নয়, নিয়মিত চর্চার মাধ্যমেই অগ্রগতি গড়ে তুলুন।</span>
-              </div>
             </div>
 
             <label class="input-group">
@@ -166,7 +152,7 @@
               <a href="#">পাসওয়ার্ড ভুলে গেছেন?</a>
             </div>
 
-            <div>
+            <div class="submit-row">
               <button class="submit-btn" type="submit" id="loginSubmitBtn">লগইন</button>
             </div>
           </form>

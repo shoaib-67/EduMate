@@ -97,15 +97,22 @@ async function ensureContentSubmissionsTable(pool) {
     CREATE TABLE IF NOT EXISTS \`content_submissions\` (
       \`submission_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       \`instructor_id\` INT UNSIGNED,
+      \`course_title\` VARCHAR(150),
+      \`batch_name\` VARCHAR(80),
       \`title\` VARCHAR(255) NOT NULL,
       \`type\` VARCHAR(50) NOT NULL,
       \`description\` TEXT,
+      \`deadline\` DATE NULL,
       \`status\` VARCHAR(50) DEFAULT 'pending',
       \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureColumn(pool, "content_submissions", "course_title", "course_title VARCHAR(150) NULL");
+  await ensureColumn(pool, "content_submissions", "batch_name", "batch_name VARCHAR(80) NULL");
+  await ensureColumn(pool, "content_submissions", "deadline", "deadline DATE NULL");
 }
 
 async function ensureReportsTable(pool) {
@@ -1004,20 +1011,41 @@ async function seedDemoContentAndReports() {
 
   // Seed content submissions
   const contentSubmissions = [
-    { title: "Physics: Work & Energy", type: "PDF", description: "Comprehensive guide on work and energy concepts" },
-    { title: "Math Quiz Set - Algebra", type: "Quiz", description: "20 questions covering algebra fundamentals" },
-    { title: "Chemistry lab worksheet", type: "Assignment", description: "Practical chemistry lab exercises" },
+    {
+      title: "Physics: Work & Energy",
+      type: "PDF",
+      courseTitle: "Engineering Physics",
+      batchName: "Engineering A",
+      description: "Comprehensive guide on work and energy concepts",
+      deadline: null,
+    },
+    {
+      title: "Math Quiz Set - Algebra",
+      type: "Quiz",
+      courseTitle: "Engineering Math",
+      batchName: "Engineering A",
+      description: "20 questions covering algebra fundamentals",
+      deadline: null,
+    },
+    {
+      title: "Chemistry lab worksheet",
+      type: "Assignment",
+      courseTitle: "Organic Chemistry",
+      batchName: "Medical+Versity",
+      description: "Practical chemistry lab exercises",
+      deadline: "2026-05-12",
+    },
   ];
 
   for (const content of contentSubmissions) {
     await pool.query(
       `
-      INSERT INTO \`content_submissions\` (title, type, description, status)
-      VALUES (?, ?, ?, 'pending')
+      INSERT INTO \`content_submissions\` (title, type, course_title, batch_name, description, deadline, status)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending')
       ON DUPLICATE KEY UPDATE
         title = VALUES(title)
       `,
-      [content.title, content.type, content.description]
+      [content.title, content.type, content.courseTitle, content.batchName, content.description, content.deadline]
     );
   }
 

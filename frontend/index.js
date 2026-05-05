@@ -6,6 +6,7 @@ const loginForm = $("#loginForm");
 const loginToggle = $("#togglePassword");
 const loginPassword = $("input[name='password']", loginForm);
 const roleToggleBtn = $("#roleToggleBtn");
+const roleTabs = $("#roleTabs");
 const loginTitle = $("#loginTitle");
 const loginSubtitle = $("#loginSubtitle");
 const demoTitle = $("#demoTitle");
@@ -84,6 +85,30 @@ const roleLabels = {
 
 let activeRole = "student";
 
+const updateRoleTabs = () => {
+  if (!roleTabs) return;
+  $$(".role-tab", roleTabs).forEach((button) => {
+    const isActive = button.dataset.role === activeRole;
+    button.classList.toggle("is-active", isActive);
+    button.setAttribute("aria-pressed", String(isActive));
+  });
+};
+
+const renderRoleTabs = () => {
+  if (!roleTabs) return;
+  roleTabs.innerHTML = "";
+  roleOrder.forEach((role) => {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "role-tab";
+    button.dataset.role = role;
+    button.textContent = roleLabels[role];
+    button.addEventListener("click", () => applyLoginRole(role));
+    roleTabs.appendChild(button);
+  });
+  updateRoleTabs();
+};
+
 const getNextRole = (role) => {
   const currentIndex = roleOrder.indexOf(role);
   if (currentIndex === -1) return "student";
@@ -119,6 +144,7 @@ const applyLoginRole = (role) => {
 
   clearLoginStatus();
   updateRoleToggleMeta();
+  updateRoleTabs();
 };
 
 if (roleToggleBtn) {
@@ -127,6 +153,7 @@ if (roleToggleBtn) {
   });
 }
 
+renderRoleTabs();
 applyLoginRole("student");
 
 if (loginForm) {
@@ -216,10 +243,14 @@ const menuToggle = $("#menuToggle");
 const mobileMenu = $("#mobileMenu");
 if (menuToggle && mobileMenu) {
   menuToggle.addEventListener("click", () => {
-    mobileMenu.classList.toggle("open");
+    const isOpen = mobileMenu.classList.toggle("open");
+    menuToggle.setAttribute("aria-expanded", String(isOpen));
   });
   $$("a", mobileMenu).forEach((link) => {
-    link.addEventListener("click", () => mobileMenu.classList.remove("open"));
+    link.addEventListener("click", () => {
+      mobileMenu.classList.remove("open");
+      menuToggle.setAttribute("aria-expanded", "false");
+    });
   });
 }
 
@@ -285,8 +316,10 @@ $$(".faq-item").forEach((item, index) => {
   const button = item.querySelector(".faq-question");
   if (!button) return;
   if (index === 0) item.classList.add("open");
+  button.setAttribute("aria-expanded", String(item.classList.contains("open")));
   button.addEventListener("click", () => {
     item.classList.toggle("open");
+    button.setAttribute("aria-expanded", String(item.classList.contains("open")));
   });
 });
 

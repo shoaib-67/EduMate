@@ -122,6 +122,38 @@
   gap: 1rem;
 }
 
+.form-status {
+  display: none;
+  margin-bottom: 1rem;
+  padding: 0.85rem 0.95rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.form-status.is-visible {
+  display: block;
+}
+
+.form-status.is-info {
+  background: #eef7ff;
+  border-color: #c9dff4;
+  color: #1c5889;
+}
+
+.form-status.is-success {
+  background: #edf9f2;
+  border-color: #b9e0c7;
+  color: #21633d;
+}
+
+.form-status.is-error {
+  background: #fff1f3;
+  border-color: #f1c2cb;
+  color: #9b3345;
+}
+
 .input-group {
   display: grid;
   gap: 0.5rem;
@@ -169,6 +201,11 @@
   padding: 1rem 1.2rem;
 }
 
+.submit-btn:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
 .demo-box {
   background: var(--surface-soft);
   border: 1px solid rgba(12, 122, 167, 0.12);
@@ -209,7 +246,20 @@
   .admin-login-page {
     padding: 1.2rem;
   }
+  .admin-header {
+    align-items: flex-start;
+  }
+  .admin-hero-card,
+  .admin-login-card {
+    padding: 1.25rem;
+  }
   .hero-stats-row {
     grid-template-columns: 1fr;
+  }
+  .password-row {
+    grid-template-columns: 1fr;
+  }
+  .toggle-btn {
+    min-height: 42px;
   }
 }

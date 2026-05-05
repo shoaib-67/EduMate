@@ -21,8 +21,68 @@
 	outline-offset: 2px;
 }
 
+.assignment-panel {
+	margin-top: 1.25rem;
+	border-color: rgba(12, 122, 167, 0.28);
+	scroll-margin-top: 96px;
+}
+
+.assignment-list {
+	display: grid;
+	grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+	gap: 0.9rem;
+	margin-top: 1rem;
+}
+
+.assignment-card {
+	display: grid;
+	gap: 0.75rem;
+	align-content: start;
+	min-height: 190px;
+	padding: 1rem;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: linear-gradient(165deg, #ffffff 0%, #f5faff 100%);
+	box-shadow: var(--shadow-soft);
+}
+
+.assignment-card-head {
+	display: flex;
+	align-items: flex-start;
+	justify-content: space-between;
+	gap: 0.75rem;
+}
+
+.assignment-card h3 {
+	font-size: 15px;
+	color: #173f65;
+}
+
+.assignment-card p,
+.assignment-card span {
+	font-size: 12px;
+	color: var(--muted);
+	line-height: 1.55;
+}
+
+.assignment-meta {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 0.45rem;
+	margin-top: auto;
+}
+
+.assignment-due {
+	background: var(--amber-light);
+	color: #8a541b;
+}
+
 @media (max-width: 700px) {
 	.panel .list-item {
 		align-items: flex-start;
+	}
+
+	.assignment-card {
+		min-height: auto;
 	}
 }

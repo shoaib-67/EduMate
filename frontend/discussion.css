@@ -27,17 +27,21 @@
   display: flex;
   gap: 0.6rem;
   margin: 0.8rem 0;
+  flex-wrap: wrap;
 }
 
 .discussion-filters input,
 .discussion-filters select {
   border: 1px solid var(--border);
   border-radius: 10px;
+  min-height: 40px;
   padding: 8px 10px;
   font-size: 13px;
+  background: #fff;
 }
 
-.discussion-filters input { flex: 1; }
+.discussion-filters input { flex: 1 1 220px; }
+.discussion-filters select { flex: 0 1 180px; }
 
 .thread-detail {
   margin-top: 0.85rem;
@@ -45,6 +49,38 @@
   border-radius: 12px;
   padding: 10px 12px;
   background: #fff;
+}
+
+.discussion-status {
+  display: none;
+  margin-top: 0.85rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.discussion-status.is-visible {
+  display: block;
+}
+
+.discussion-status.is-info {
+  background: #eef7ff;
+  border-color: #c9dff4;
+  color: #1c5889;
+}
+
+.discussion-status.is-success {
+  background: #edf9f2;
+  border-color: #b9e0c7;
+  color: #21633d;
+}
+
+.discussion-status.is-error {
+  background: #fff1f3;
+  border-color: #f1c2cb;
+  color: #9b3345;
 }
 
 .input-row { display: grid; gap: 8px; margin-top: 1rem; }
@@ -77,3 +113,10 @@
 
 .section-spacer { margin-top: 1.25rem; }
 .section-title { font-size: 16px; }
+
+@media (max-width: 760px) {
+  .discussion-filters input,
+  .discussion-filters select {
+    flex-basis: 100%;
+  }
+}

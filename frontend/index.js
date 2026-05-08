@@ -39,38 +39,38 @@ if (loginToggle && loginPassword) {
 
 const roleConfig = {
   student: {
-    title: "স্টুডেন্ট লগইন",
+    title: "Student Login",
     subtitle: "আপনার একাউন্টে লগইন করে প্রস্তুতিকে এগিয়ে নিন।",
     demoTitle: "ডেমো একাউন্ট",
     email: "Email: demo@edumate.com",
     password: "Password: EduMate@123",
     identifierLabel: "ইমেইল বা ফোন",
     identifierPlaceholder: "name@email.com",
-    submitText: "লগইন",
+    submitText: "Login as Student",
     action: "student.html",
     showCreateAccount: true,
   },
   instructor: {
-    title: "ইন্সট্রাক্টর লগইন",
+    title: "Instructor Login",
     subtitle: "আপনার ক্লাস, রুটিন, শিক্ষার্থী এবং এক্সাম ওয়ার্কস্পেস খুলুন।",
     demoTitle: "ইন্সট্রাক্টর ডেমো একাউন্ট",
     email: "Email: instructor@edumate.com",
     password: "Password: EduMate@123",
     identifierLabel: "ইন্সট্রাক্টর ইমেইল",
     identifierPlaceholder: "instructor@edumate.com",
-    submitText: "ইন্সট্রাক্টর হিসেবে লগইন",
+    submitText: "Login as Instructor",
     action: "instructor.html",
     showCreateAccount: false,
   },
   admin: {
-    title: "অ্যাডমিন লগইন",
+    title: "Admin Login",
     subtitle: "ইউজার, রিপোর্ট এবং প্ল্যাটফর্মের শেয়ারড কন্ট্রোল পরিচালনা করুন।",
     demoTitle: "অ্যাডমিন ডেমো একাউন্ট",
     email: "Email: admin@edumate.com",
     password: "Password: Admin@123",
     identifierLabel: "অ্যাডমিন ইমেইল",
     identifierPlaceholder: "admin@edumate.com",
-    submitText: "অ্যাডমিন হিসেবে লগইন",
+    submitText: "Login as Admin",
     action: "admin.html",
     showCreateAccount: false,
   },
@@ -78,9 +78,9 @@ const roleConfig = {
 
 const roleOrder = ["student", "instructor", "admin"];
 const roleLabels = {
-  student: "স্টুডেন্ট",
-  instructor: "ইন্সট্রাক্টর",
-  admin: "অ্যাডমিন",
+  student: "Student",
+  instructor: "Instructor",
+  admin: "Admin",
 };
 
 let activeRole = "student";
@@ -233,9 +233,21 @@ $$("a[href^='#']").forEach((anchor) => {
     event.preventDefault();
     const targetId = anchor.getAttribute("href");
     const target = targetId ? document.querySelector(targetId) : null;
-    if (target) {
-      target.scrollIntoView({ behavior: "smooth", block: "start" });
+    if (!targetId) return;
+
+    if (targetId === "#home") {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+      return;
     }
+
+    if (!target) return;
+    const nav = document.querySelector(".top-nav");
+    const navOffset = nav ? nav.offsetHeight : 0;
+    const targetTop = target.getBoundingClientRect().top + window.scrollY;
+    window.scrollTo({
+      top: Math.max(0, targetTop - navOffset - 8),
+      behavior: "smooth",
+    });
   });
 });
 
@@ -259,28 +271,58 @@ const createObserver = (callback, options) =>
     entries.forEach((entry) => callback(entry, observer));
   }, options);
 
-const counters = $$("[data-count]");
-const counterObserver = createObserver(
-  (entry, observer) => {
-    if (!entry.isIntersecting) return;
-    const el = entry.target;
-    const target = Number(el.getAttribute("data-count")) || 0;
-    const duration = 1200;
-    const start = performance.now();
+async function loadHomeStats() {
+  const heroCounters = $$(".hero-stats [data-count]");
+  const bandCounters = $$(".stats-band [data-count]");
+  if (heroCounters.length < 3 || bandCounters.length < 4) return;
 
-    const tick = (now) => {
-      const progress = Math.min((now - start) / duration, 1);
-      el.textContent = Math.floor(progress * target).toLocaleString();
-      if (progress < 1) requestAnimationFrame(tick);
-    };
+  try {
+    const response = await fetch(`${API_BASE_URL}/public/home-stats`);
+    const payload = await response.json();
+    if (!response.ok || !payload?.success || !payload?.data) return;
 
-    requestAnimationFrame(tick);
-    observer.unobserve(el);
-  },
-  { threshold: 0.3 }
-);
+    const { hero = {}, band = {} } = payload.data;
+    heroCounters[0].setAttribute("data-count", String(Number(hero.practiceSets) || 0));
+    heroCounters[1].setAttribute("data-count", String(Number(hero.videoLessons) || 0));
+    heroCounters[2].setAttribute("data-count", String(Number(hero.activeLearners) || 0));
 
-counters.forEach((counter) => counterObserver.observe(counter));
+    bandCounters[0].setAttribute("data-count", String(Number(band.practiceAttempts) || 0));
+    bandCounters[1].setAttribute("data-count", String(Number(band.freeVideoClasses) || 0));
+    bandCounters[2].setAttribute("data-count", String(Number(band.freePdfNotes) || 0));
+    bandCounters[3].setAttribute("data-count", String(Number(band.freeTrialDays) || 0));
+  } catch (_error) {
+    // Keep existing values in DOM if API is unavailable.
+  }
+}
+
+async function initCounters() {
+  await loadHomeStats();
+
+  const counters = $$("[data-count]");
+  const counterObserver = createObserver(
+    (entry, observer) => {
+      if (!entry.isIntersecting) return;
+      const el = entry.target;
+      const target = Number(el.getAttribute("data-count")) || 0;
+      const duration = 1200;
+      const start = performance.now();
+
+      const tick = (now) => {
+        const progress = Math.min((now - start) / duration, 1);
+        el.textContent = Math.floor(progress * target).toLocaleString();
+        if (progress < 1) requestAnimationFrame(tick);
+      };
+
+      requestAnimationFrame(tick);
+      observer.unobserve(el);
+    },
+    { threshold: 0.3 }
+  );
+
+  counters.forEach((counter) => counterObserver.observe(counter));
+}
+
+initCounters();
 
 const revealElements = $$(".reveal");
 const revealObserver = createObserver(
@@ -296,20 +338,34 @@ revealElements.forEach((item) => revealObserver.observe(item));
 
 const sectionIds = ["home", "features", "packages", "contact"];
 const allNavLinks = $$(".nav-links a");
+const setActiveNavLink = (id) => {
+  allNavLinks.forEach((link) => {
+    link.classList.toggle("active", link.getAttribute("href") === `#${id}`);
+  });
+};
+
 const sectionObserver = createObserver(
   (entry) => {
     if (!entry.isIntersecting) return;
+    if (window.scrollY <= 24) {
+      setActiveNavLink("home");
+      return;
+    }
     const id = entry.target.getAttribute("id");
-    allNavLinks.forEach((link) => {
-      link.classList.toggle("active", link.getAttribute("href") === `#${id}`);
-    });
+    setActiveNavLink(id);
   },
-  { threshold: 0.4 }
+  { threshold: 0.45 }
 );
 
 sectionIds.forEach((id) => {
   const section = document.getElementById(id);
   if (section) sectionObserver.observe(section);
+});
+
+window.addEventListener("scroll", () => {
+  if (window.scrollY <= 24) {
+    setActiveNavLink("home");
+  }
 });
 
 $$(".faq-item").forEach((item, index) => {

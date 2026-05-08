@@ -132,6 +132,63 @@ function parsePositiveInteger(value) {
   return Number.isInteger(num) && num > 0 ? num : null;
 }
 
+function parseQuestionIds(input) {
+  const source = Array.isArray(input)
+    ? input
+    : String(input || "")
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean);
+
+  return Array.from(
+    new Set(
+      source
+        .map((item) => Number(item))
+        .filter((id) => Number.isInteger(id) && id > 0)
+    )
+  );
+}
+
+function parseMcqOptions(optionsText = "") {
+  const raw = String(optionsText || "").trim();
+  if (!raw) return [];
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (Array.isArray(parsed)) {
+      return parsed.map((item) => String(item || "").trim()).filter(Boolean);
+    }
+  } catch {
+    // Fall back to delimiter-based parsing.
+  }
+
+  return raw
+    .split("|")
+    .map((part) => part.replace(/^\s*[A-Da-d][).:\-]\s*/, "").trim())
+    .filter(Boolean);
+}
+
+function resolveAnswerIndex(answerKey, options) {
+  const normalizedOptions = Array.isArray(options) ? options : [];
+  const raw = String(answerKey || "").trim();
+  if (!raw || !normalizedOptions.length) return -1;
+
+  if (/^\d+$/.test(raw)) {
+    const numeric = Number(raw);
+    if (numeric >= 0 && numeric < normalizedOptions.length) return numeric;
+    if (numeric >= 1 && numeric <= normalizedOptions.length) return numeric - 1;
+  }
+
+  const letter = raw.toUpperCase();
+  const letterIndex = ["A", "B", "C", "D"].indexOf(letter);
+  if (letterIndex >= 0 && letterIndex < normalizedOptions.length) return letterIndex;
+
+  const matchIndex = normalizedOptions.findIndex(
+    (option) => option.toLowerCase() === raw.toLowerCase()
+  );
+  return matchIndex;
+}
+
 function toDateTimeValue(dateInput, timeInput) {
   const date = String(dateInput || "").trim();
   const time = String(timeInput || "").trim();
@@ -325,6 +382,14 @@ function deriveInstructorExamStatus(startTime, durationMinutes, now = new Date()
 }
 
 function normalizeInstructorExamRecord(exam, now = new Date()) {
+  let parsedQuestionIds = [];
+  try {
+    const raw = JSON.parse(exam.question_ids_json || "[]");
+    parsedQuestionIds = Array.isArray(raw) ? raw : [];
+  } catch {
+    parsedQuestionIds = [];
+  }
+
   return {
     id: exam.instructor_exam_id,
     title: exam.title,
@@ -337,6 +402,8 @@ function normalizeInstructorExamRecord(exam, now = new Date()) {
     shuffleMode: exam.shuffle_mode || "None",
     examType: exam.exam_type,
     state: exam.publish_state,
+    approvalStatus: exam.approval_status || "pending",
+    questionIds: parsedQuestionIds,
     rules: exam.rules || "",
     status: deriveInstructorExamStatus(exam.start_time, exam.duration_minutes, now),
   };
@@ -374,7 +441,7 @@ async function buildInstructorWorkspace(pool, instructorId) {
 
   const [questionBank] = await pool.query(
     `
-    SELECT question_id, subject, question_type, question_text, options_text, answer_key
+    SELECT question_id, subject, question_type, question_text, options_text, answer_key, approval_status
     FROM instructor_question_bank
     WHERE instructor_id = ?
     ORDER BY created_at DESC
@@ -385,7 +452,7 @@ async function buildInstructorWorkspace(pool, instructorId) {
   const [exams] = await pool.query(
     `
     SELECT instructor_exam_id, title, batch_name, exam_date, start_time, duration_minutes, join_window_minutes,
-           negative_marking, shuffle_mode, exam_type, publish_state, rules
+           negative_marking, shuffle_mode, exam_type, publish_state, rules, question_ids_json, approval_status
     FROM instructor_exam_schedules
     WHERE instructor_id = ?
     ORDER BY start_time DESC
@@ -499,6 +566,7 @@ async function buildInstructorWorkspace(pool, instructorId) {
       text: item.question_text,
       options: item.options_text,
       answerKey: item.answer_key,
+      approvalStatus: item.approval_status || "pending",
     })),
     exams: normalizedExams,
     students: students.map((student) => ({
@@ -549,6 +617,66 @@ app.use(express.json());
 
 app.get("/api/health", (_req, res) => {
   return sendSuccess(res, { message: "EduMate API is running" });
+});
+
+app.get("/api/public/home-stats", async (_req, res) => {
+  const fallback = {
+    hero: {
+      practiceSets: 525,
+      videoLessons: 1300,
+      activeLearners: 1800,
+    },
+    band: {
+      practiceAttempts: 1800000,
+      freeVideoClasses: 400,
+      freePdfNotes: 1000,
+      freeTrialDays: 7,
+    },
+  };
+
+  try {
+    const pool = getPool();
+
+    const [[studentsRow]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM students`
+    );
+    const [[questionBankRow]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM instructor_question_bank`
+    );
+    const [[videoRow]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM instructor_course_items WHERE LOWER(content_type) LIKE '%video%'`
+    );
+    const [[pdfRow]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM instructor_course_items WHERE LOWER(content_type) LIKE '%pdf%'`
+    );
+    const [[attemptsRow]] = await pool.query(
+      `SELECT COUNT(*) AS total FROM student_performance WHERE test_type = 'mock'`
+    );
+
+    const students = Number(studentsRow?.total || 0);
+    const questionBankCount = Number(questionBankRow?.total || 0);
+    const videoCount = Number(videoRow?.total || 0);
+    const pdfCount = Number(pdfRow?.total || 0);
+    const attempts = Number(attemptsRow?.total || 0);
+
+    return sendSuccess(res, {
+      data: {
+        hero: {
+          practiceSets: questionBankCount || fallback.hero.practiceSets,
+          videoLessons: videoCount || fallback.hero.videoLessons,
+          activeLearners: students || fallback.hero.activeLearners,
+        },
+        band: {
+          practiceAttempts: attempts || fallback.band.practiceAttempts,
+          freeVideoClasses: videoCount || fallback.band.freeVideoClasses,
+          freePdfNotes: pdfCount || fallback.band.freePdfNotes,
+          freeTrialDays: fallback.band.freeTrialDays,
+        },
+      },
+    });
+  } catch (_error) {
+    return sendSuccess(res, { data: fallback });
+  }
 });
 
 app.post("/api/auth/signup", async (req, res) => {
@@ -1092,7 +1220,7 @@ app.post("/api/admin/content/:id/approve", async (req, res) => {
     const { id } = req.params;
     const pool = getPool();
     const [contentRows] = await pool.query(
-      "SELECT title, type FROM content_submissions WHERE submission_id = ? LIMIT 1",
+      "SELECT title, type, source_ref FROM content_submissions WHERE submission_id = ? LIMIT 1",
       [id]
     );
 
@@ -1106,6 +1234,107 @@ app.post("/api/admin/content/:id/approve", async (req, res) => {
         success: false,
         message: "Content submission not found.",
       });
+    }
+
+    const sourceRef = String(contentRows[0]?.source_ref || "");
+    const questionRefMatch = sourceRef.match(/^instructor_question_bank:(\d+)$/);
+    const instructorExamRefMatch = sourceRef.match(/^instructor_exam_schedules:(\d+)$/);
+    const adminId = parseRequiredId(req.body?.adminId) || null;
+    if (questionRefMatch) {
+      await pool.query(
+        `
+        UPDATE instructor_question_bank
+        SET approval_status = 'approved',
+            approved_at = NOW(),
+            approved_by_admin_id = ?
+        WHERE question_id = ?
+        `,
+        [adminId, Number(questionRefMatch[1])]
+      );
+    } else if (instructorExamRefMatch) {
+      const instructorExamId = Number(instructorExamRefMatch[1]);
+      const [[instructorExam]] = await pool.query(
+        `
+        SELECT instructor_exam_id, title, batch_name, exam_date, start_time, duration_minutes,
+               join_window_minutes, rules, question_ids_json, published_exam_id
+        FROM instructor_exam_schedules
+        WHERE instructor_exam_id = ?
+        LIMIT 1
+        `,
+        [instructorExamId]
+      );
+
+      if (instructorExam) {
+        let publishedExamId = parseRequiredId(instructorExam.published_exam_id);
+        if (!publishedExamId) {
+          const endTime = formatSqlDateTime(
+            new Date(new Date(instructorExam.start_time).getTime() + Number(instructorExam.duration_minutes || 0) * 60000)
+          );
+          const [examInsertResult] = await pool.query(
+            `
+            INSERT INTO exam_schedules
+              (subject, exam_date, start_time, end_time, duration_minutes, batch_name, instructions, audience_type, join_window_minutes, created_by_admin_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, 'batch', ?, ?)
+            `,
+            [
+              instructorExam.title,
+              instructorExam.exam_date,
+              instructorExam.start_time,
+              endTime,
+              Number(instructorExam.duration_minutes || 0),
+              instructorExam.batch_name,
+              instructorExam.rules || null,
+              Number(instructorExam.join_window_minutes || 15),
+              adminId,
+            ]
+          );
+          publishedExamId = Number(examInsertResult.insertId || 0);
+        }
+
+        await pool.query(
+          `
+          UPDATE instructor_exam_schedules
+          SET approval_status = 'approved',
+              approved_at = NOW(),
+              published_exam_id = ?,
+              publish_state = 'Published'
+          WHERE instructor_exam_id = ?
+          `,
+          [publishedExamId || null, instructorExamId]
+        );
+
+        let questionIds = [];
+        try {
+          const parsed = JSON.parse(instructorExam.question_ids_json || "[]");
+          questionIds = parseQuestionIds(parsed);
+        } catch {
+          questionIds = parseQuestionIds(instructorExam.question_ids_json || "");
+        }
+
+        if (publishedExamId && questionIds.length) {
+          for (let index = 0; index < questionIds.length; index += 1) {
+            await pool.query(
+              `
+              INSERT IGNORE INTO exam_question_mappings (exam_id, question_id, order_index)
+              VALUES (?, ?, ?)
+              `,
+              [publishedExamId, questionIds[index], index + 1]
+            );
+          }
+
+          const placeholders = questionIds.map(() => "?").join(", ");
+          await pool.query(
+            `
+            UPDATE instructor_question_bank
+            SET approval_status = 'approved',
+                approved_at = NOW(),
+                approved_by_admin_id = ?
+            WHERE question_id IN (${placeholders})
+            `,
+            [adminId, ...questionIds]
+          );
+        }
+      }
     }
 
     await logAdminActivity(pool, {
@@ -1134,7 +1363,7 @@ app.post("/api/admin/content/:id/deny", async (req, res) => {
     const { id } = req.params;
     const pool = getPool();
     const [contentRows] = await pool.query(
-      "SELECT title, type FROM content_submissions WHERE submission_id = ? LIMIT 1",
+      "SELECT title, type, source_ref FROM content_submissions WHERE submission_id = ? LIMIT 1",
       [id]
     );
 
@@ -1148,6 +1377,33 @@ app.post("/api/admin/content/:id/deny", async (req, res) => {
         success: false,
         message: "Content submission not found.",
       });
+    }
+
+    const sourceRef = String(contentRows[0]?.source_ref || "");
+    const questionRefMatch = sourceRef.match(/^instructor_question_bank:(\d+)$/);
+    const instructorExamRefMatch = sourceRef.match(/^instructor_exam_schedules:(\d+)$/);
+    if (questionRefMatch) {
+      await pool.query(
+        `
+        UPDATE instructor_question_bank
+        SET approval_status = 'denied',
+            approved_at = NULL,
+            approved_by_admin_id = NULL
+        WHERE question_id = ?
+        `,
+        [Number(questionRefMatch[1])]
+      );
+    } else if (instructorExamRefMatch) {
+      await pool.query(
+        `
+        UPDATE instructor_exam_schedules
+        SET approval_status = 'denied',
+            approved_at = NULL,
+            publish_state = 'Draft'
+        WHERE instructor_exam_id = ?
+        `,
+        [Number(instructorExamRefMatch[1])]
+      );
     }
 
     await logAdminActivity(pool, {
@@ -1519,15 +1775,38 @@ app.post("/api/instructor/:instructorId/question-bank", async (req, res) => {
     }
 
     const pool = getPool();
-    await pool.query(
+    const [result] = await pool.query(
       `
-      INSERT INTO instructor_question_bank (instructor_id, subject, question_type, question_text, options_text, answer_key)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO instructor_question_bank
+        (instructor_id, subject, question_type, question_text, options_text, answer_key, approval_status)
+      VALUES (?, ?, ?, ?, ?, ?, 'pending')
       `,
       [instructorId, subject, type, text, options, answerKey]
     );
 
-    return sendSuccess(res, { status: 201, message: "Question added to bank." });
+    const questionId = Number(result.insertId || 0);
+    if (questionId) {
+      await pool.query(
+        `
+        INSERT INTO content_submissions
+          (instructor_id, course_title, batch_name, title, type, description, status, source_ref)
+        VALUES (?, NULL, NULL, ?, ?, ?, 'pending', ?)
+        `,
+        [
+          instructorId,
+          `${subject} question for approval`,
+          `${type} Question`,
+          `${text}\n\nOptions: ${options}\nAnswer key: ${answerKey}`,
+          `instructor_question_bank:${questionId}`,
+        ]
+      );
+    }
+
+    return sendSuccess(res, {
+      status: 201,
+      message: "Question added and sent to admin for approval.",
+      data: { questionId },
+    });
   } catch (error) {
     return sendError(res, { message: "Could not add question.", error: error.message });
   }
@@ -1547,10 +1826,14 @@ app.post("/api/instructor/:instructorId/exams", async (req, res) => {
     const examType = String(req.body?.examType || "").trim();
     const state = String(req.body?.state || "Draft").trim();
     const rules = String(req.body?.rules || "").trim();
+    const questionIds = parseQuestionIds(req.body?.questionIds || []);
     const startDate = toDateTimeValue(date, time);
 
     if (!instructorId || !title || !batch || !date || !time || !duration || !examType) {
       return sendError(res, { status: 422, message: "Title, batch, date, time, duration, and exam type are required." });
+    }
+    if (!questionIds.length) {
+      return sendError(res, { status: 422, message: "Select at least one question for the exam." });
     }
     if (!startDate) return sendError(res, { status: 422, message: "Invalid exam date or time." });
 
@@ -1570,21 +1853,53 @@ app.post("/api/instructor/:instructorId/exams", async (req, res) => {
       });
     }
 
-    await pool.query(
+    const [insertResult] = await pool.query(
       `
       INSERT INTO instructor_exam_schedules
-        (instructor_id, title, batch_name, exam_date, start_time, duration_minutes, join_window_minutes, negative_marking, shuffle_mode, exam_type, publish_state, rules)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        (instructor_id, title, batch_name, exam_date, start_time, duration_minutes, join_window_minutes, negative_marking, shuffle_mode, exam_type, publish_state, question_ids_json, approval_status, rules)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
       `,
-      [instructorId, title, batch, date, startTime, duration, joinWindow, negativeMarking || null, shuffleMode || null, examType, state, rules || null]
+      [
+        instructorId,
+        title,
+        batch,
+        date,
+        startTime,
+        duration,
+        joinWindow,
+        negativeMarking || null,
+        shuffleMode || null,
+        examType,
+        state,
+        JSON.stringify(questionIds),
+        rules || null,
+      ]
     );
+    const instructorExamId = Number(insertResult?.insertId || 0);
+
+    if (instructorExamId) {
+      await pool.query(
+        `
+        INSERT INTO content_submissions
+          (instructor_id, course_title, batch_name, title, type, description, status, source_ref)
+        VALUES (?, NULL, ?, ?, 'Exam', ?, 'pending', ?)
+        `,
+        [
+          instructorId,
+          batch,
+          title,
+          `Exam Type: ${examType}\nStart: ${date} ${time}\nDuration: ${duration} min\nQuestions: ${questionIds.length}\nRules: ${rules || "-"}`,
+          `instructor_exam_schedules:${instructorExamId}`,
+        ]
+      );
+    }
 
     await pool.query(
       `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New exam scheduled', ?)`,
-      [instructorId, `${title} scheduled for ${batch} on ${date} ${time}.`]
+      [instructorId, `${title} scheduled for ${batch} on ${date} ${time} and sent for admin approval.`]
     );
 
-    return sendSuccess(res, { status: 201, message: "Exam created successfully." });
+    return sendSuccess(res, { status: 201, message: "Exam created and sent for admin approval." });
   } catch (error) {
     return sendError(res, { message: "Could not create instructor exam.", error: error.message });
   }
@@ -1744,6 +2059,143 @@ app.get("/api/student/:studentId/exams", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Could not fetch exam routine.",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/student/:studentId/mock-questions", async (req, res) => {
+  try {
+    const studentId = parseRequiredId(req.params.studentId);
+    if (!studentId) {
+      return sendError(res, { status: 422, message: "Valid student ID is required." });
+    }
+
+    const rawSubjects = []
+      .concat(req.query.subjects || [])
+      .concat(req.query.subject || [])
+      .map((item) => String(item || "").trim())
+      .filter(Boolean);
+    const subjects = Array.from(new Set(rawSubjects.map((item) => item.toLowerCase())));
+    const examId = parseRequiredId(req.query.examId);
+    const requestedCount = Number(req.query.count);
+    const count = Number.isFinite(requestedCount)
+      ? Math.max(1, Math.min(100, Math.floor(requestedCount)))
+      : 20;
+
+    const pool = getPool();
+    const [studentRows] = await pool.query(
+      `SELECT student_id, batch_name FROM students WHERE student_id = ? LIMIT 1`,
+      [studentId]
+    );
+    if (!studentRows.length) {
+      return sendError(res, { status: 404, message: "Student not found." });
+    }
+    const student = studentRows[0];
+
+    if (examId) {
+      const [examRows] = await pool.query(
+        `
+        SELECT DISTINCT e.exam_id
+        FROM exam_schedules e
+        LEFT JOIN exam_assignments ea ON ea.exam_id = e.exam_id
+        WHERE e.exam_id = ?
+          AND (
+            (e.audience_type = 'batch' AND e.batch_name = ?)
+            OR ea.student_id = ?
+          )
+        LIMIT 1
+        `,
+        [examId, student.batch_name || "", studentId]
+      );
+
+      if (examRows.length) {
+        const [mappedRows] = await pool.query(
+          `
+          SELECT iq.question_id, iq.subject, iq.question_text, iq.options_text, iq.answer_key, eqm.order_index
+          FROM exam_question_mappings eqm
+          JOIN instructor_question_bank iq ON iq.question_id = eqm.question_id
+          WHERE eqm.exam_id = ?
+          ORDER BY eqm.order_index ASC, eqm.mapping_id ASC
+          `,
+          [examId]
+        );
+
+        const mappedQuestions = mappedRows
+          .map((row) => {
+            const options = parseMcqOptions(row.options_text);
+            const answerIndex = resolveAnswerIndex(row.answer_key, options);
+            if (options.length < 2 || answerIndex < 0 || answerIndex >= options.length) return null;
+            return {
+              id: row.question_id,
+              subject: row.subject,
+              text: row.question_text,
+              opts: options,
+              ans: answerIndex,
+            };
+          })
+          .filter(Boolean)
+          .slice(0, count);
+
+        if (mappedQuestions.length) {
+          return sendSuccess(res, {
+            data: {
+              questions: mappedQuestions,
+              requestedCount: count,
+              deliveredCount: mappedQuestions.length,
+            },
+          });
+        }
+      }
+    }
+
+    const params = [];
+    let subjectFilterSql = "";
+    if (subjects.length) {
+      subjectFilterSql = ` AND LOWER(subject) IN (${subjects.map(() => "?").join(",")})`;
+      params.push(...subjects);
+    }
+
+    params.push(count * 3);
+    const [rows] = await pool.query(
+      `
+      SELECT question_id, subject, question_text, options_text, answer_key
+      FROM instructor_question_bank
+      WHERE question_type = 'MCQ'
+        AND approval_status = 'approved'
+        ${subjectFilterSql}
+      ORDER BY RAND()
+      LIMIT ?
+      `,
+      params
+    );
+
+    const questions = rows
+      .map((row) => {
+        const options = parseMcqOptions(row.options_text);
+        const answerIndex = resolveAnswerIndex(row.answer_key, options);
+        if (options.length < 2 || answerIndex < 0 || answerIndex >= options.length) return null;
+        return {
+          id: row.question_id,
+          subject: row.subject,
+          text: row.question_text,
+          opts: options,
+          ans: answerIndex,
+        };
+      })
+      .filter(Boolean)
+      .slice(0, count);
+
+    return sendSuccess(res, {
+      data: {
+        questions,
+        requestedCount: count,
+        deliveredCount: questions.length,
+      },
+    });
+  } catch (error) {
+    return sendError(res, {
+      message: "Could not fetch approved mock questions.",
       error: error.message,
     });
   }
@@ -2059,6 +2511,44 @@ app.post("/api/student/:studentId/performance", async (req, res) => {
     return res.status(500).json({
       success: false,
       message: "Could not create performance record.",
+      error: error.message,
+    });
+  }
+});
+
+app.post("/api/student/:studentId/proctoring-events", async (req, res) => {
+  try {
+    const studentId = parseRequiredId(req.params.studentId);
+    if (!studentId) {
+      return sendError(res, { status: 422, message: "Valid student ID is required." });
+    }
+
+    const eventType = String(req.body?.eventType || "").trim().toLowerCase();
+    const allowedEventTypes = ["photo_capture", "disqualified"];
+    if (!allowedEventTypes.includes(eventType)) {
+      return sendError(res, { status: 422, message: "Invalid proctoring event type." });
+    }
+
+    const examId = parseRequiredId(req.body?.examId) || null;
+    const reason = String(req.body?.reason || "").trim() || null;
+    const photoDataUrl = String(req.body?.photoDataUrl || "").trim() || null;
+
+    const pool = getPool();
+    await pool.query(
+      `
+      INSERT INTO proctoring_events (student_id, exam_id, event_type, reason, photo_data_url)
+      VALUES (?, ?, ?, ?, ?)
+      `,
+      [studentId, examId, eventType, reason, photoDataUrl]
+    );
+
+    return sendSuccess(res, {
+      status: 201,
+      message: "Proctoring event recorded.",
+    });
+  } catch (error) {
+    return sendError(res, {
+      message: "Could not record proctoring event.",
       error: error.message,
     });
   }

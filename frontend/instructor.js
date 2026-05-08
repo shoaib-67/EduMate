@@ -3,6 +3,7 @@ const { API_BASE_URL, getStoredUser, escapeHTML, requireRole, setupLogoutHandler
 const state = {
   instructorId: null,
   feedbackTimer: null,
+  selectedExamQuestionIds: new Set(),
   workspace: {
     stats: { courseCount: 0, publishedExamCount: 0, managedStudentCount: 0, batchAverageScore: 0 },
     courseContent: [],
@@ -201,6 +202,15 @@ function renderCourseContent() {
 
 function renderQuestionBank() {
   const items = state.workspace.questionBank || [];
+  const validIds = new Set(
+    items
+      .map((item) => Number(item.id))
+      .filter((id) => Number.isInteger(id) && id > 0)
+  );
+  state.selectedExamQuestionIds.forEach((id) => {
+    if (!validIds.has(id)) state.selectedExamQuestionIds.delete(id);
+  });
+
   $("#questionBankList").innerHTML = items.length
     ? items
         .map(
@@ -212,12 +222,47 @@ function renderQuestionBank() {
             <span>${escapeHTML(item.options)}</span>
             <span>Answer key: ${escapeHTML(item.answerKey)}</span>
           </div>
-          <span class="chip blue">${escapeHTML(item.type)}</span>
+          <div class="list-item-actions">
+            <span class="chip blue">${escapeHTML(item.type)}</span>
+            <span class="chip ${
+              item.approvalStatus === "approved"
+                ? ""
+                : item.approvalStatus === "denied"
+                  ? "red"
+                  : "amber"
+            }">${escapeHTML(item.approvalStatus || "pending")}</span>
+            ${
+              String(item.type || "").toLowerCase() === "mcq"
+                ? `<button class="btn btn-sm ${state.selectedExamQuestionIds.has(Number(item.id)) ? "btn-primary" : ""}" type="button" onclick="toggleExamQuestionSelection(${Number(item.id)})">${state.selectedExamQuestionIds.has(Number(item.id)) ? "Selected" : "Select"}</button>`
+                : ""
+            }
+          </div>
         </div>
       `
         )
         .join("")
     : renderEmptyCard("Question bank is empty", "Add reusable MCQ, short answer, or essay items so new exams are faster to assemble.");
+
+  updateSelectedQuestionMeta();
+}
+
+function updateSelectedQuestionMeta() {
+  const countNode = $("#selectedQuestionCount");
+  if (!countNode) return;
+  countNode.textContent = String(state.selectedExamQuestionIds.size);
+}
+
+function toggleExamQuestionSelection(questionId) {
+  const id = Number(questionId);
+  if (!Number.isInteger(id) || id <= 0) return;
+  if (state.selectedExamQuestionIds.has(id)) state.selectedExamQuestionIds.delete(id);
+  else state.selectedExamQuestionIds.add(id);
+  renderQuestionBank();
+}
+
+function clearExamQuestionSelection() {
+  state.selectedExamQuestionIds.clear();
+  renderQuestionBank();
 }
 
 function renderExams() {
@@ -415,6 +460,11 @@ async function handleExamSubmit(event) {
   showConflict("");
   const formData = new FormData(event.currentTarget);
   const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+  const selectedQuestionIds = Array.from(state.selectedExamQuestionIds);
+  if (!selectedQuestionIds.length) {
+    showBanner("Select at least one MCQ from question bank before creating an exam.", "error");
+    return;
+  }
 
   try {
     await submitForm(submitButton, async () => {
@@ -433,11 +483,13 @@ async function handleExamSubmit(event) {
           examType: String(formData.get("examType") || "").trim(),
           state: String(formData.get("publishState") || "").trim(),
           rules: String(formData.get("examRules") || "").trim(),
+          questionIds: selectedQuestionIds,
         }),
       });
       event.currentTarget.reset();
+      state.selectedExamQuestionIds.clear();
       await loadWorkspace();
-      showBanner("Exam saved and added to the routine board.", "success");
+      showBanner("Exam with selected questions sent to admin for approval.", "success");
     });
   } catch (error) {
     if (error.status === 409 && error.payload?.conflict) {
@@ -468,7 +520,7 @@ async function handleQuestionSubmit(event) {
     });
     event.currentTarget.reset();
     await loadWorkspace();
-    showBanner("Question saved to the reusable bank.", "success");
+    showBanner("Question saved and sent to admin for approval.", "success");
   });
 }
 
@@ -531,6 +583,9 @@ function bindEvents() {
   $("#communicationForm")?.addEventListener("submit", (event) => {
     handleCommunicationSubmit(event).catch((error) => showBanner(error.message, "error"));
   });
+  $("#clearSelectedQuestionsBtn")?.addEventListener("click", () => {
+    clearExamQuestionSelection();
+  });
 }
 
 function bindSectionNav() {
@@ -587,3 +642,5 @@ document.addEventListener("DOMContentLoaded", async () => {
     showBanner(`Instructor workspace could not load: ${error.message}`, "error", true);
   }
 });
+
+window.toggleExamQuestionSelection = toggleExamQuestionSelection;

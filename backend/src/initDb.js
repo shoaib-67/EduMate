@@ -113,6 +113,7 @@ async function ensureContentSubmissionsTable(pool) {
   await ensureColumn(pool, "content_submissions", "course_title", "course_title VARCHAR(150) NULL");
   await ensureColumn(pool, "content_submissions", "batch_name", "batch_name VARCHAR(80) NULL");
   await ensureColumn(pool, "content_submissions", "deadline", "deadline DATE NULL");
+  await ensureColumn(pool, "content_submissions", "source_ref", "source_ref VARCHAR(120) NULL");
 }
 
 async function ensureReportsTable(pool) {
@@ -319,6 +320,24 @@ async function ensureNotificationsTable(pool) {
   `);
 }
 
+async function ensureProctoringEventsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`proctoring_events\` (
+      \`event_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`student_id\` INT UNSIGNED NOT NULL,
+      \`exam_id\` INT UNSIGNED NULL,
+      \`event_type\` VARCHAR(40) NOT NULL,
+      \`reason\` VARCHAR(255) NULL,
+      \`photo_data_url\` LONGTEXT NULL,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      INDEX \`idx_proctoring_student_created\` (\`student_id\`, \`created_at\`),
+      INDEX \`idx_proctoring_exam\` (\`exam_id\`),
+      FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`exam_id\`) REFERENCES \`exam_schedules\`(\`exam_id\`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureInstructorCourseItemsTable(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS \`instructor_course_items\` (
@@ -352,6 +371,25 @@ async function ensureInstructorQuestionBankTable(pool) {
       INDEX \`idx_instructor_question_bank\` (\`instructor_id\`, \`created_at\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureColumn(
+    pool,
+    "instructor_question_bank",
+    "approval_status",
+    "approval_status VARCHAR(20) NOT NULL DEFAULT 'pending'"
+  );
+  await ensureColumn(
+    pool,
+    "instructor_question_bank",
+    "approved_at",
+    "approved_at TIMESTAMP NULL DEFAULT NULL"
+  );
+  await ensureColumn(
+    pool,
+    "instructor_question_bank",
+    "approved_by_admin_id",
+    "approved_by_admin_id INT UNSIGNED NULL"
+  );
 }
 
 async function ensureInstructorExamSchedulesTable(pool) {
@@ -369,11 +407,56 @@ async function ensureInstructorExamSchedulesTable(pool) {
       \`shuffle_mode\` VARCHAR(80),
       \`exam_type\` VARCHAR(60) NOT NULL,
       \`publish_state\` VARCHAR(30) NOT NULL DEFAULT 'Draft',
+      \`question_ids_json\` TEXT NULL,
+      \`approval_status\` VARCHAR(20) NOT NULL DEFAULT 'pending',
+      \`approved_at\` TIMESTAMP NULL DEFAULT NULL,
+      \`published_exam_id\` INT UNSIGNED NULL,
       \`rules\` TEXT,
       \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
       FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
       INDEX \`idx_instructor_exam_schedule\` (\`instructor_id\`, \`batch_name\`, \`start_time\`)
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+
+  await ensureColumn(
+    pool,
+    "instructor_exam_schedules",
+    "question_ids_json",
+    "question_ids_json TEXT NULL"
+  );
+  await ensureColumn(
+    pool,
+    "instructor_exam_schedules",
+    "approval_status",
+    "approval_status VARCHAR(20) NOT NULL DEFAULT 'pending'"
+  );
+  await ensureColumn(
+    pool,
+    "instructor_exam_schedules",
+    "approved_at",
+    "approved_at TIMESTAMP NULL DEFAULT NULL"
+  );
+  await ensureColumn(
+    pool,
+    "instructor_exam_schedules",
+    "published_exam_id",
+    "published_exam_id INT UNSIGNED NULL"
+  );
+}
+
+async function ensureExamQuestionMappingsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`exam_question_mappings\` (
+      \`mapping_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`exam_id\` INT UNSIGNED NOT NULL,
+      \`question_id\` INT UNSIGNED NOT NULL,
+      \`order_index\` INT UNSIGNED NOT NULL DEFAULT 0,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY \`unique_exam_question\` (\`exam_id\`, \`question_id\`),
+      INDEX \`idx_exam_order\` (\`exam_id\`, \`order_index\`),
+      FOREIGN KEY (\`exam_id\`) REFERENCES \`exam_schedules\`(\`exam_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`question_id\`) REFERENCES \`instructor_question_bank\`(\`question_id\`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 }
@@ -507,9 +590,11 @@ async function ensureSchema() {
   await ensureExamSchedulesTable(pool);
   await ensureExamAssignmentsTable(pool);
   await ensureNotificationsTable(pool);
+  await ensureProctoringEventsTable(pool);
   await ensureInstructorCourseItemsTable(pool);
   await ensureInstructorQuestionBankTable(pool);
   await ensureInstructorExamSchedulesTable(pool);
+  await ensureExamQuestionMappingsTable(pool);
   await ensureInstructorStudentAssignmentsTable(pool);
   await ensureInstructorStudentNotesTable(pool);
   await ensureInstructorMessagesTable(pool);

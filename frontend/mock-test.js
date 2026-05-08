@@ -1,5 +1,6 @@
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => root.querySelectorAll(selector);
+const { API_BASE_URL, getStudentId } = window.EduMateShared || {};
 
 const MAX_ATTEMPTS_UNLIMITED = 999;
 const OPTION_LABELS = ["A", "B", "C", "D"];
@@ -10,7 +11,7 @@ const BADGE_MAP = {
   completed: ["badge-blue", "Completed"],
 };
 
-const testsData = [
+let testsData = [
   {
     id: 1,
     title: "BUET Admission Full Mock",
@@ -121,6 +122,7 @@ const testsData = [
     free: false,
   },
 ];
+const localTestsData = [...testsData];
 
 const questionBankData = {
   Physics: [
@@ -139,6 +141,31 @@ const questionBankData = {
       opts: ["Joule", "Coulomb", "Volt", "Ampere"],
       ans: 2,
     },
+    {
+      text: "For uniform circular motion, acceleration is always directed:",
+      opts: ["Along velocity", "Away from center", "Toward center", "Zero"],
+      ans: 2,
+    },
+    {
+      text: "The dimensional formula of force is:",
+      opts: ["MLT^-1", "ML^2T^-2", "MLT^-2", "M^0LT^-2"],
+      ans: 2,
+    },
+    {
+      text: "If two resistors 3 ohm and 6 ohm are in parallel, equivalent resistance is:",
+      opts: ["9 ohm", "2 ohm", "3 ohm", "4 ohm"],
+      ans: 1,
+    },
+    {
+      text: "Speed of light in vacuum is approximately:",
+      opts: ["3 x 10^6 m/s", "3 x 10^7 m/s", "3 x 10^8 m/s", "3 x 10^9 m/s"],
+      ans: 2,
+    },
+    {
+      text: "Work done by a force perpendicular to displacement is:",
+      opts: ["Maximum", "Minimum negative", "Zero", "Infinite"],
+      ans: 2,
+    },
   ],
   Chemistry: [
     {
@@ -149,6 +176,26 @@ const questionBankData = {
     {
       text: "The number of moles in 44g of CO2 (Molar mass = 44 g/mol) is:",
       opts: ["0.5 mol", "1 mol", "2 mol", "44 mol"],
+      ans: 1,
+    },
+    {
+      text: "pH of a neutral solution at 25 C is:",
+      opts: ["0", "7", "10", "14"],
+      ans: 1,
+    },
+    {
+      text: "Avogadro number is:",
+      opts: ["6.02 x 10^20", "6.02 x 10^22", "6.02 x 10^23", "6.02 x 10^24"],
+      ans: 2,
+    },
+    {
+      text: "Which bond is present in NaCl?",
+      opts: ["Covalent", "Hydrogen", "Ionic", "Metallic"],
+      ans: 2,
+    },
+    {
+      text: "Oxidation is:",
+      opts: ["Gain of electrons", "Loss of electrons", "Gain of neutrons", "Loss of protons"],
       ans: 1,
     },
   ],
@@ -164,6 +211,26 @@ const questionBankData = {
       opts: ["1", "1.5", "2", "2.5"],
       ans: 2,
     },
+    {
+      text: "Integral of 2x dx is:",
+      opts: ["x^2 + C", "2x + C", "x + C", "x^3 + C"],
+      ans: 0,
+    },
+    {
+      text: "If sin(theta)=1, then theta can be:",
+      opts: ["0", "pi/6", "pi/2", "pi"],
+      ans: 2,
+    },
+    {
+      text: "Determinant of [[1,0],[0,1]] is:",
+      opts: ["0", "1", "-1", "2"],
+      ans: 1,
+    },
+    {
+      text: "The roots of x^2 - 1 = 0 are:",
+      opts: ["1 only", "-1 only", "1 and -1", "0 and 1"],
+      ans: 2,
+    },
   ],
   Biology: [
     {
@@ -174,6 +241,26 @@ const questionBankData = {
     {
       text: "DNA replication occurs in which phase of the cell cycle?",
       opts: ["G1", "S", "G2", "M"],
+      ans: 1,
+    },
+    {
+      text: "Basic unit of life is:",
+      opts: ["Tissue", "Cell", "Organ", "Nucleus"],
+      ans: 1,
+    },
+    {
+      text: "Photosynthesis mainly occurs in:",
+      opts: ["Mitochondria", "Nucleus", "Ribosome", "Chloroplast"],
+      ans: 3,
+    },
+    {
+      text: "Human blood group is determined by:",
+      opts: ["RBC membrane antigens", "WBC count", "Platelet size", "Hemoglobin only"],
+      ans: 0,
+    },
+    {
+      text: "Genetic material in most organisms is:",
+      opts: ["RNA", "DNA", "Protein", "Lipid"],
       ans: 1,
     },
   ],
@@ -187,11 +274,77 @@ let timerInterval = null;
 let secondsLeft = 0;
 let activeFilter = "all";
 let activeSearch = "";
+let isExamSessionActive = false;
+let disqualified = false;
+let tabProctoringArmed = false;
+let armTabProctoringTimeout = null;
 
 const stopTimer = () => {
   clearInterval(timerInterval);
   timerInterval = null;
 };
+
+const clearTabProctoringTimer = () => {
+  clearTimeout(armTabProctoringTimeout);
+  armTabProctoringTimeout = null;
+};
+
+async function enterExamFullscreen() {
+  const target = document.documentElement;
+  if (!target.requestFullscreen) return false;
+  try {
+    await target.requestFullscreen();
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+async function exitExamFullscreen() {
+  if (!document.fullscreenElement || !document.exitFullscreen) return;
+  try {
+    await document.exitFullscreen();
+  } catch {
+    // Ignore fullscreen exit failure to keep flow stable.
+  }
+}
+
+const teardownProctoring = () => {
+  tabProctoringArmed = false;
+  clearTabProctoringTimer();
+  document.removeEventListener("visibilitychange", handleVisibilityViolation);
+};
+
+function getExamIdFromUrl() {
+  const params = new URLSearchParams(window.location.search);
+  const raw = params.get("examId");
+  const examId = Number(raw);
+  return Number.isInteger(examId) && examId > 0 ? examId : null;
+}
+
+function showDisqualifiedResult(reason) {
+  disqualified = true;
+  isExamSessionActive = false;
+  stopTimer();
+  teardownProctoring();
+
+  $("#resultTestName").textContent = `${currentTest?.title || "Mock Test"} - Disqualified`;
+  $("#resultPct").textContent = "0%";
+  $("#r-correct").textContent = "0";
+  $("#r-wrong").textContent = String(questions.length || 0);
+  $("#r-skipped").textContent = "0";
+  $("#r-marks").textContent = "Disqualified";
+  $("#resultFeedback").textContent = `You were disqualified: ${reason}`;
+  $("#reviewList").innerHTML = '<div class="review-item"><p class="review-question">Result locked due to proctoring violation.</p></div>';
+  showView("resultView");
+}
+
+function handleVisibilityViolation() {
+  if (!isExamSessionActive || disqualified || !tabProctoringArmed) return;
+  if (document.hidden) {
+    showDisqualifiedResult("you switched tab/window during the exam.");
+  }
+}
 
 const isUnlimited = (maxAttempts) => maxAttempts >= MAX_ATTEMPTS_UNLIMITED;
 
@@ -202,6 +355,127 @@ function buildQuestions(subjects, count) {
     questionBankData[subject].forEach((item) => merged.push({ ...item, subject }));
   });
   return merged.sort(() => Math.random() - 0.5).slice(0, Math.min(count, merged.length));
+}
+
+async function fetchApprovedQuestions(subjects, count, examId = null) {
+  if (!API_BASE_URL || typeof getStudentId !== "function") return null;
+  const studentId = getStudentId();
+  if (!studentId) return null;
+
+  try {
+    const params = new URLSearchParams();
+    normalizeSubjects(subjects).forEach((subject) => params.append("subjects", subject));
+    params.set("count", String(count));
+    if (examId) params.set("examId", String(examId));
+
+    const response = await fetch(
+      `${API_BASE_URL}/student/${studentId}/mock-questions?${params.toString()}`
+    );
+    const payload = await response.json();
+    if (!response.ok || !payload?.success) return null;
+
+    return (payload.data?.questions || [])
+      .map((question) => ({
+        text: String(question.text || ""),
+        opts: Array.isArray(question.opts) ? question.opts : [],
+        ans: Number(question.ans),
+        subject: String(question.subject || "General"),
+      }))
+      .filter(
+        (question) =>
+          question.text &&
+          question.opts.length >= 2 &&
+          Number.isInteger(question.ans) &&
+          question.ans >= 0 &&
+          question.ans < question.opts.length
+      );
+  } catch {
+    return null;
+  }
+}
+
+function normalizeSubjects(subjectInput) {
+  const source = Array.isArray(subjectInput) ? subjectInput : [subjectInput];
+  const normalized = source
+    .map((item) => String(item || "").trim())
+    .filter(Boolean)
+    .map((item) => {
+      const key = item.toLowerCase();
+      if (key.includes("physics")) return "Physics";
+      if (key.includes("chem")) return "Chemistry";
+      if (key.includes("math")) return "Math";
+      if (key.includes("bio")) return "Biology";
+      return item.charAt(0).toUpperCase() + item.slice(1);
+    });
+
+  return normalized.length ? normalized : ["Physics"];
+}
+
+function mapExamStatusToTestStatus(exam) {
+  const status = String(exam?.status || "").toLowerCase();
+  if (status === "completed" || status === "missed") return "completed";
+  if (status === "upcoming" && !exam?.joinAvailable) return "scheduled";
+  return "available";
+}
+
+function buildTestsFromExamRoutine(exams = []) {
+  const mapped = exams
+    .filter((exam) => {
+      const status = String(exam?.status || "").toLowerCase();
+      return status !== "completed" && status !== "missed";
+    })
+    .map((exam) => {
+    const subjects = normalizeSubjects(exam.subject);
+    const duration = Number(exam.durationMinutes || 30);
+    const questionCount = Math.max(6, Math.round(duration / 5));
+    const status = mapExamStatusToTestStatus(exam);
+    const examTitle = String(exam.subject || "Exam").trim();
+    const cardTitle = /mock|test/i.test(examTitle) ? examTitle : `${examTitle} Mock`;
+    return {
+      id: Number(exam.id),
+      title: cardTitle,
+      status,
+      featured: status === "available",
+      duration,
+      questions: questionCount,
+      subjects,
+      attempts: 0,
+      maxAttempts: 3,
+      description: exam.instructions || "Scheduled from exam routine.",
+      tags: [String(exam.batchName || "General"), String(exam.status || "").toUpperCase()].filter(Boolean),
+      free: true,
+      schedDate: exam.startTime ? new Date(exam.startTime).toLocaleDateString() : "Scheduled",
+      sourceExamId: Number(exam.id),
+    };
+  });
+
+  if (mapped.length) return mapped;
+  return localTestsData.filter((test) => String(test.status || "").toLowerCase() !== "completed");
+}
+
+function updateMockStatsFromPerformance(items = []) {
+  const cards = $$(".stat-row .stat-card");
+  if (cards.length < 4) return;
+
+  const mockItems = items.filter((item) => String(item.test_type || "").toLowerCase() === "mock");
+  const completed = mockItems.length;
+  const avg = completed
+    ? Math.round(mockItems.reduce((sum, item) => sum + Number(item.score || 0), 0) / completed)
+    : 0;
+  const bestItem = mockItems.reduce(
+    (best, item) => (Number(item.score || 0) > Number(best?.score || -1) ? item : best),
+    null
+  );
+
+  const available = testsData.filter((test) => test.status === "available").length;
+  cards[0].querySelector(".s-val").textContent = String(available);
+  cards[0].querySelector(".s-sub").textContent = "Synced from backend";
+  cards[1].querySelector(".s-val").textContent = String(completed);
+  cards[1].querySelector(".s-sub").textContent = completed ? "From performance records" : "No completed mocks yet";
+  cards[2].querySelector(".s-val").textContent = `${avg}%`;
+  cards[2].querySelector(".s-sub").textContent = "Average mock score";
+  cards[3].querySelector(".s-val").textContent = `${Number(bestItem?.score || 0)}%`;
+  cards[3].querySelector(".s-sub").textContent = bestItem?.test_name || "No test record yet";
 }
 
 function getAttemptProgress(test) {
@@ -234,6 +508,8 @@ function renderTests(filter = "all", search = "") {
     const pct = getAttemptProgress(test);
     const pctClass = pct >= 80 ? "red" : pct >= 50 ? "amber" : "";
     const [badgeClass, badgeLabel] = BADGE_MAP[test.status] || ["badge-gray", "Unknown"];
+    const numericScore = Number(test.score);
+    const scoreLabel = Number.isFinite(numericScore) ? `${Math.round(numericScore)}%` : "N/A";
 
     const card = document.createElement("div");
     card.className = `test-card${test.featured ? " featured" : ""}`;
@@ -282,7 +558,7 @@ function renderTests(filter = "all", search = "") {
             ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openTestConfirm(${test.id})">Start -&gt;</button>`
             : test.status === "scheduled"
               ? `<button class="btn btn-sm btn-scheduled">${test.schedDate}</button>`
-              : `<div class="score-box"><p class="score-label">Score</p><p class="score-value">${test.score}%</p></div>`
+              : `<div class="score-box"><p class="score-label">Score</p><p class="score-value">${scoreLabel}</p></div>`
         }
       </div>
     `;
@@ -336,15 +612,39 @@ function openTestConfirm(id) {
 }
 
 function closeModal() {
+  isExamSessionActive = false;
   stopTimer();
+  teardownProctoring();
+  exitExamFullscreen().catch(() => null);
   $("#examModal").classList.remove("open");
   showView("confirmView");
 }
 
-function startExam() {
+async function startExam() {
   if (!currentTest) return;
 
-  questions = buildQuestions(currentTest.subjects, currentTest.questions);
+  const fullscreenReady = await enterExamFullscreen();
+  if (!fullscreenReady) {
+    window.alert("Please allow fullscreen mode to start this mock test.");
+    return;
+  }
+
+  disqualified = false;
+  tabProctoringArmed = false;
+
+  const backendQuestions = await fetchApprovedQuestions(
+    currentTest.subjects,
+    currentTest.questions,
+    currentTest.sourceExamId || currentTest.id || null
+  );
+  questions = Array.isArray(backendQuestions)
+    ? backendQuestions
+    : buildQuestions(currentTest.subjects, currentTest.questions);
+  if (!questions.length) {
+    window.alert("No approved MCQ questions found for this subject yet.");
+    exitExamFullscreen().catch(() => null);
+    return;
+  }
   answers = new Array(questions.length).fill(null);
   currentQ = 0;
   secondsLeft = currentTest.duration * 60;
@@ -354,6 +654,13 @@ function startExam() {
   buildPalette();
   renderQuestion();
   startTimer();
+
+  isExamSessionActive = true;
+  document.addEventListener("visibilitychange", handleVisibilityViolation);
+  clearTabProctoringTimer();
+  armTabProctoringTimeout = setTimeout(() => {
+    tabProctoringArmed = true;
+  }, 1500);
 }
 
 function updateTimerDisplay() {
@@ -479,7 +786,10 @@ function hideSubmitConfirm() {
 }
 
 function submitExam() {
+  isExamSessionActive = false;
   stopTimer();
+  teardownProctoring();
+  exitExamFullscreen().catch(() => null);
 
   let correct = 0;
   let wrong = 0;
@@ -541,19 +851,102 @@ function submitExam() {
   });
 
   showView("resultView");
+  savePerformanceRecord({ correct, scorePercent: pct }).catch(() => null);
 }
 
-renderTests();
+async function savePerformanceRecord({ correct, scorePercent }) {
+  if (!API_BASE_URL || typeof getStudentId !== "function" || !currentTest || !questions.length) return;
+  const studentId = getStudentId();
+  if (!studentId) return;
+
+  const primarySubject = normalizeSubjects(currentTest.subjects)[0] || "General";
+  try {
+    await fetch(`${API_BASE_URL}/student/${studentId}/performance`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        subject: primarySubject,
+        testType: "mock",
+        score: scorePercent,
+        totalQuestions: questions.length,
+        correctAnswers: correct,
+        testName: currentTest.title,
+        rank: null,
+        totalParticipants: null,
+      }),
+    });
+  } catch {
+    // Keep exam experience smooth when API is temporarily unavailable.
+  }
+}
+
+async function loadMockTestsFromBackend() {
+  if (!API_BASE_URL || typeof getStudentId !== "function") return false;
+  const studentId = getStudentId();
+  if (!studentId) return false;
+
+  try {
+    const [routineRes, performanceRes] = await Promise.all([
+      fetch(`${API_BASE_URL}/student/${studentId}/exams`),
+      fetch(`${API_BASE_URL}/student/${studentId}/performance`),
+    ]);
+
+    const routinePayload = await routineRes.json();
+    const performancePayload = await performanceRes.json();
+
+    testsData = routineRes.ok && routinePayload?.success
+      ? buildTestsFromExamRoutine(routinePayload.data?.exams || [])
+      : [...localTestsData];
+
+    if (performanceRes.ok && performancePayload?.success) {
+      updateMockStatsFromPerformance(performancePayload.data || []);
+    }
+
+    return true;
+  } catch {
+    testsData = [...localTestsData];
+    return false;
+  }
+}
+
+function resolveTestIdFromQuery() {
+  const params = new URLSearchParams(window.location.search);
+
+  const openTestId = Number(params.get("openTest"));
+  if (Number.isInteger(openTestId) && openTestId > 0) {
+    const foundOpenTest = testsData.find((test) => test.id === openTestId);
+    if (foundOpenTest) return foundOpenTest.id;
+  }
+
+  const demoExam = (params.get("demoExam") || "").trim().toLowerCase();
+  if (demoExam) {
+    const matchBySubject = testsData.find(
+      (test) =>
+        test.status === "available" &&
+        test.subjects.some((subject) => subject.toLowerCase() === demoExam)
+    );
+    if (matchBySubject) return matchBySubject.id;
+  }
+
+  const examId = Number(params.get("examId"));
+  if (Number.isInteger(examId) && examId > 0) {
+    const foundExamTest = testsData.find((test) => test.id === examId);
+    if (foundExamTest) return foundExamTest.id;
+  }
+
+  return null;
+}
 
 const openTestFromQuery = () => {
-  const params = new URLSearchParams(window.location.search);
-  const testId = Number(params.get("openTest"));
+  const testId = resolveTestIdFromQuery();
   if (!testId) return;
-
-  const matchedTest = testsData.find((test) => test.id === testId);
-  if (!matchedTest) return;
-
   openTestConfirm(testId);
 };
 
-openTestFromQuery();
+async function initMockTestPage() {
+  await loadMockTestsFromBackend();
+  renderTests(activeFilter, activeSearch);
+  openTestFromQuery();
+}
+
+initMockTestPage();

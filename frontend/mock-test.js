@@ -11,260 +11,8 @@ const BADGE_MAP = {
   completed: ["badge-blue", "Completed"],
 };
 
-let testsData = [
-  {
-    id: 1,
-    title: "BUET Admission Full Mock",
-    status: "available",
-    featured: true,
-    duration: 60,
-    questions: 10,
-    subjects: ["Physics", "Chemistry", "Math"],
-    attempts: 3,
-    maxAttempts: 5,
-    description: "Complete admission mock covering all three core subjects.",
-    tags: ["BUET", "Full Mock"],
-    free: false,
-  },
-  {
-    id: 2,
-    title: "DU Ka Unit - Physics Only",
-    status: "available",
-    duration: 45,
-    questions: 8,
-    subjects: ["Physics"],
-    attempts: 1,
-    maxAttempts: 5,
-    description: "Focus test on Physics for Dhaka University Ka unit.",
-    tags: ["DU", "Physics"],
-    free: true,
-  },
-  {
-    id: 3,
-    title: "Math Practice Set #4",
-    status: "available",
-    duration: 30,
-    questions: 6,
-    subjects: ["Math"],
-    attempts: 0,
-    maxAttempts: MAX_ATTEMPTS_UNLIMITED,
-    description: "Algebra and Calculus intensive - unlimited attempts.",
-    tags: ["Math", "Practice"],
-    free: true,
-  },
-  {
-    id: 4,
-    title: "Chemistry Full Chapter Mock",
-    status: "scheduled",
-    duration: 50,
-    questions: 8,
-    subjects: ["Chemistry"],
-    attempts: 0,
-    maxAttempts: 3,
-    description: "Organic and Inorganic chemistry comprehensive test.",
-    tags: ["Chemistry", "BUET"],
-    free: false,
-    schedDate: "Apr 15, 2025",
-  },
-  {
-    id: 5,
-    title: "Biology for Medical Admission",
-    status: "scheduled",
-    duration: 60,
-    questions: 8,
-    subjects: ["Biology"],
-    attempts: 0,
-    maxAttempts: 3,
-    description: "Covers cell biology, genetics, and human physiology.",
-    tags: ["Biology", "Medical"],
-    free: false,
-    schedDate: "Apr 18, 2025",
-  },
-  {
-    id: 6,
-    title: "Chemistry Mock #2",
-    status: "completed",
-    duration: 50,
-    questions: 6,
-    subjects: ["Chemistry"],
-    attempts: 2,
-    maxAttempts: 3,
-    description: "Review your result and understand weak areas.",
-    tags: ["Chemistry", "Review"],
-    free: false,
-    score: 72,
-  },
-  {
-    id: 7,
-    title: "Physics Wave and Optics",
-    status: "completed",
-    duration: 35,
-    questions: 6,
-    subjects: ["Physics"],
-    attempts: 1,
-    maxAttempts: 3,
-    description: "Focused test on wave motion and optics chapter.",
-    tags: ["Physics", "Chapter"],
-    free: true,
-    score: 85,
-  },
-  {
-    id: 8,
-    title: "DU Kha Unit Full Mock",
-    status: "available",
-    duration: 75,
-    questions: 10,
-    subjects: ["Physics", "Math", "Biology"],
-    attempts: 0,
-    maxAttempts: 3,
-    description: "Comprehensive mock for DU Kha unit aspirants.",
-    tags: ["DU", "Full Mock"],
-    free: false,
-  },
-];
-const localTestsData = [...testsData];
-
-const questionBankData = {
-  Physics: [
-    {
-      text: "A particle moves with displacement s = 2t^3 - 3t^2 + 1 m. What is the velocity at t = 2s?",
-      opts: ["12 m/s", "18 m/s", "6 m/s", "24 m/s"],
-      ans: 1,
-    },
-    {
-      text: "A body is thrown vertically upward with velocity 20 m/s. Maximum height reached (g = 10 m/s^2) is:",
-      opts: ["10 m", "20 m", "30 m", "40 m"],
-      ans: 1,
-    },
-    {
-      text: "The SI unit of electric potential is:",
-      opts: ["Joule", "Coulomb", "Volt", "Ampere"],
-      ans: 2,
-    },
-    {
-      text: "For uniform circular motion, acceleration is always directed:",
-      opts: ["Along velocity", "Away from center", "Toward center", "Zero"],
-      ans: 2,
-    },
-    {
-      text: "The dimensional formula of force is:",
-      opts: ["MLT^-1", "ML^2T^-2", "MLT^-2", "M^0LT^-2"],
-      ans: 2,
-    },
-    {
-      text: "If two resistors 3 ohm and 6 ohm are in parallel, equivalent resistance is:",
-      opts: ["9 ohm", "2 ohm", "3 ohm", "4 ohm"],
-      ans: 1,
-    },
-    {
-      text: "Speed of light in vacuum is approximately:",
-      opts: ["3 x 10^6 m/s", "3 x 10^7 m/s", "3 x 10^8 m/s", "3 x 10^9 m/s"],
-      ans: 2,
-    },
-    {
-      text: "Work done by a force perpendicular to displacement is:",
-      opts: ["Maximum", "Minimum negative", "Zero", "Infinite"],
-      ans: 2,
-    },
-  ],
-  Chemistry: [
-    {
-      text: "Which of the following is an example of a Lewis acid?",
-      opts: ["NH3", "H2O", "BF3", "NaOH"],
-      ans: 2,
-    },
-    {
-      text: "The number of moles in 44g of CO2 (Molar mass = 44 g/mol) is:",
-      opts: ["0.5 mol", "1 mol", "2 mol", "44 mol"],
-      ans: 1,
-    },
-    {
-      text: "pH of a neutral solution at 25 C is:",
-      opts: ["0", "7", "10", "14"],
-      ans: 1,
-    },
-    {
-      text: "Avogadro number is:",
-      opts: ["6.02 x 10^20", "6.02 x 10^22", "6.02 x 10^23", "6.02 x 10^24"],
-      ans: 2,
-    },
-    {
-      text: "Which bond is present in NaCl?",
-      opts: ["Covalent", "Hydrogen", "Ionic", "Metallic"],
-      ans: 2,
-    },
-    {
-      text: "Oxidation is:",
-      opts: ["Gain of electrons", "Loss of electrons", "Gain of neutrons", "Loss of protons"],
-      ans: 1,
-    },
-  ],
-  Math: [
-    {
-      text: "The derivative of f(x) = 3x^4 - 5x^2 + 2 at x = 1 is:",
-      opts: ["2", "-2", "4", "-4"],
-      ans: 0,
-    },
-    { text: "If log2(x) = 5, then x equals:", opts: ["10", "25", "32", "64"], ans: 2 },
-    {
-      text: "The sum of the infinite geometric series 1 + 1/2 + 1/4 + ... is:",
-      opts: ["1", "1.5", "2", "2.5"],
-      ans: 2,
-    },
-    {
-      text: "Integral of 2x dx is:",
-      opts: ["x^2 + C", "2x + C", "x + C", "x^3 + C"],
-      ans: 0,
-    },
-    {
-      text: "If sin(theta)=1, then theta can be:",
-      opts: ["0", "pi/6", "pi/2", "pi"],
-      ans: 2,
-    },
-    {
-      text: "Determinant of [[1,0],[0,1]] is:",
-      opts: ["0", "1", "-1", "2"],
-      ans: 1,
-    },
-    {
-      text: "The roots of x^2 - 1 = 0 are:",
-      opts: ["1 only", "-1 only", "1 and -1", "0 and 1"],
-      ans: 2,
-    },
-  ],
-  Biology: [
-    {
-      text: "The powerhouse of the cell is:",
-      opts: ["Nucleus", "Ribosome", "Mitochondria", "Chloroplast"],
-      ans: 2,
-    },
-    {
-      text: "DNA replication occurs in which phase of the cell cycle?",
-      opts: ["G1", "S", "G2", "M"],
-      ans: 1,
-    },
-    {
-      text: "Basic unit of life is:",
-      opts: ["Tissue", "Cell", "Organ", "Nucleus"],
-      ans: 1,
-    },
-    {
-      text: "Photosynthesis mainly occurs in:",
-      opts: ["Mitochondria", "Nucleus", "Ribosome", "Chloroplast"],
-      ans: 3,
-    },
-    {
-      text: "Human blood group is determined by:",
-      opts: ["RBC membrane antigens", "WBC count", "Platelet size", "Hemoglobin only"],
-      ans: 0,
-    },
-    {
-      text: "Genetic material in most organisms is:",
-      opts: ["RNA", "DNA", "Protein", "Lipid"],
-      ans: 1,
-    },
-  ],
-};
+let testsData = [];
+const localTestsData = [];
 
 let currentTest = null;
 let questions = [];
@@ -347,15 +95,6 @@ function handleVisibilityViolation() {
 }
 
 const isUnlimited = (maxAttempts) => maxAttempts >= MAX_ATTEMPTS_UNLIMITED;
-
-function buildQuestions(subjects, count) {
-  const merged = [];
-  subjects.forEach((subject) => {
-    if (!questionBankData[subject]) return;
-    questionBankData[subject].forEach((item) => merged.push({ ...item, subject }));
-  });
-  return merged.sort(() => Math.random() - 0.5).slice(0, Math.min(count, merged.length));
-}
 
 async function fetchApprovedQuestions(subjects, count, examId = null) {
   if (!API_BASE_URL || typeof getStudentId !== "function") return null;
@@ -450,7 +189,7 @@ function buildTestsFromExamRoutine(exams = []) {
   });
 
   if (mapped.length) return mapped;
-  return localTestsData.filter((test) => String(test.status || "").toLowerCase() !== "completed");
+  return [];
 }
 
 function updateMockStatsFromPerformance(items = []) {
@@ -637,11 +376,9 @@ async function startExam() {
     currentTest.questions,
     currentTest.sourceExamId || currentTest.id || null
   );
-  questions = Array.isArray(backendQuestions)
-    ? backendQuestions
-    : buildQuestions(currentTest.subjects, currentTest.questions);
+  questions = Array.isArray(backendQuestions) ? backendQuestions : [];
   if (!questions.length) {
-    window.alert("No approved MCQ questions found for this subject yet.");
+    window.alert("No approved questions found for this subject yet. Please contact your instructor.");
     exitExamFullscreen().catch(() => null);
     return;
   }
@@ -904,7 +641,7 @@ async function loadMockTestsFromBackend() {
 
     return true;
   } catch {
-    testsData = [...localTestsData];
+    testsData = [];
     return false;
   }
 }

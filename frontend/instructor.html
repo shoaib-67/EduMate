@@ -47,61 +47,64 @@
         </div>
 
         <div class="content">
-          <div class="page-header" id="overviewSection">
-            <h1>Instructor command desk</h1>
-            <p>Manage your own courses, exams, students, and notices without touching platform-wide admin controls.</p>
-            <div class="page-actions">
-              <a class="btn btn-primary" href="#examSection">Create exam</a>
-              <a class="btn btn-light" href="#coursesSection">Upload content</a>
-              <a class="btn" href="#communicationSection">Send notice</a>
-            </div>
-          </div>
-
-          <div class="workspace-banner" id="workspaceBanner" role="status" aria-live="polite"></div>
-
-          <section class="workspace-band" aria-label="Instructor overview">
-            <div class="workspace-card workspace-card-highlight">
-              <div>
-                <p class="workspace-eyebrow">Today</p>
-                <h2 id="workspaceHeadline">Workspace loading</h2>
-                <p id="workspaceSummary">Pulling the latest courses, exams, and student updates for this instructor.</p>
-              </div>
-              <div class="workspace-meta">
-                <span class="workspace-pill" id="nextExamPill">No exam data yet</span>
-                <span class="workspace-pill" id="attentionPill">No alerts yet</span>
+          <div class="workspace-section active" id="overviewSection">
+            <div class="page-header">
+              <h1>Instructor command desk</h1>
+              <p>Manage your own courses, exams, students, and notices without touching platform-wide admin controls.</p>
+              <div class="page-actions">
+                <a class="btn btn-primary" href="#examSection">Create exam</a>
+                <a class="btn btn-light" href="#coursesSection">Upload content</a>
+                <a class="btn" href="#communicationSection">Send notice</a>
               </div>
             </div>
-            <div class="workspace-card workspace-card-side">
-              <h2>Needs attention</h2>
-              <div class="attention-list" id="attentionList"></div>
-            </div>
-          </section>
 
-          <div class="stat-row">
-            <div class="stat-card highlight">
-              <p class="s-label">Active Courses</p>
-              <p class="s-val" id="courseCount">0</p>
-              <p class="s-sub">Owned by this instructor</p>
-            </div>
-            <div class="stat-card">
-              <p class="s-label">Published Exams</p>
-              <p class="s-val text-primary" id="publishedExamCount">0</p>
-              <p class="s-sub">Live for assigned batches</p>
-            </div>
-            <div class="stat-card">
-              <p class="s-label">Managed Students</p>
-              <p class="s-val" id="managedStudentCount">0</p>
-              <p class="s-sub">Across assigned batches</p>
-            </div>
-            <div class="stat-card">
-              <p class="s-label">Average Batch Score</p>
-              <p class="s-val" id="batchAverageScore">0%</p>
-              <p class="s-sub">Auto + manual grading combined</p>
+            <div class="workspace-banner" id="workspaceBanner" role="status" aria-live="polite"></div>
+
+            <section class="workspace-band" aria-label="Instructor overview">
+              <div class="workspace-card workspace-card-highlight">
+                <div>
+                  <p class="workspace-eyebrow">Today</p>
+                  <h2 id="workspaceHeadline">Workspace loading</h2>
+                  <p id="workspaceSummary">Pulling the latest courses, exams, and student updates for this instructor.</p>
+                </div>
+                <div class="workspace-meta">
+                  <span class="workspace-pill" id="nextExamPill">No exam data yet</span>
+                  <span class="workspace-pill" id="attentionPill">No alerts yet</span>
+                </div>
+              </div>
+              <div class="workspace-card workspace-card-side">
+                <h2>Needs attention</h2>
+                <div class="attention-list" id="attentionList"></div>
+              </div>
+            </section>
+
+            <div class="stat-row">
+              <div class="stat-card highlight">
+                <p class="s-label">Active Courses</p>
+                <p class="s-val" id="courseCount">0</p>
+                <p class="s-sub">Owned by this instructor</p>
+              </div>
+              <div class="stat-card">
+                <p class="s-label">Published Exams</p>
+                <p class="s-val text-primary" id="publishedExamCount">0</p>
+                <p class="s-sub">Live for assigned batches</p>
+              </div>
+              <div class="stat-card">
+                <p class="s-label">Managed Students</p>
+                <p class="s-val" id="managedStudentCount">0</p>
+                <p class="s-sub">Across assigned batches</p>
+              </div>
+              <div class="stat-card">
+                <p class="s-label">Average Batch Score</p>
+                <p class="s-val" id="batchAverageScore">0%</p>
+                <p class="s-sub">Auto + manual grading combined</p>
+              </div>
             </div>
           </div>
 
           <div class="panel-grid panel-grid-spaced instructor-grid">
-            <section class="panel" id="coursesSection">
+          <div class="workspace-section" id="coursesSection">
+            <section class="panel">
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Course & content</h2>
@@ -132,6 +135,10 @@
                     <option value="Lesson Summary">Lesson Summary</option>
                   </select>
                 </div>
+                <div class="form-group" id="linkField" style="display: none;">
+                  <label for="contentLink">Content Link</label>
+                  <input id="contentLink" name="contentLink" type="url" placeholder="https://example.com/document.pdf" />
+                </div>
                 <div class="form-group">
                   <label for="contentDeadline">Deadline</label>
                   <input id="contentDeadline" name="contentDeadline" type="date" />
@@ -146,14 +153,16 @@
                 </div>
                 <div class="form-footer form-group-full">
                   <p>Use this for notes, slides, assignments, and announcements tied to one batch.</p>
-                  <button class="btn btn-primary" type="submit">Save content item</button>
+                  <button class="btn btn-primary" type="submit">Upload content</button>
                 </div>
               </form>
 
               <div class="list compact-list" id="courseContentList"></div>
             </section>
+          </div>
 
-            <section class="panel" id="examSection">
+          <div class="workspace-section" id="examSection">
+            <section class="panel">
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Exam & mock test management</h2>
@@ -271,8 +280,10 @@
                 </div>
               </div>
             </section>
+          </div>
 
-            <section class="panel" id="routineSection">
+          <div class="workspace-section" id="routineSection">
+            <section class="panel">
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Exam routine & schedule</h2>
@@ -299,8 +310,10 @@
               <div class="status-banner status-banner-warning is-hidden" id="conflictBanner"></div>
               <div class="list compact-list" id="routineList"></div>
             </section>
+          </div>
 
-            <section class="panel" id="studentsSection">
+          <div class="workspace-section" id="studentsSection">
+            <section class="panel">
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Student management</h2>
@@ -355,8 +368,10 @@
                 </table>
               </div>
             </section>
+          </div>
 
-            <section class="panel panel-full" id="resultsSection">
+          <div class="workspace-section" id="resultsSection">
+            <section class="panel panel-full">
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Results & analytics</h2>
@@ -384,8 +399,10 @@
                 </div>
               </div>
             </section>
+          </div>
 
-            <section class="panel" id="communicationSection">
+          <div class="workspace-section" id="communicationSection">
+            <section class="panel">
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Communication hub</h2>
@@ -424,8 +441,10 @@
 
               <div class="list compact-list" id="communicationList"></div>
             </section>
+          </div>
 
-            <section class="panel" id="alertsSection">
+          <div class="workspace-section" id="alertsSection">
+            <section class="panel">
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Instructor alerts</h2>
@@ -436,6 +455,7 @@
 
               <div class="list compact-list" id="alertList"></div>
             </section>
+          </div>
           </div>
         </div>
       </div>

@@ -190,6 +190,7 @@ function renderCourseContent() {
             <h4>${escapeHTML(item.title)}</h4>
             <span>${escapeHTML(item.course)} - ${escapeHTML(item.batch)} - ${escapeHTML(item.type)}</span>
             <span>${escapeHTML(item.summary)}</span>
+            ${item.link ? `<span>Link: <a href="${escapeHTML(item.link)}" target="_blank">${escapeHTML(item.link)}</a></span>` : ""}
             <span>${item.deadline ? `Deadline: ${escapeHTML(item.deadline)}` : "No deadline"}</span>
           </div>
           <span class="chip">${escapeHTML(item.type)}</span>
@@ -197,7 +198,7 @@ function renderCourseContent() {
       `
         )
         .join("")
-    : renderEmptyCard("No study materials yet", "Your course items will show up here once you save the first PDF, note, assignment, or announcement.");
+    : renderEmptyCard("No study materials yet", "Your course items will show up here once you upload the first PDF, note, assignment, or announcement.");
 }
 
 function renderQuestionBank() {
@@ -447,11 +448,15 @@ async function handleCourseSubmit(event) {
         title: String(formData.get("contentTitle") || "").trim(),
         summary: String(formData.get("contentSummary") || "").trim(),
         deadline: String(formData.get("contentDeadline") || "").trim(),
+        link: String(formData.get("contentLink") || "").trim(),
       }),
     });
     event.currentTarget.reset();
+    // Reset link field visibility
+    $("#linkField").style.display = "none";
+    $("#contentLink").required = false;
     await loadWorkspace();
-    showBanner("Course content saved and sent to admin for approval.", "success");
+    showBanner("Course content uploaded and sent to admin for approval.", "success");
   });
 }
 
@@ -568,6 +573,20 @@ async function handleCommunicationSubmit(event) {
 }
 
 function bindEvents() {
+  // Content type change handler
+  $("#contentType")?.addEventListener("change", (event) => {
+    const linkField = $("#linkField");
+    const selectedType = event.target.value;
+    if (selectedType === "PDF" || selectedType === "Video") {
+      linkField.style.display = "block";
+      $("#contentLink").required = true;
+    } else {
+      linkField.style.display = "none";
+      $("#contentLink").required = false;
+      $("#contentLink").value = "";
+    }
+  });
+
   $("#courseForm")?.addEventListener("submit", (event) => {
     handleCourseSubmit(event).catch((error) => showBanner(error.message, "error"));
   });
@@ -589,42 +608,39 @@ function bindEvents() {
 }
 
 function bindSectionNav() {
-  const sections = [
-    "#overviewSection",
-    "#coursesSection",
-    "#examSection",
-    "#routineSection",
-    "#studentsSection",
-    "#resultsSection",
-    "#communicationSection",
-    "#alertsSection",
-  ]
-    .map((selector) => document.querySelector(selector))
-    .filter(Boolean);
   const navItems = Array.from(document.querySelectorAll('.nav-item[href^="#"]'));
 
-  if (!sections.length || !navItems.length || typeof IntersectionObserver !== "function") return;
+  navItems.forEach((item) => {
+    item.addEventListener('click', (event) => {
+      event.preventDefault();
+      const targetId = item.getAttribute('href').substring(1); // Remove the '#'
+      const targetSection = document.getElementById(targetId);
 
-  const navMap = new Map(navItems.map((item) => [item.getAttribute("href"), item]));
-  const observer = new IntersectionObserver(
-    (entries) => {
-      const visibleEntry = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((left, right) => right.intersectionRatio - left.intersectionRatio)[0];
+      if (targetSection) {
+        // Hide all sections
+        document.querySelectorAll('.workspace-section').forEach(section => {
+          section.classList.remove('active');
+        });
 
-      if (!visibleEntry?.target?.id) return;
-      const activeHref = `#${visibleEntry.target.id}`;
+        // Show the target section
+        targetSection.classList.add('active');
 
-      navItems.forEach((item) => item.classList.toggle("active", item.getAttribute("href") === activeHref));
-    },
-    {
-      rootMargin: "-25% 0px -55% 0px",
-      threshold: [0.2, 0.4, 0.6],
-    }
-  );
+        // Update active nav item
+        navItems.forEach(navItem => navItem.classList.remove('active'));
+        item.classList.add('active');
+      }
+    });
+  });
 
-  sections.forEach((section) => observer.observe(section));
-  navMap.get("#overviewSection")?.classList.add("active");
+  // Set overview as default active section
+  const overviewSection = document.getElementById('overviewSection');
+  if (overviewSection) {
+    overviewSection.classList.add('active');
+  }
+  const overviewNav = navItems.find(item => item.getAttribute('href') === '#overviewSection');
+  if (overviewNav) {
+    overviewNav.classList.add('active');
+  }
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

@@ -354,6 +354,8 @@ async function ensureInstructorCourseItemsTable(pool) {
       INDEX \`idx_instructor_course_items\` (\`instructor_id\`, \`created_at\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureColumn(pool, "instructor_course_items", "source_ref", "source_ref VARCHAR(500) NULL");
 }
 
 async function ensureInstructorQuestionBankTable(pool) {

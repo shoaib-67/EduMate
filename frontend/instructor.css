@@ -497,3 +497,29 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* Tabbed Navigation Styles */
+.workspace-section {
+  display: none;
+}
+
+.workspace-section.active {
+  display: block;
+}
+
+.nav-item.active {
+  background: var(--primary);
+  color: #ffffff;
+}
+
+.nav-item {
+  transition: all 0.2s ease;
+}
+
+.nav-item:hover {
+  background: rgba(26, 91, 140, 0.1);
+}
+
+.nav-item.active:hover {
+  background: var(--primary-dark);
+}

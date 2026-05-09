@@ -431,7 +431,7 @@ async function findInstructorExamConflict(pool, { instructorId, batchName, start
 async function buildInstructorWorkspace(pool, instructorId) {
   const [courseItems] = await pool.query(
     `
-    SELECT item_id, course_title, batch_name, content_type, title, summary, deadline
+    SELECT item_id, course_title, batch_name, content_type, title, summary, deadline, source_ref AS link
     FROM instructor_course_items
     WHERE instructor_id = ?
     ORDER BY created_at DESC
@@ -1727,37 +1727,43 @@ app.post("/api/instructor/:instructorId/course-items", async (req, res) => {
     const title = String(req.body?.title || "").trim();
     const summary = String(req.body?.summary || "").trim();
     const deadline = String(req.body?.deadline || "").trim();
+    const link = String(req.body?.link || "").trim();
 
     if (!instructorId || !course || !batch || !type || !title || !summary) {
       return sendError(res, { status: 422, message: "Course, batch, type, title, and summary are required." });
     }
 
+    // Validate link for PDF and Video types
+    if ((type === "PDF" || type === "Video") && !link) {
+      return sendError(res, { status: 422, message: "Link is required for PDF and Video content types." });
+    }
+
     const pool = getPool();
     await pool.query(
       `
-      INSERT INTO instructor_course_items (instructor_id, course_title, batch_name, content_type, title, summary, deadline)
-      VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''))
+      INSERT INTO instructor_course_items (instructor_id, course_title, batch_name, content_type, title, summary, deadline, source_ref)
+      VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?)
       `,
-      [instructorId, course, batch, type, title, summary, deadline]
+      [instructorId, course, batch, type, title, summary, deadline, link]
     );
 
     await pool.query(
       `
       INSERT INTO content_submissions
-        (instructor_id, course_title, batch_name, title, type, description, deadline, status)
-      VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), 'pending')
+        (instructor_id, course_title, batch_name, title, type, description, deadline, status, source_ref)
+      VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), 'pending', ?)
       `,
-      [instructorId, course, batch, title, type, summary, deadline]
+      [instructorId, course, batch, title, type, summary, deadline, link]
     );
 
     await pool.query(
       `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New study material uploaded', ?)`,
-      [instructorId, `${title} was added for ${batch} and sent for admin approval.`]
+      [instructorId, `${title} was uploaded for ${batch} and sent for admin approval.`]
     );
 
-    return sendSuccess(res, { status: 201, message: "Course content saved and sent for admin approval." });
+    return sendSuccess(res, { status: 201, message: "Course content uploaded and sent for admin approval." });
   } catch (error) {
-    return sendError(res, { message: "Could not save course content.", error: error.message });
+    return sendError(res, { message: "Could not upload course content.", error: error.message });
   }
 });
 

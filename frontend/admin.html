@@ -57,7 +57,7 @@
             <article class="stat-card">
               <p class="s-label">New Signups</p>
               <p class="s-val text-primary" id="newSignupCount">0</p>
-              <p class="s-sub">Last 24 hours</p>
+              <p class="s-sub">Recent student and instructor accounts</p>
             </article>
             <article class="stat-card">
               <p class="s-label">Pending Reports</p>
@@ -72,39 +72,6 @@
           </div>
 
           <div class="dashboard-grid">
-            <section class="panel panel-full" id="users">
-              <div class="panel-header">
-                <h2>User management</h2>
-              </div>
-              <p>Review active users and account status.</p>
-              <div class="panel-tools">
-                <input type="search" id="userSearch" class="filter-input" placeholder="Search users by name or email" />
-                <select id="userRoleFilter" class="filter-select">
-                  <option value="all">All roles</option>
-                  <option value="Student">Student</option>
-                  <option value="Instructor">Instructor</option>
-                  <option value="Admin">Admin</option>
-                </select>
-                <select id="userStatusFilter" class="filter-select">
-                  <option value="all">All statuses</option>
-                  <option value="Active">Active</option>
-                  <option value="Frozen">Frozen</option>
-                </select>
-              </div>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Name</th>
-                      <th>Role</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody id="userTableBody"></tbody>
-                </table>
-              </div>
-            </section>
             <section class="panel panel-full" id="activity">
               <div class="panel-header">
                 <h2>Admin activity log</h2>

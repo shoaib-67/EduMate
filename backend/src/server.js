@@ -992,9 +992,16 @@ app.get("/api/admin/overview", async (_req, res) => {
     const [totalReportsRows] = await pool.query("SELECT COUNT(*) as count FROM reports");
     const [completedReportsRows] = await pool.query("SELECT COUNT(*) as count FROM reports WHERE status = 'completed'");
 
-    // Get recent signups (last 24 hours)
+    // Get recent signups (last 24 hours) across student and instructor accounts
     const [newSignups] = await pool.query(
-      "SELECT COUNT(*) as count FROM students WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)"
+      `
+      SELECT COUNT(*) as count
+      FROM (
+        SELECT created_at FROM students WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+        UNION ALL
+        SELECT created_at FROM instructors WHERE created_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR)
+      ) recent_accounts
+      `
     );
     
     // Get total active users (students + instructors)

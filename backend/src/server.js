@@ -3130,6 +3130,108 @@ app.post("/api/student/:studentId/proctoring-events", async (req, res) => {
   }
 });
 
+// Announcement Endpoints
+
+app.post("/api/instructor/:instructorId/announcements", async (req, res) => {
+  try {
+    const instructorId = parseRequiredId(req.params.instructorId);
+    if (!instructorId) {
+      return sendError(res, { status: 422, message: "Valid instructor ID is required." });
+    }
+
+    const title = String(req.body?.title || "").trim();
+    const content = String(req.body?.content || "").trim();
+    const batchName = String(req.body?.batchName || "").trim() || null;
+
+    if (!title || !content) {
+      return sendError(res, { status: 422, message: "Title and content are required." });
+    }
+
+    const pool = getPool();
+
+    // Get instructor name
+    const [instructorRows] = await pool.query(
+      `SELECT name FROM instructors WHERE instructor_id = ? LIMIT 1`,
+      [instructorId]
+    );
+
+    const instructorName = instructorRows[0]?.name || "Instructor";
+
+    // Insert into content_submissions for admin approval workflow
+    await pool.query(
+      `
+      INSERT INTO content_submissions
+        (instructor_id, batch_name, title, type, description, status)
+      VALUES (?, ?, ?, 'announcement', ?, 'pending')
+      `,
+      [instructorId, batchName, title, content]
+    );
+
+    return sendSuccess(res, {
+      status: 201,
+      message: "Announcement posted and sent for admin approval."
+    });
+  } catch (error) {
+    return sendError(res, {
+      message: "Could not post announcement.",
+      error: error.message
+    });
+  }
+});
+
+app.get("/api/student/:studentId/announcements", async (req, res) => {
+  try {
+    const studentId = parseRequiredId(req.params.studentId);
+    if (!studentId) {
+      return sendError(res, { status: 422, message: "Valid student ID is required." });
+    }
+
+    const pool = getPool();
+
+    // Get student's batch
+    const [studentRows] = await pool.query(
+      `SELECT batch_name FROM students WHERE student_id = ? LIMIT 1`,
+      [studentId]
+    );
+
+    if (!studentRows.length) {
+      return sendError(res, { status: 404, message: "Student not found." });
+    }
+
+    const studentBatch = String(studentRows[0].batch_name || "").trim();
+
+    // Fetch approved announcements
+    const [announcements] = await pool.query(
+      `
+      SELECT 
+        cs.submission_id as announcement_id,
+        cs.title,
+        cs.description as content,
+        cs.batch_name,
+        cs.created_at,
+        i.name as instructor_name
+      FROM content_submissions cs
+      LEFT JOIN instructors i ON cs.instructor_id = i.instructor_id
+      WHERE cs.type = 'announcement' 
+        AND cs.status = 'approved'
+        AND (cs.batch_name IS NULL OR cs.batch_name = ? OR cs.batch_name = 'All Batches')
+      ORDER BY cs.created_at DESC
+      LIMIT 50
+      `,
+      [studentBatch]
+    );
+
+    return sendSuccess(res, {
+      data: announcements
+    });
+  } catch (error) {
+    return sendError(res, {
+      message: "Could not fetch announcements.",
+      error: error.message
+    });
+  }
+});
+
 // Discussion & Study Circle API Endpoints
 
 app.get("/api/discussions", async (req, res) => {

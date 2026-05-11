@@ -71,23 +71,189 @@ async function loadDashboardStats() {
   }
 }
 
-function setupUpcomingExamCards() {
-  document.querySelectorAll(".upcoming-exam-item").forEach((card) => {
-    const openExam = () => {
-      const examId = card.getAttribute("data-exam-id") || card.getAttribute("data-mock-test-id");
-      if (!examId) return;
-      window.location.href = `exam-routine.html?examId=${encodeURIComponent(examId)}`;
-    };
+function getExamWindow(test) {
+  const start = test?.startTime ? new Date(test.startTime) : null;
+  let end = test?.endTime ? new Date(test.endTime) : null;
+  if (start && (!end || end <= start)) {
+    const duration = Number(test?.duration || 0);
+    if (duration > 0) {
+      end = new Date(start.getTime() + duration * 60000);
+    }
+  }
+  if (!start || Number.isNaN(start.getTime()) || !end || Number.isNaN(end.getTime())) {
+    return { start: null, end: null };
+  }
+  return { start, end };
+}
 
-    card.style.cursor = "pointer";
-    card.addEventListener("click", openExam);
-    card.addEventListener("keydown", (event) => {
-      if (event.key === "Enter" || event.key === " ") {
-        event.preventDefault();
-        openExam();
-      }
-    });
+function isTestJoinAvailable(test, now = new Date()) {
+  const { start, end } = getExamWindow(test);
+  if (!start || !end) return false;
+  const joinWindowMinutes = Number(test?.joinWindowMinutes || 15);
+  const joinStart = new Date(start.getTime() - joinWindowMinutes * 60000);
+  return now >= joinStart && now <= end;
+}
+
+function deriveLiveTestStatus(test, now = new Date()) {
+  const status = String(test?.status || "").toLowerCase();
+  if (status === "completed" || status === "missed") return "completed";
+
+  const { start, end } = getExamWindow(test);
+  if (!start || !end) return status === "available" ? "available" : "scheduled";
+  if (now > end) return "completed";
+  if (isTestJoinAvailable(test, now)) return "available";
+  return "scheduled";
+}
+
+function formatScheduleLabel(test) {
+  const { start } = getExamWindow(test);
+  if (!start) return test.schedDate || "Scheduled";
+  return start.toLocaleString([], {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
   });
+}
+
+function formatExamWindow(test) {
+  const { start, end } = getExamWindow(test);
+  if (!start || !end) return "End time will be set after schedule sync.";
+  const startLabel = start.toLocaleString([], {
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const endLabel = end.toLocaleString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${startLabel} - ${endLabel}`;
+}
+
+function renderUpcomingExams(exams = []) {
+  const tracker = document.getElementById("upcomingExamTracker");
+  if (!tracker) return;
+
+  const upcoming = exams
+    .map((exam) => ({
+      id: Number(exam.id),
+      title: String(exam.title || exam.subject || "Exam").trim(),
+      subject: String(exam.subject || exam.title || "General").trim(),
+      status: deriveLiveTestStatus(exam),
+      duration: Number(exam.duration || exam.durationMinutes || 0),
+      startTime: exam.startTime || null,
+      endTime: exam.endTime || null,
+      joinWindowMinutes: Number(exam.joinWindowMinutes || 15),
+      batchName: String(exam.batchName || "General").trim(),
+    }))
+    .filter((exam) => ["scheduled", "available"].includes(exam.status))
+    .sort((left, right) => {
+      const leftTime = getExamWindow(left).start?.getTime() || Number.MAX_SAFE_INTEGER;
+      const rightTime = getExamWindow(right).start?.getTime() || Number.MAX_SAFE_INTEGER;
+      return leftTime - rightTime;
+    })
+    .slice(0, 4);
+
+  if (!upcoming.length) {
+    tracker.innerHTML = '<div class="upcoming-exams-empty">No upcoming exams are scheduled right now.</div>';
+    return;
+  }
+
+  tracker.innerHTML = upcoming
+    .map((exam) => {
+      const { start } = getExamWindow(exam);
+      const isLive = exam.status === "available";
+      const statusLabel = isLive ? "Open now" : "Scheduled";
+      const statusClass = isLive ? "is-live" : "is-scheduled";
+      const actionMarkup = isLive
+        ? `<a class="btn btn-small btn-primary" href="mock-test.html?examId=${encodeURIComponent(exam.id)}">Start test</a>`
+        : `<span class="upcoming-exam-pill">Opens ${start ? formatScheduleLabel(exam) : exam.batchName}</span>`;
+
+      return `
+        <div class="list-item upcoming-exam-item">
+          <div class="upcoming-exam-main">
+            <div class="upcoming-exam-meta">
+              <span class="upcoming-exam-pill ${statusClass}">${statusLabel}</span>
+              <span class="upcoming-exam-pill">${exam.duration || 0} min</span>
+              <span class="upcoming-exam-pill">${escapeHTML(exam.batchName)}</span>
+            </div>
+            <h4>${escapeHTML(exam.title)}</h4>
+            <span>${escapeHTML(formatExamWindow(exam))} - ${escapeHTML(exam.subject)}</span>
+          </div>
+          <div class="upcoming-exam-actions">${actionMarkup}</div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+async function loadUpcomingExams() {
+  try {
+    const studentId = getStudentId();
+    if (!studentId) return;
+
+    const response = await fetch(`${API_BASE_URL}/student/${studentId}/exams`);
+    const payload = await response.json();
+    const exams = payload.success ? payload.data?.exams || [] : [];
+    renderUpcomingExams(exams);
+  } catch (error) {
+    console.error("Error loading upcoming exams:", error);
+    const tracker = document.getElementById("upcomingExamTracker");
+    if (tracker) {
+      tracker.innerHTML = '<div class="upcoming-exams-empty">Could not load upcoming exams right now.</div>';
+    }
+  }
+}
+
+function renderAnnouncements(announcements = []) {
+  const announcementsTracker = document.getElementById("announcementsTracker");
+  if (!announcementsTracker) return;
+
+  if (!announcements || announcements.length === 0) {
+    announcementsTracker.innerHTML = '<div class="upcoming-exams-empty">No announcements yet. Check back soon for updates from your instructors.</div>';
+    return;
+  }
+
+  announcementsTracker.innerHTML = "";
+  announcements.slice(0, 5).forEach((announcement) => {
+    const item = document.createElement("div");
+    item.className = "upcoming-exam";
+    const createdDate = new Date(announcement.created_at).toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      hour: "numeric",
+      minute: "2-digit"
+    });
+    item.innerHTML = `
+      <div class="exam-info">
+        <h4>${escapeHTML(announcement.title)}</h4>
+        <p>${escapeHTML((announcement.content || "").substring(0, 120))}${(announcement.content || "").length > 120 ? "..." : ""}</p>
+        <span class="exam-time">by ${escapeHTML(announcement.instructor_name || "Instructor")} • ${escapeHTML(createdDate)}</span>
+      </div>
+    `;
+    announcementsTracker.appendChild(item);
+  });
+}
+
+async function loadAnnouncements() {
+  try {
+    const studentId = getStudentId();
+    if (!studentId) return;
+
+    const response = await fetch(`${API_BASE_URL}/student/${studentId}/announcements`);
+    const payload = await response.json();
+    const announcements = payload.success ? payload.data || [] : [];
+    renderAnnouncements(announcements);
+  } catch (error) {
+    console.error("Error loading announcements:", error);
+    const tracker = document.getElementById("announcementsTracker");
+    if (tracker) {
+      tracker.innerHTML = '<div class="upcoming-exams-empty">Could not load announcements right now.</div>';
+    }
+  }
 }
 
 async function loadBellNotifications() {
@@ -143,56 +309,12 @@ async function loadBellNotifications() {
   }
 }
 
-async function loadUpcomingAndInsights() {
-  const studentId = getStudentId();
-  if (!studentId) return;
-
-  const upcomingExamList = document.getElementById("upcomingExamList");
-
-  try {
-    const routineRes = await fetch(`${API_BASE_URL}/student/${studentId}/exams`);
-    const routinePayload = await routineRes.json();
-
-    const routine = routinePayload.success ? routinePayload.data?.exams || [] : [];
-
-    if (upcomingExamList) {
-      const activeExams = routine.filter((exam) => ["upcoming", "ongoing"].includes(String(exam.status || "").toLowerCase()));
-      if (activeExams.length > 0) {
-        upcomingExamList.innerHTML = activeExams
-          .slice(0, 3)
-          .map(
-            (exam) => `
-              <div class="list-item upcoming-exam-item" data-exam-id="${escapeHTML(String(exam.id))}" role="button" tabindex="0" aria-label="Open ${escapeHTML(exam.subject)}">
-                <div>
-                  <h4>${escapeHTML(exam.subject)}</h4>
-                  <span>${escapeHTML(formatDateTime(exam.startTime))} - ${escapeHTML(exam.batchName || "General")}</span>
-                </div>
-                <span class="chip">${escapeHTML(exam.status === "ongoing" ? "Live" : "Upcoming")}</span>
-              </div>
-            `
-          )
-          .join("");
-      } else {
-        upcomingExamList.innerHTML = `
-          <div class="list-item">
-            <div><h4>No upcoming exams</h4><span>Your routine is clear right now.</span></div>
-            <span class="chip">Free</span>
-          </div>
-        `;
-      }
-    }
-  } catch (error) {
-    console.error("Error loading dashboard insights:", error);
-  } finally {
-    setupUpcomingExamCards();
-  }
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   if (!requireRole("student")) return;
   setupLogoutHandlers();
   updatePageHeader();
   loadDashboardStats();
-  loadUpcomingAndInsights();
+  loadUpcomingExams();
+  loadAnnouncements();
   loadBellNotifications();
 });

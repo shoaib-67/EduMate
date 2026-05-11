@@ -716,20 +716,41 @@ async function handleCommunicationSubmit(event) {
   event.preventDefault();
   const formData = new FormData(event.currentTarget);
   const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+  const messageType = String(formData.get("messageType") || "").trim();
+  const isAnnouncement = messageType === "Announcement";
+
   await submitForm(submitButton, async () => {
-    await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/messages`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        type: String(formData.get("messageType") || "").trim(),
-        audience: String(formData.get("messageAudience") || "").trim(),
-        title: String(formData.get("messageTitle") || "").trim(),
-        body: String(formData.get("messageBody") || "").trim(),
-      }),
-    });
+    if (isAnnouncement) {
+      // Route announcements to the approval workflow
+      await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/announcements`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          title: String(formData.get("messageTitle") || "").trim(),
+          content: String(formData.get("messageBody") || "").trim(),
+          batchName: String(formData.get("announcementBatch") || "").trim() || null,
+        }),
+      });
+    } else {
+      // Route other message types to the regular messages endpoint
+      await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/messages`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          type: messageType,
+          audience: String(formData.get("messageAudience") || "").trim(),
+          title: String(formData.get("messageTitle") || "").trim(),
+          body: String(formData.get("messageBody") || "").trim(),
+        }),
+      });
+    }
     event.currentTarget.reset();
     await loadWorkspace();
-    showBanner("Message posted to the communication hub.", "success");
+    if (isAnnouncement) {
+      showBanner("Announcement posted and sent for admin approval.", "success");
+    } else {
+      showBanner("Message posted to the communication hub.", "success");
+    }
   });
 }
 
@@ -857,6 +878,40 @@ function bindEvents() {
   $("#communicationForm")?.addEventListener("submit", (event) => {
     handleCommunicationSubmit(event).catch((error) => showBanner(error.message, "error"));
   });
+  
+  // Initialize message type change event listener
+  $("#messageType")?.addEventListener("change", (event) => {
+    const isAnnouncement = event.target.value === "Announcement";
+    const batchGroup = $("#announcementBatchGroup");
+    const audienceGroup = $("#messageAudienceGroup");
+    const helpText = $("#formHelpText");
+    const messageAudienceInput = $("#messageAudience");
+    
+    if (batchGroup) {
+      batchGroup.style.display = isAnnouncement ? "block" : "none";
+    }
+    if (audienceGroup) {
+      audienceGroup.style.display = isAnnouncement ? "none" : "block";
+    }
+    
+    if (helpText) {
+      if (isAnnouncement) {
+        helpText.textContent = "Announcements go to admin for approval before appearing to students.";
+      } else {
+        helpText.textContent = "Other messages are posted immediately in the communication hub.";
+      }
+    }
+    
+    if (messageAudienceInput) {
+      messageAudienceInput.required = !isAnnouncement;
+    }
+  });
+  
+  // Trigger initial state for message form
+  const initialMessageType = $("#messageType");
+  if (initialMessageType) {
+    initialMessageType.dispatchEvent(new Event("change"));
+  }
   $("#clearSelectedQuestionsBtn")?.addEventListener("click", () => {
     clearExamQuestionSelection();
   });

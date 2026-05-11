@@ -407,15 +407,24 @@
                 <div class="form-group">
                   <label for="messageType">Message Type</label>
                   <select id="messageType" name="messageType" required>
-                    <option value="Announcement">Announcement</option>
+                    <option value="Announcement">Announcement (for admin approval)</option>
                     <option value="Discussion Thread">Discussion Thread</option>
                     <option value="Direct Message">Direct Message</option>
                     <option value="Exam Feedback">Exam Feedback</option>
                   </select>
                 </div>
-                <div class="form-group">
+                <div class="form-group" id="announcementBatchGroup" style="display: none;">
+                  <label for="announcementBatch">Batch (for announcements)</label>
+                  <select id="announcementBatch" name="announcementBatch">
+                    <option value="">All Batches</option>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Varsity">Varsity</option>
+                    <option value="Medical">Medical</option>
+                  </select>
+                </div>
+                <div class="form-group" id="messageAudienceGroup" style="display: none;">
                   <label for="messageAudience">Audience</label>
-                  <input id="messageAudience" name="messageAudience" type="text" placeholder="Engineering A / specific student" required />
+                  <input id="messageAudience" name="messageAudience" type="text" placeholder="Engineering A / specific student" />
                 </div>
                 <div class="form-group form-group-full">
                   <label for="messageTitle">Title</label>
@@ -426,7 +435,7 @@
                   <textarea id="messageBody" name="messageBody" rows="3" placeholder="Write the announcement, thread opener, or feedback..." required></textarea>
                 </div>
                 <div class="form-footer form-group-full">
-                  <p>Announcements work best for batches. Direct messages are better for one student follow-up.</p>
+                  <p id="formHelpText">Announcements go to admin for approval before appearing to students.</p>
                   <button class="btn btn-primary" type="submit">Send / post</button>
                 </div>
               </form>

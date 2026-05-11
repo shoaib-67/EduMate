@@ -104,6 +104,46 @@ async function loadDiscussions() {
   }
 }
 
+function renderAnnouncements(announcements) {
+  const announcementsList = document.getElementById("announcementsList");
+  if (!announcementsList) return;
+
+  if (!announcements || announcements.length === 0) {
+    announcementsList.innerHTML = '<div class="thread empty-state"><h4>No announcements yet</h4><span>Instructor announcements will appear here after admin approval.</span></div>';
+    return;
+  }
+
+  announcementsList.innerHTML = "";
+  announcements.forEach((announcement) => {
+    const thread = document.createElement("div");
+    thread.className = "thread";
+    thread.innerHTML = `
+      <div class="u-flex u-space-between u-gap-8">
+        <h4>${escapeHTML(announcement.title)}</h4>
+        <span class="chip blue">📢 Announcement</span>
+      </div>
+      <p>${escapeHTML(announcement.content || "")}</p>
+      <span>by ${escapeHTML(announcement.instructor_name || "Instructor")} - ${escapeHTML(getTimeAgo(announcement.created_at))}</span>
+    `;
+    announcementsList.appendChild(thread);
+  });
+}
+
+async function loadAnnouncements() {
+  try {
+    const studentId = getStudentId();
+    if (!studentId) return;
+
+    const response = await fetch(`${API_BASE_URL}/student/${studentId}/announcements`);
+    const result = await response.json();
+    const announcements = result.success ? result.data || [] : [];
+    renderAnnouncements(announcements);
+  } catch (error) {
+    console.error("Error loading announcements:", error);
+    renderAnnouncements([]);
+  }
+}
+
 async function handlePostDiscussion() {
   try {
     const titleInput = document.querySelector(".discussion-input");
@@ -176,6 +216,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   }
   loadDiscussions();
+  loadAnnouncements();
   loadStudyCircles();
 
   postButton?.addEventListener("click", () => {

@@ -345,6 +345,7 @@ async function ensureInstructorCourseItemsTable(pool) {
       \`instructor_id\` INT UNSIGNED NOT NULL,
       \`course_title\` VARCHAR(150) NOT NULL,
       \`batch_name\` VARCHAR(80) NOT NULL,
+      \`audience_type\` VARCHAR(20) NOT NULL DEFAULT 'batch',
       \`content_type\` VARCHAR(60) NOT NULL,
       \`title\` VARCHAR(255) NOT NULL,
       \`summary\` TEXT,
@@ -356,6 +357,12 @@ async function ensureInstructorCourseItemsTable(pool) {
   `);
 
   await ensureColumn(pool, "instructor_course_items", "source_ref", "source_ref VARCHAR(500) NULL");
+  await ensureColumn(
+    pool,
+    "instructor_course_items",
+    "audience_type",
+    "audience_type VARCHAR(20) NOT NULL DEFAULT 'batch'"
+  );
 }
 
 async function ensureInstructorQuestionBankTable(pool) {
@@ -363,6 +370,8 @@ async function ensureInstructorQuestionBankTable(pool) {
     CREATE TABLE IF NOT EXISTS \`instructor_question_bank\` (
       \`question_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       \`instructor_id\` INT UNSIGNED NOT NULL,
+      \`batch_name\` VARCHAR(80) NULL,
+      \`audience_type\` VARCHAR(20) NOT NULL DEFAULT 'batch',
       \`subject\` VARCHAR(120) NOT NULL,
       \`question_type\` VARCHAR(40) NOT NULL,
       \`question_text\` TEXT NOT NULL,
@@ -392,6 +401,13 @@ async function ensureInstructorQuestionBankTable(pool) {
     "approved_by_admin_id",
     "approved_by_admin_id INT UNSIGNED NULL"
   );
+  await ensureColumn(pool, "instructor_question_bank", "batch_name", "batch_name VARCHAR(80) NULL");
+  await ensureColumn(
+    pool,
+    "instructor_question_bank",
+    "audience_type",
+    "audience_type VARCHAR(20) NOT NULL DEFAULT 'batch'"
+  );
 }
 
 async function ensureInstructorExamSchedulesTable(pool) {
@@ -401,6 +417,7 @@ async function ensureInstructorExamSchedulesTable(pool) {
       \`instructor_id\` INT UNSIGNED NOT NULL,
       \`title\` VARCHAR(180) NOT NULL,
       \`batch_name\` VARCHAR(80) NOT NULL,
+      \`audience_type\` VARCHAR(20) NOT NULL DEFAULT 'batch',
       \`exam_date\` DATE NOT NULL,
       \`start_time\` DATETIME NOT NULL,
       \`duration_minutes\` INT UNSIGNED NOT NULL,
@@ -420,6 +437,13 @@ async function ensureInstructorExamSchedulesTable(pool) {
       INDEX \`idx_instructor_exam_schedule\` (\`instructor_id\`, \`batch_name\`, \`start_time\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureColumn(
+    pool,
+    "instructor_exam_schedules",
+    "access_mode",
+    "access_mode VARCHAR(30) NOT NULL DEFAULT 'scheduled'"
+  );
 
   await ensureColumn(
     pool,
@@ -444,6 +468,12 @@ async function ensureInstructorExamSchedulesTable(pool) {
     "instructor_exam_schedules",
     "published_exam_id",
     "published_exam_id INT UNSIGNED NULL"
+  );
+  await ensureColumn(
+    pool,
+    "instructor_exam_schedules",
+    "audience_type",
+    "audience_type VARCHAR(20) NOT NULL DEFAULT 'batch'"
   );
 }
 

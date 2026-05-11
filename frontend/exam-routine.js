@@ -369,7 +369,7 @@ function renderList() {
             </div>
             <div class="routine-meta-box">
               <strong>Audience</strong>
-              <span>${escapeHTML(exam.audienceType === "specific" ? "Selected students" : "Entire batch")}</span>
+              <span>${escapeHTML(exam.audienceType === "specific" ? "Selected students" : exam.audienceType === "all" ? "All batches" : "Entire batch")}</span>
             </div>
           </div>
           <p class="routine-card-summary">${escapeHTML(exam.instructions || "No instructions provided.")}</p>

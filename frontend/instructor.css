@@ -256,6 +256,24 @@
   box-shadow: 0 0 0 3px rgba(12, 122, 167, 0.14);
 }
 
+.mcq-option-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.mcq-answer-row {
+  display: grid;
+  grid-template-columns: 130px minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.mcq-answer-row label {
+  margin: 0;
+}
+
 .form-grid .btn {
   width: fit-content;
   justify-self: start;
@@ -274,6 +292,12 @@
   font-size: 12px;
   color: var(--muted);
   max-width: 54ch;
+}
+
+.final-submit-row {
+  margin-top: 1rem;
+  padding-top: 0.85rem;
+  border-top: 1px dashed var(--border);
 }
 
 .compact-list {
@@ -440,6 +464,14 @@
 @media (max-width: 700px) {
   .form-grid,
   .status-strip {
+    grid-template-columns: 1fr;
+  }
+
+  .mcq-option-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .mcq-answer-row {
     grid-template-columns: 1fr;
   }
 

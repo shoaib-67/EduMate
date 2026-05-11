@@ -26,6 +26,7 @@ let isExamSessionActive = false;
 let disqualified = false;
 let tabProctoringArmed = false;
 let armTabProctoringTimeout = null;
+let mockRefreshInterval = null;
 
 const stopTimer = () => {
   clearInterval(timerInterval);
@@ -157,6 +158,67 @@ function mapExamStatusToTestStatus(exam) {
   return "available";
 }
 
+function getExamWindow(test) {
+  const start = test?.startTime ? new Date(test.startTime) : null;
+  let end = test?.endTime ? new Date(test.endTime) : null;
+  if (start && (!end || end <= start)) {
+    const duration = Number(test?.duration || 0);
+    if (duration > 0) {
+      end = new Date(start.getTime() + duration * 60000);
+    }
+  }
+  if (!start || Number.isNaN(start.getTime()) || !end || Number.isNaN(end.getTime())) {
+    return { start: null, end: null };
+  }
+  return { start, end };
+}
+
+function isTestJoinAvailable(test, now = new Date()) {
+  const { start, end } = getExamWindow(test);
+  if (!start || !end) return false;
+  const joinWindowMinutes = Number(test?.joinWindowMinutes || 15);
+  const joinStart = new Date(start.getTime() - joinWindowMinutes * 60000);
+  return now >= joinStart && now <= end;
+}
+
+function deriveLiveTestStatus(test, now = new Date()) {
+  const backendStatus = String(test?.backendStatus || test?.status || "").toLowerCase();
+  if (backendStatus === "completed" || backendStatus === "missed") return "completed";
+
+  const { start, end } = getExamWindow(test);
+  if (!start || !end) return backendStatus === "available" ? "available" : "scheduled";
+  if (now > end) return "completed";
+  if (isTestJoinAvailable(test, now)) return "available";
+  return "scheduled";
+}
+
+function formatScheduleLabel(test) {
+  const { start } = getExamWindow(test);
+  if (!start) return test.schedDate || "Scheduled";
+  return start.toLocaleString([], {
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
+function formatExamWindow(test) {
+  const { start, end } = getExamWindow(test);
+  if (!start || !end) return "End time will be set after schedule sync.";
+  const startLabel = start.toLocaleString([], {
+    month: "numeric",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  const endLabel = end.toLocaleString([], {
+    hour: "numeric",
+    minute: "2-digit",
+  });
+  return `${startLabel} - ${endLabel}`;
+}
+
 function buildTestsFromExamRoutine(exams = []) {
   const mapped = exams
     .filter((exam) => {
@@ -185,6 +247,11 @@ function buildTestsFromExamRoutine(exams = []) {
       free: true,
       schedDate: exam.startTime ? new Date(exam.startTime).toLocaleDateString() : "Scheduled",
       sourceExamId: Number(exam.id),
+      startTime: exam.startTime || null,
+      endTime: exam.endTime || null,
+      joinWindowMinutes: Number(exam.joinWindowMinutes || 15),
+      backendStatus: String(exam.status || "").toLowerCase(),
+      joinAvailableFromApi: Boolean(exam.joinAvailable),
     };
   });
 
@@ -206,7 +273,7 @@ function updateMockStatsFromPerformance(items = []) {
     null
   );
 
-  const available = testsData.filter((test) => test.status === "available").length;
+  const available = testsData.filter((test) => deriveLiveTestStatus(test) === "available").length;
   cards[0].querySelector(".s-val").textContent = String(available);
   cards[0].querySelector(".s-sub").textContent = "Synced from backend";
   cards[1].querySelector(".s-val").textContent = String(completed);
@@ -227,7 +294,10 @@ function renderTests(filter = "all", search = "") {
   if (!grid) return;
 
   const searchText = search.trim().toLowerCase();
-  let list = testsData;
+  let list = testsData.map((test) => {
+    const liveStatus = deriveLiveTestStatus(test);
+    return { ...test, status: liveStatus, featured: liveStatus === "available" };
+  });
   if (filter !== "all") list = list.filter((test) => test.status === filter);
   if (searchText) {
     list = list.filter(
@@ -266,6 +336,7 @@ function renderTests(filter = "all", search = "") {
       <div>
         <p class="tc-title">${test.title}</p>
         <p class="tc-desc tc-desc-spaced">${test.description}</p>
+        <p class="tc-window">Exam window: ${formatExamWindow(test)}</p>
       </div>
       <div class="tc-tags">
         ${test.subjects.map((subject) => `<span class="tag">${subject}</span>`).join("")}
@@ -296,7 +367,7 @@ function renderTests(filter = "all", search = "") {
           test.status === "available"
             ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openTestConfirm(${test.id})">Start -&gt;</button>`
             : test.status === "scheduled"
-              ? `<button class="btn btn-sm btn-scheduled">${test.schedDate}</button>`
+              ? `<button class="btn btn-sm btn-scheduled">Starts ${formatScheduleLabel(test)}</button>`
               : `<div class="score-box"><p class="score-label">Score</p><p class="score-value">${scoreLabel}</p></div>`
         }
       </div>
@@ -684,6 +755,12 @@ async function initMockTestPage() {
   await loadMockTestsFromBackend();
   renderTests(activeFilter, activeSearch);
   openTestFromQuery();
+
+  if (mockRefreshInterval) clearInterval(mockRefreshInterval);
+  mockRefreshInterval = setInterval(async () => {
+    await loadMockTestsFromBackend();
+    renderTests(activeFilter, activeSearch);
+  }, 30000);
 }
 
 initMockTestPage();

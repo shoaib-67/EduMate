@@ -42,6 +42,16 @@
   line-height: 1.55;
 }
 
+.no-bank-message {
+  grid-column: 1 / -1;
+  font-size: 14px;
+  color: var(--muted);
+  background: #ffffff;
+  border: 1px dashed var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
 @media (max-width: 520px) {
   .bank-card {
     min-height: auto;

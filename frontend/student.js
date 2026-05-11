@@ -148,19 +148,12 @@ async function loadUpcomingAndInsights() {
   if (!studentId) return;
 
   const upcomingExamList = document.getElementById("upcomingExamList");
-  const courseProgressList = document.getElementById("courseProgressList");
-  const performanceSnapshotList = document.getElementById("performanceSnapshotList");
 
   try {
-    const [routineRes, subjectsRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/student/${studentId}/exams`),
-      fetch(`${API_BASE_URL}/student/${studentId}/performance/subjects`),
-    ]);
+    const routineRes = await fetch(`${API_BASE_URL}/student/${studentId}/exams`);
     const routinePayload = await routineRes.json();
-    const subjectsPayload = await subjectsRes.json();
 
     const routine = routinePayload.success ? routinePayload.data?.exams || [] : [];
-    const subjects = subjectsPayload.success ? subjectsPayload.data || [] : [];
 
     if (upcomingExamList) {
       const activeExams = routine.filter((exam) => ["upcoming", "ongoing"].includes(String(exam.status || "").toLowerCase()));
@@ -187,52 +180,6 @@ async function loadUpcomingAndInsights() {
           </div>
         `;
       }
-    }
-
-    if (courseProgressList && subjects.length > 0) {
-      courseProgressList.innerHTML = subjects
-        .slice(0, 3)
-        .map(
-          (subject) => `
-            <div class="list-item">
-              <div>
-                <h4>${escapeHTML(subject.subject)} Practice Track</h4>
-                <span>${escapeHTML(String(subject.test_count))} tests completed</span>
-              </div>
-              <span class="chip">${escapeHTML(toDisplayPercent(subject.accuracy))}%</span>
-            </div>
-          `
-        )
-        .join("");
-    }
-
-    if (performanceSnapshotList && subjects.length > 0) {
-      const sorted = [...subjects].sort((a, b) => Number(b.accuracy) - Number(a.accuracy));
-      const top = sorted[0];
-      const weak = sorted[sorted.length - 1];
-      performanceSnapshotList.innerHTML = `
-        <div class="list-item">
-          <div>
-            <h4>Top subject</h4>
-            <span>${escapeHTML(top.subject)} - ${escapeHTML(toDisplayPercent(top.accuracy))}% average</span>
-          </div>
-          <span class="chip">Strong</span>
-        </div>
-        <div class="list-item">
-          <div>
-            <h4>Needs focus</h4>
-            <span>${escapeHTML(weak.subject)} - target +10% improvement</span>
-          </div>
-          <span class="chip amber">Priority</span>
-        </div>
-        <div class="list-item">
-          <div>
-            <h4>Routine load</h4>
-            <span>${escapeHTML(String(routine.length))} exams assigned in total</span>
-          </div>
-          <span class="chip blue">On track</span>
-        </div>
-      `;
     }
   } catch (error) {
     console.error("Error loading dashboard insights:", error);

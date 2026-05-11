@@ -242,3 +242,95 @@
 		min-height: auto;
 	}
 }
+
+.profile-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 1.25rem;
+}
+
+.profile-panel {
+	display: grid;
+	gap: 0.9rem;
+	align-content: start;
+}
+
+.profile-form {
+	display: grid;
+	gap: 0.85rem;
+}
+
+.profile-field {
+	display: grid;
+	gap: 0.38rem;
+}
+
+.profile-field > span {
+	font-size: 12px;
+	font-weight: 700;
+	color: #34516e;
+}
+
+.profile-field > input,
+.profile-field > select {
+	width: 100%;
+	min-height: 42px;
+	border: 1px solid rgba(214, 226, 238, 0.95);
+	border-radius: 10px;
+	background: #ffffff;
+	color: var(--text);
+	padding: 0.64rem 0.78rem;
+	font: inherit;
+	font-size: 13px;
+	outline: none;
+}
+
+.profile-field > input:focus,
+.profile-field > select:focus {
+	border-color: var(--primary);
+	box-shadow: 0 0 0 3px rgba(12, 122, 167, 0.14);
+}
+
+.profile-field > input:disabled,
+.profile-field > select:disabled {
+	background: #f6f8fb;
+	color: #5d738a;
+	cursor: not-allowed;
+}
+
+.profile-status {
+	display: none;
+	border: 1px solid transparent;
+	border-radius: 10px;
+	padding: 0.55rem 0.7rem;
+	font-size: 12px;
+	font-weight: 600;
+}
+
+.profile-status.is-visible {
+	display: block;
+}
+
+.profile-status.is-info {
+	background: #eef6fd;
+	border-color: #cae0f3;
+	color: #23557e;
+}
+
+.profile-status.is-success {
+	background: #ecf9f2;
+	border-color: #b9e6cc;
+	color: #1d6e44;
+}
+
+.profile-status.is-error {
+	background: #fff1f3;
+	border-color: #f6c5ce;
+	color: #9f3548;
+}
+
+@media (max-width: 900px) {
+	.profile-grid {
+		grid-template-columns: 1fr;
+	}
+}

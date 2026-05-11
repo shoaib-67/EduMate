@@ -153,38 +153,10 @@ async function handlePostDiscussion() {
 }
 
 async function loadStudyCircles() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/study-circles`);
-    const result = await response.json();
-    const circlesList = document.querySelector(".section-spacer .list");
-    if (!circlesList) return;
-
-    circlesList.innerHTML = "";
-    const circles = result.success ? result.data || [] : [];
-    if (!circles.length) {
-      circlesList.innerHTML = '<div class="thread"><h4>No study circles available</h4><span>Create or join a circle later.</span></div>';
-      return;
-    }
-
-    circles.forEach((circle) => {
-      const thread = document.createElement("div");
-      thread.className = "thread";
-
-      let chipClass = "";
-      if (Number(circle.member_count) > 45) chipClass = "amber";
-      else if (Number(circle.member_count) > 40) chipClass = "blue";
-
-      thread.innerHTML = `
-        <div class="u-flex u-space-between u-gap-8">
-          <h4>${escapeHTML(circle.name)}</h4>
-          <span class="chip ${chipClass}">${escapeHTML(String(circle.member_count || 0))} members</span>
-        </div>
-        <span>${escapeHTML(circle.description)}</span>
-      `;
-      circlesList.appendChild(thread);
-    });
-  } catch (error) {
-    console.error("Error loading study circles:", error);
+  // Study circles removed as requested
+  const circlesContainer = document.querySelector(".section-spacer");
+  if (circlesContainer) {
+    circlesContainer.style.display = "none";
   }
 }
 

@@ -29,7 +29,7 @@
           <a class="nav-item active" href="#overviewSection">Overview</a>
           <a class="nav-item" href="#coursesSection">Courses</a>
           <a class="nav-item" href="#examSection">Exams & Mock Tests</a>
-          <a class="nav-item" href="#routineSection">Exam Routine</a>
+
           <a class="nav-item" href="#studentsSection">Students</a>
           <a class="nav-item" href="#resultsSection">Results & Analytics</a>
           <a class="nav-item" href="#communicationSection">Communication</a>
@@ -119,10 +119,6 @@
                   <input id="courseTitle" name="courseTitle" type="text" placeholder="Engineering Physics" required />
                 </div>
                 <div class="form-group">
-                  <label for="courseBatch">Assigned Batch</label>
-                  <input id="courseBatch" name="courseBatch" type="text" placeholder="Engineering A" required />
-                </div>
-                <div class="form-group">
                   <label for="contentType">Content Type</label>
                   <select id="contentType" name="contentType" required>
                     <option value="">Select type</option>
@@ -135,9 +131,24 @@
                     <option value="Lesson Summary">Lesson Summary</option>
                   </select>
                 </div>
-                <div class="form-group" id="linkField" style="display: none;">
+                <div class="form-group">
+                  <label for="courseAudienceType">Audience</label>
+                  <select id="courseAudienceType" name="courseAudienceType" required>
+                    <option value="batch">Specific Batch</option>
+                    <option value="all">All Batches</option>
+                  </select>
+                </div>
+                <div class="form-group" id="courseBatchGroup">
+                  <label for="courseBatch">Batch</label>
+                  <select id="courseBatch" name="courseBatch" required>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Varsity">Varsity</option>
+                    <option value="Medical">Medical</option>
+                  </select>
+                </div>
+                <div class="form-group" id="linkField" style="display: block;">
                   <label for="contentLink">Content Link</label>
-                  <input id="contentLink" name="contentLink" type="url" placeholder="https://example.com/document.pdf" />
+                  <input id="contentLink" name="contentLink" type="url" placeholder="https://example.com/document.pdf" required />
                 </div>
                 <div class="form-group">
                   <label for="contentDeadline">Deadline</label>
@@ -177,8 +188,16 @@
                   <input id="examTitle" name="examTitle" type="text" placeholder="Physics Weekly Mock 3" required />
                 </div>
                 <div class="form-group">
+                  <label for="examSubject">Subject</label>
+                  <input id="examSubject" name="examSubject" type="text" placeholder="Physics" required />
+                </div>
+                <div class="form-group">
                   <label for="examBatch">Batch</label>
-                  <input id="examBatch" name="examBatch" type="text" placeholder="Engineering A" required />
+                  <select id="examBatch" name="examBatch" required>
+                    <option value="Engineering">Engineering</option>
+                    <option value="Varsity">Varsity</option>
+                    <option value="Medical">Medical</option>
+                  </select>
                 </div>
                 <div class="form-group">
                   <label for="examDate">Date</label>
@@ -193,16 +212,16 @@
                   <input id="examDuration" name="examDuration" type="number" min="15" step="15" value="60" required />
                 </div>
                 <div class="form-group">
-                  <label for="joinWindow">Join Window</label>
-                  <select id="joinWindow" name="joinWindow">
-                    <option value="10">10 minutes</option>
-                    <option value="15" selected>15 minutes</option>
-                    <option value="20">20 minutes</option>
-                  </select>
+                  <label for="examEndTime">End Time (optional)</label>
+                  <input id="examEndTime" name="examEndTime" type="time" />
                 </div>
                 <div class="form-group">
                   <label for="negativeMarking">Negative Marking</label>
                   <input id="negativeMarking" name="negativeMarking" type="text" placeholder="-0.25 per MCQ" />
+                </div>
+                <div class="form-group">
+                  <label for="perMcqMark">Per MCQ Mark</label>
+                  <input id="perMcqMark" name="perMcqMark" type="number" min="0.25" step="0.25" value="1" required />
                 </div>
                 <div class="form-group">
                   <label for="shuffleMode">Shuffle Options</label>
@@ -216,27 +235,15 @@
                   <label for="examType">Exam Type</label>
                   <select id="examType" name="examType" required>
                     <option value="Mock Test">Mock Test</option>
-                    <option value="Batch Exam">Batch Exam</option>
-                    <option value="Assignment Quiz">Assignment Quiz</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="publishState">Publish State</label>
-                  <select id="publishState" name="publishState">
-                    <option value="Draft">Draft</option>
-                    <option value="Published">Published</option>
-                    <option value="Unpublished">Unpublished</option>
                   </select>
                 </div>
                 <div class="form-group form-group-full">
                   <label for="examRules">Rules / preview notes</label>
-                  <textarea id="examRules" name="examRules" rows="3" placeholder="Access rules, proctoring note, preview note, short-answer grading note"></textarea>
+                  <textarea id="examRules" name="examRules" rows="3" placeholder="Access rules, proctoring note, preview note"></textarea>
                 </div>
-                <div class="form-footer form-group-full">
-                  <p>We will warn you before saving if the same batch already has an overlapping exam. Selected MCQ: <strong id="selectedQuestionCount">0</strong></p>
-                  <button class="btn btn-secondary" type="button" id="clearSelectedQuestionsBtn">Clear selected questions</button>
-                  <button class="btn btn-primary" type="submit">Create exam</button>
-                </div>
+                <input id="examAudienceType" name="examAudienceType" type="hidden" value="batch" />
+                <input id="accessMode" name="accessMode" type="hidden" value="scheduled" />
+                <input id="publishState" name="publishState" type="hidden" value="Draft" />
               </form>
 
               <div class="split-block">
@@ -245,12 +252,8 @@
                   <div class="list compact-list" id="examList"></div>
                 </div>
                 <div>
-                  <h3 class="subsection-title">Question bank</h3>
+                  <h3 class="subsection-title">Add questions one by one</h3>
                   <form id="questionBankForm" class="form-grid form-grid-tight">
-                    <div class="form-group">
-                      <label for="questionSubject">Subject</label>
-                      <input id="questionSubject" name="questionSubject" type="text" placeholder="Physics" required />
-                    </div>
                     <div class="form-group">
                       <label for="questionType">Question Type</label>
                       <select id="questionType" name="questionType" required>
@@ -263,52 +266,45 @@
                       <label for="questionText">Question</label>
                       <textarea id="questionText" name="questionText" rows="3" placeholder="Write the question here..." required></textarea>
                     </div>
-                    <div class="form-group">
-                      <label for="optionSet">Options / prompt</label>
-                      <input id="optionSet" name="optionSet" type="text" placeholder="A) ... | B) ... | C) ... | D) ..." required />
+                    <div class="form-group form-group-full" id="mcqEditorGroup">
+                      <label>MCQ Options</label>
+                      <div class="mcq-option-grid">
+                        <input id="questionOptionA" name="questionOptionA" type="text" placeholder="Option A" />
+                        <input id="questionOptionB" name="questionOptionB" type="text" placeholder="Option B" />
+                        <input id="questionOptionC" name="questionOptionC" type="text" placeholder="Option C" />
+                        <input id="questionOptionD" name="questionOptionD" type="text" placeholder="Option D" />
+                      </div>
+                      <div class="mcq-answer-row">
+                        <label for="questionAnswerOption">Correct Option</label>
+                        <select id="questionAnswerOption" name="questionAnswerOption">
+                          <option value="A">A</option>
+                          <option value="B">B</option>
+                          <option value="C">C</option>
+                          <option value="D">D</option>
+                        </select>
+                      </div>
                     </div>
-                    <div class="form-group">
-                      <label for="answerKey">Answer Key</label>
-                      <input id="answerKey" name="answerKey" type="text" placeholder="B / key point list" required />
+                    <div class="form-group form-group-full is-hidden" id="nonMcqAnswerGroup">
+                      <label for="nonMcqAnswer">Expected Answer / Rubric</label>
+                      <textarea id="nonMcqAnswer" name="nonMcqAnswer" rows="3" placeholder="Write expected points, marking rubric, or sample answer"></textarea>
                     </div>
                     <div class="form-footer form-group-full">
-                      <p>Keep reusable items here before attaching them to a published exam.</p>
-                      <button class="btn btn-secondary" type="submit">Add to bank</button>
+                      <p>Each click adds this question to the draft list below. Nothing is submitted before final submit.</p>
+                      <button class="btn btn-secondary" type="submit">Add question to mock test</button>
                     </div>
                   </form>
+                  <h3 class="subsection-title">Questions added for this mock test</h3>
+                  <div class="list compact-list" id="examDraftQuestionList"></div>
+                  <h3 class="subsection-title">Reusable question bank</h3>
                   <div class="list compact-list" id="questionBankList"></div>
                 </div>
               </div>
-            </section>
-          </div>
-
-          <div class="workspace-section" id="routineSection">
-            <section class="panel">
-              <div class="panel-header">
-                <div class="panel-title-group">
-                  <h2>Exam routine & schedule</h2>
-                  <p>See upcoming, ongoing, and completed exams with overlap warnings before publishing.</p>
-                </div>
-                <span class="panel-kicker">Schedule</span>
+              <div class="form-footer final-submit-row">
+                <p>Questions ready: <strong id="selectedQuestionCount">0</strong> <span id="draftQuestionMeta">(0 draft, 0 from bank)</span></p>
+                <button class="btn btn-secondary" type="button" id="clearSelectedQuestionsBtn">Clear selected questions</button>
+                <button class="btn btn-secondary" type="button" id="clearDraftQuestionsBtn">Clear draft questions</button>
+                <button class="btn btn-primary" type="submit" form="examForm" id="finalExamSubmitBtn" disabled>Final submit for admin approval</button>
               </div>
-
-              <div class="status-strip">
-                <div class="mini-status">
-                  <span>Upcoming</span>
-                  <strong id="upcomingRoutineCount">0</strong>
-                </div>
-                <div class="mini-status">
-                  <span>Ongoing</span>
-                  <strong id="ongoingRoutineCount">0</strong>
-                </div>
-                <div class="mini-status">
-                  <span>Completed</span>
-                  <strong id="completedRoutineCount">0</strong>
-                </div>
-              </div>
-
-              <div class="status-banner status-banner-warning is-hidden" id="conflictBanner"></div>
-              <div class="list compact-list" id="routineList"></div>
             </section>
           </div>
 
@@ -375,7 +371,7 @@
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Results & analytics</h2>
-                  <p>View auto-graded results, manual-review workload, and batch performance snapshots.</p>
+                  <p>View auto-graded score distribution and course-wise student performance in real time.</p>
                 </div>
                 <span class="panel-kicker">Insights</span>
               </div>
@@ -386,16 +382,12 @@
                   <div class="list compact-list" id="distributionList"></div>
                 </div>
                 <div class="analytics-card">
-                  <h3>Manual grading queue</h3>
-                  <div class="list compact-list" id="gradingQueueList"></div>
+                  <h3>Course performance</h3>
+                  <div class="list compact-list" id="coursePerformanceList"></div>
                 </div>
                 <div class="analytics-card">
-                  <h3>Topic performance</h3>
-                  <div class="list compact-list" id="topicPerformanceList"></div>
-                </div>
-                <div class="analytics-card">
-                  <h3>Export center</h3>
-                  <div class="list compact-list" id="exportList"></div>
+                  <h3>Course pass rates</h3>
+                  <div class="list compact-list" id="passRateList"></div>
                 </div>
               </div>
             </section>

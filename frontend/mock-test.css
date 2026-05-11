@@ -82,6 +82,12 @@
   line-height: 1.55;
 }
 
+.tc-window {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #2f587d;
+}
+
 .tc-tags {
   display: flex;
   gap: 6px;

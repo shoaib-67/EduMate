@@ -26,15 +26,16 @@ if (signupForm) {
     const fullName = (signupForm.fullName?.value || "").trim();
     const email = (signupForm.email?.value || "").trim();
     const phone = (signupForm.phone?.value || "").trim();
+    const program = (signupForm.program?.value || "").trim();
     const password = (signupForm.password?.value || "").trim();
     const submitButton = signupForm.querySelector("button[type='submit']");
-    const originalText = submitButton?.textContent || "Create account";
+    const originalText = submitButton?.textContent || "অ্যাকাউন্ট তৈরি করুন";
 
     if (submitButton) {
       submitButton.disabled = true;
-      submitButton.textContent = "Creating account...";
+      submitButton.textContent = "অ্যাকাউন্ট তৈরি করা হচ্ছে...";
     }
-    showSignupStatus("Creating your account and preparing the login step.", "info");
+    showSignupStatus("আপনার একাউন্ট তৈরি করা হচ্ছে...", "info");
 
     try {
       const response = await fetch(`${API_BASE_URL}/auth/signup`, {
@@ -46,6 +47,7 @@ if (signupForm) {
           fullName,
           email,
           phone,
+          program,
           password,
         }),
       });
@@ -53,16 +55,16 @@ if (signupForm) {
       const payload = await response.json();
 
       if (!response.ok || !payload.success) {
-        showSignupStatus(payload.message || "Signup failed. Please check your details.", "error");
+        showSignupStatus(payload.message || "সাইনআপ ব্যর্থ হয়েছে। তথ্য পরীক্ষা করুন।", "error");
         return;
       }
 
-      showSignupStatus("Account created successfully. Taking you to login.", "success");
+      showSignupStatus("অ্যাকাউন্ট সফলভাবে তৈরি হয়েছে। লগইনে নিয়ে যাওয়া হচ্ছে।", "success");
       setTimeout(() => {
         window.location.href = "index.html";
       }, 700);
     } catch (_error) {
-      showSignupStatus("Cannot connect to backend. Run node server.js and try again.", "error");
+      showSignupStatus("ব্যাকএন্ডে সংযোগ করা যাচ্ছে না। node server.js চালু করে আবার চেষ্টা করুন।", "error");
     } finally {
       if (submitButton) {
         submitButton.disabled = false;

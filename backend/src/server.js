@@ -9,7 +9,6 @@ const {
   ensureSchema,
   seedDemoAccounts,
   seedDemoContentAndReports,
-  seedDemoDiscussions,
   seedDemoStudyCircles,
   seedDemoExamSchedules,
   seedDemoInstructorWorkspace,
@@ -39,6 +38,80 @@ const USER_ROLE_CONFIG = {
     canManage: false,
   },
 };
+const DEFAULT_BATCH_OPTIONS = ["Engineering", "Varsity", "Medical"];
+const ALL_BATCHES_LABEL = "ALL_BATCHES";
+const ALL_BATCHES_DISPLAY = "All Batches";
+
+function normalizeBatchName(rawBatch) {
+  const value = String(rawBatch || "").trim();
+  if (!value) return "";
+
+  const normalized = value.toLowerCase().replace(/\s+/g, " ");
+  if (
+    normalized === "all" ||
+    normalized === "all batch" ||
+    normalized === "all batches" ||
+    normalized === "all-batches" ||
+    normalized === "all_batches"
+  ) {
+    return ALL_BATCHES_LABEL;
+  }
+
+  return value;
+}
+
+function deriveBatchFromProgram(program) {
+  const group = deriveProgramGroup(program);
+  if (group === "engineering") return "Engineering";
+  if (group === "varsity") return "Varsity";
+  if (group === "medical") return "Medical";
+  return "";
+}
+
+function deriveProgramGroup(rawValue) {
+  const normalized = String(rawValue || "").trim().toLowerCase();
+  if (!normalized) return "";
+  const groups = [];
+  if (normalized.includes("engineering")) groups.push("engineering");
+  if (normalized.includes("varsity") || normalized.includes("versity")) groups.push("varsity");
+  if (normalized.includes("medical")) groups.push("medical");
+  return groups.length === 1 ? groups[0] : "";
+}
+
+function resolveStudentProgramGroup(studentRow) {
+  const fromTrack = deriveProgramGroup(studentRow?.course_track);
+  if (fromTrack) return fromTrack;
+  return deriveProgramGroup(studentRow?.batch_name);
+}
+
+function isAudienceVisibleToStudent({ audienceType, batchName, studentBatchName, studentProgramGroup }) {
+  const cleanAudienceType = normalizeAudienceType(audienceType, "batch");
+  if (cleanAudienceType === "all") return true;
+
+  const normalizedBatch = normalizeBatchName(batchName);
+  if (normalizedBatch === ALL_BATCHES_LABEL) return true;
+
+  const targetGroup = deriveProgramGroup(batchName);
+  if (targetGroup && studentProgramGroup) return targetGroup === studentProgramGroup;
+
+  const normalizedStudentBatch = normalizeBatchName(studentBatchName);
+  if (!normalizedBatch || !normalizedStudentBatch) return false;
+  return normalizedBatch.toLowerCase() === normalizedStudentBatch.toLowerCase();
+}
+
+function normalizeAudienceType(rawAudienceType, fallback = "batch") {
+  const clean = String(rawAudienceType || fallback).trim().toLowerCase();
+  if (["all", "all_batches", "all-batches"].includes(clean)) return "all";
+  if (clean === "specific") return "specific";
+  return "batch";
+}
+
+function formatAudienceLabel(audienceType, batchName) {
+  if (normalizeAudienceType(audienceType) === "all") return ALL_BATCHES_DISPLAY;
+  const normalizedBatch = normalizeBatchName(batchName);
+  if (normalizedBatch === ALL_BATCHES_LABEL) return ALL_BATCHES_DISPLAY;
+  return String(batchName || "").trim() || "General";
+}
 
 function sendSuccess(res, { status = 200, message, data, ...rest } = {}) {
   const payload = { success: true };
@@ -70,6 +143,19 @@ function getManageableUserConfig(role) {
 
 function formatAccountStatus(accountStatus) {
   return String(accountStatus || "active").toLowerCase() === "frozen" ? "Frozen" : "Active";
+}
+
+function sanitizeAdminUserPayload(user = {}) {
+  return {
+    id: Number(user.id) || 0,
+    name: user.name || "",
+    email: user.email || "",
+    phoneNumber: user.phoneNumber || "",
+    role: user.role || "",
+    accountStatus: user.accountStatus || "active",
+    createdAt: user.createdAt || null,
+    status: formatAccountStatus(user.accountStatus),
+  };
 }
 
 function validateAccountPayload(body) {
@@ -199,16 +285,68 @@ function toDateTimeValue(dateInput, timeInput) {
   return Number.isNaN(parsed.getTime()) ? null : parsed;
 }
 
-function formatSqlDateTime(date) {
-  return new Date(date.getTime() - date.getMilliseconds())
-    .toISOString()
-    .slice(0, 19)
-    .replace("T", " ");
+function padDateTimePart(value) {
+  return String(value).padStart(2, "0");
 }
 
-function deriveExamStatus(startTime, endTime, now = new Date()) {
-  const start = new Date(startTime);
-  const end = new Date(endTime);
+function parseSqlDateTime(rawValue) {
+  if (rawValue instanceof Date) {
+    const d = rawValue;
+    return new Date(
+      d.getFullYear(),
+      d.getMonth(),
+      d.getDate(),
+      d.getHours(),
+      d.getMinutes(),
+      d.getSeconds()
+    );
+  }
+
+  const raw = String(rawValue || "").trim();
+  if (!raw) return null;
+
+  const normalized = raw.replace("T", " ").replace("Z", "");
+  const match = normalized.match(
+    /^(\d{4})-(\d{2})-(\d{2})\s+(\d{2}):(\d{2})(?::(\d{2}))?$/
+  );
+  if (!match) {
+    const fallback = new Date(raw);
+    return Number.isNaN(fallback.getTime()) ? null : fallback;
+  }
+
+  return new Date(
+    Number(match[1]),
+    Number(match[2]) - 1,
+    Number(match[3]),
+    Number(match[4]),
+    Number(match[5]),
+    Number(match[6] || 0)
+  );
+}
+
+function formatSqlDateTime(date) {
+  return `${date.getFullYear()}-${padDateTimePart(date.getMonth() + 1)}-${padDateTimePart(
+    date.getDate()
+  )} ${padDateTimePart(date.getHours())}:${padDateTimePart(date.getMinutes())}:${padDateTimePart(
+    date.getSeconds()
+  )}`;
+}
+
+function resolveExamWindow(startTime, endTime, durationMinutes) {
+  const start = parseSqlDateTime(startTime);
+  let end = parseSqlDateTime(endTime);
+  const duration = parsePositiveInteger(durationMinutes) || 0;
+
+  if (start && (!end || end <= start) && duration > 0) {
+    end = new Date(start.getTime() + duration * 60000);
+  }
+
+  return { start, end };
+}
+
+function deriveExamStatus(startTime, endTime, now = new Date(), durationMinutes = 0) {
+  const { start, end } = resolveExamWindow(startTime, endTime, durationMinutes);
+  if (!start || !end) return "upcoming";
 
   if (now < start) return "upcoming";
   if (now <= end) return "ongoing";
@@ -221,24 +359,34 @@ function buildJoinExamLink(examId) {
 
 function canJoinExam(exam, now = new Date()) {
   const joinWindowMinutes = parsePositiveInteger(exam.join_window_minutes) || 15;
-  const start = new Date(exam.start_time);
-  const end = new Date(exam.end_time);
+  const { start, end } = resolveExamWindow(
+    exam.start_time,
+    exam.end_time,
+    exam.duration_minutes
+  );
+  if (!start || !end) return false;
   const joinStart = new Date(start.getTime() - joinWindowMinutes * 60000);
   return now >= joinStart && now <= end;
 }
 
 function normalizeExamRecord(exam, now = new Date()) {
-  const status = deriveExamStatus(exam.start_time, exam.end_time, now);
+  const { start, end } = resolveExamWindow(
+    exam.start_time,
+    exam.end_time,
+    exam.duration_minutes
+  );
+  const status = deriveExamStatus(start, end, now, exam.duration_minutes);
+  const audienceType = normalizeAudienceType(exam.audience_type);
   return {
     id: exam.exam_id,
     subject: exam.subject,
     examDate: exam.exam_date,
-    startTime: exam.start_time,
-    endTime: exam.end_time,
+    startTime: start || exam.start_time,
+    endTime: end || exam.end_time,
     durationMinutes: exam.duration_minutes,
-    batchName: exam.batch_name,
+    batchName: formatAudienceLabel(audienceType, exam.batch_name),
     instructions: exam.instructions,
-    audienceType: exam.audience_type,
+    audienceType,
     status,
     joinWindowMinutes: exam.join_window_minutes,
     joinAvailable: canJoinExam(exam, now),
@@ -251,9 +399,26 @@ async function updateExamStatuses(pool) {
   await pool.query(
     `
     UPDATE exam_schedules
+    SET end_time = DATE_ADD(start_time, INTERVAL duration_minutes MINUTE)
+    WHERE (end_time IS NULL OR end_time <= start_time)
+      AND duration_minutes IS NOT NULL
+      AND duration_minutes > 0
+    `
+  );
+
+  await pool.query(
+    `
+    UPDATE exam_schedules
     SET status = CASE
       WHEN NOW() < start_time THEN 'upcoming'
-      WHEN NOW() BETWEEN start_time AND end_time THEN 'ongoing'
+      WHEN NOW() <= (
+        CASE
+          WHEN end_time > start_time THEN end_time
+          WHEN duration_minutes IS NOT NULL AND duration_minutes > 0
+            THEN DATE_ADD(start_time, INTERVAL duration_minutes MINUTE)
+          ELSE end_time
+        END
+      ) THEN 'ongoing'
       ELSE 'completed'
     END
     `
@@ -281,13 +446,15 @@ async function dispatchExamReminders(pool) {
         e.start_time,
         e.end_time,
         e.batch_name,
+        e.audience_type,
         s.student_id,
         s.email,
         s.phone_number
       FROM exam_schedules e
       JOIN students s
         ON (
-          (e.audience_type = 'batch' AND e.batch_name IS NOT NULL AND e.batch_name = s.batch_name)
+          (e.audience_type = 'all')
+          OR (e.audience_type = 'batch' AND e.batch_name IS NOT NULL AND e.batch_name = s.batch_name)
           OR EXISTS (
             SELECT 1
             FROM exam_assignments ea
@@ -303,7 +470,7 @@ async function dispatchExamReminders(pool) {
     for (const assignment of dueAssignments) {
       const startAt = new Date(assignment.start_time).toLocaleString();
       const title = `${reminder.label}: ${assignment.subject}`;
-      const message = `${assignment.subject} starts at ${startAt} for ${assignment.batch_name || "your schedule"}.`;
+      const message = `${assignment.subject} starts at ${startAt} for ${formatAudienceLabel(assignment.audience_type, assignment.batch_name)}.`;
       const scheduledFor = formatSqlDateTime(new Date());
 
       await createReminderNotification(pool, {
@@ -374,7 +541,8 @@ async function findExamConflict(pool, { batchName, startTime, endTime }) {
 }
 
 function deriveInstructorExamStatus(startTime, durationMinutes, now = new Date()) {
-  const start = new Date(startTime);
+  const start = parseSqlDateTime(startTime);
+  if (!start) return "Upcoming";
   const end = new Date(start.getTime() + Number(durationMinutes || 0) * 60000);
   if (now < start) return "Upcoming";
   if (now <= end) return "Ongoing";
@@ -390,14 +558,23 @@ function normalizeInstructorExamRecord(exam, now = new Date()) {
     parsedQuestionIds = [];
   }
 
+  const accessMode = exam.access_mode || "scheduled";
+  const audienceType = normalizeAudienceType(exam.audience_type);
+  const status = accessMode === "open_anytime" ? "always_open" : deriveInstructorExamStatus(exam.start_time, exam.duration_minutes, now);
+  const start = parseSqlDateTime(exam.start_time);
+  const timeValue = start
+    ? `${padDateTimePart(start.getHours())}:${padDateTimePart(start.getMinutes())}`
+    : "00:00";
+
   return {
     id: exam.instructor_exam_id,
     title: exam.title,
-    batch: exam.batch_name,
+    batch: formatAudienceLabel(audienceType, exam.batch_name),
+    audienceType,
     date: exam.exam_date,
-    time: new Date(exam.start_time).toISOString().slice(11, 16),
+    time: timeValue,
     duration: Number(exam.duration_minutes || 0),
-    joinWindow: Number(exam.join_window_minutes || 15),
+    accessMode,
     negativeMarking: exam.negative_marking || "",
     shuffleMode: exam.shuffle_mode || "None",
     examType: exam.exam_type,
@@ -405,25 +582,29 @@ function normalizeInstructorExamRecord(exam, now = new Date()) {
     approvalStatus: exam.approval_status || "pending",
     questionIds: parsedQuestionIds,
     rules: exam.rules || "",
-    status: deriveInstructorExamStatus(exam.start_time, exam.duration_minutes, now),
+    status,
   };
 }
 
-async function findInstructorExamConflict(pool, { instructorId, batchName, startTime, durationMinutes }) {
+async function findInstructorExamConflict(pool, { instructorId, batchName, audienceType, startTime, durationMinutes }) {
   const endTime = new Date(new Date(startTime).getTime() + Number(durationMinutes || 0) * 60000);
+  const cleanAudienceType = normalizeAudienceType(audienceType);
   const [rows] = await pool.query(
     `
     SELECT instructor_exam_id, title, batch_name, exam_date, start_time, duration_minutes, join_window_minutes,
-           negative_marking, shuffle_mode, exam_type, publish_state, rules
+           negative_marking, shuffle_mode, exam_type, publish_state, rules, audience_type
     FROM instructor_exam_schedules
     WHERE instructor_id = ?
-      AND LOWER(batch_name) = LOWER(?)
+      AND (
+        (? = 'all' AND audience_type = 'all')
+        OR (? = 'batch' AND audience_type = 'batch' AND LOWER(batch_name) = LOWER(?))
+      )
       AND ? < DATE_ADD(start_time, INTERVAL duration_minutes MINUTE)
       AND ? > start_time
     ORDER BY start_time ASC
     LIMIT 1
     `,
-    [instructorId, batchName, startTime, formatSqlDateTime(endTime)]
+    [instructorId, cleanAudienceType, cleanAudienceType, batchName, startTime, formatSqlDateTime(endTime)]
   );
   return rows[0] || null;
 }
@@ -431,7 +612,7 @@ async function findInstructorExamConflict(pool, { instructorId, batchName, start
 async function buildInstructorWorkspace(pool, instructorId) {
   const [courseItems] = await pool.query(
     `
-    SELECT item_id, course_title, batch_name, content_type, title, summary, deadline, source_ref AS link
+    SELECT item_id, course_title, batch_name, audience_type, content_type, title, summary, deadline, source_ref AS link
     FROM instructor_course_items
     WHERE instructor_id = ?
     ORDER BY created_at DESC
@@ -441,7 +622,7 @@ async function buildInstructorWorkspace(pool, instructorId) {
 
   const [questionBank] = await pool.query(
     `
-    SELECT question_id, subject, question_type, question_text, options_text, answer_key, approval_status
+    SELECT question_id, subject, question_type, question_text, options_text, answer_key, approval_status, batch_name, audience_type
     FROM instructor_question_bank
     WHERE instructor_id = ?
     ORDER BY created_at DESC
@@ -451,8 +632,8 @@ async function buildInstructorWorkspace(pool, instructorId) {
 
   const [exams] = await pool.query(
     `
-    SELECT instructor_exam_id, title, batch_name, exam_date, start_time, duration_minutes, join_window_minutes,
-           negative_marking, shuffle_mode, exam_type, publish_state, rules, question_ids_json, approval_status
+    SELECT instructor_exam_id, title, batch_name, exam_date, start_time, duration_minutes,
+           negative_marking, shuffle_mode, exam_type, publish_state, rules, question_ids_json, approval_status, access_mode, audience_type
     FROM instructor_exam_schedules
     WHERE instructor_id = ?
     ORDER BY start_time DESC
@@ -502,32 +683,20 @@ async function buildInstructorWorkspace(pool, instructorId) {
     [instructorId]
   );
 
-  const [gradingQueue] = await pool.query(
+  const [coursePerformance] = await pool.query(
     `
-    SELECT queue_id, exam_title, queue_item, owner_label
-    FROM instructor_grading_queue
-    WHERE instructor_id = ?
-    ORDER BY created_at DESC
-    `,
-    [instructorId]
-  );
-
-  const [exportsList] = await pool.query(
-    `
-    SELECT export_id, label, format, status
-    FROM instructor_export_jobs
-    WHERE instructor_id = ?
-    ORDER BY created_at DESC
-    `,
-    [instructorId]
-  );
-
-  const [topicPerformance] = await pool.query(
-    `
-    SELECT topic_id, topic, score, note
-    FROM instructor_topic_performance
-    WHERE instructor_id = ?
-    ORDER BY created_at DESC
+    SELECT
+      sp.subject AS course,
+      COUNT(*) AS assessments,
+      ROUND(AVG(sp.score), 1) AS averageScore,
+      ROUND(SUM(CASE WHEN sp.score >= 50 THEN 1 ELSE 0 END) / COUNT(*) * 100, 1) AS passRate,
+      ROUND(MAX(sp.score), 1) AS topScore,
+      ROUND(MIN(sp.score), 1) AS bottomScore
+    FROM instructor_student_assignments isa
+    JOIN student_performance sp ON sp.student_id = isa.student_id
+    WHERE isa.instructor_id = ? AND isa.is_active = TRUE
+    GROUP BY sp.subject
+    ORDER BY averageScore DESC, passRate DESC
     `,
     [instructorId]
   );
@@ -553,7 +722,8 @@ async function buildInstructorWorkspace(pool, instructorId) {
     courseContent: courseItems.map((item) => ({
       id: item.item_id,
       course: item.course_title,
-      batch: item.batch_name,
+      batch: formatAudienceLabel(item.audience_type, item.batch_name),
+      audienceType: normalizeAudienceType(item.audience_type),
       type: item.content_type,
       title: item.title,
       summary: item.summary,
@@ -566,6 +736,8 @@ async function buildInstructorWorkspace(pool, instructorId) {
       text: item.question_text,
       options: item.options_text,
       answerKey: item.answer_key,
+      batchName: formatAudienceLabel(item.audience_type, item.batch_name),
+      audienceType: normalizeAudienceType(item.audience_type),
       approvalStatus: item.approval_status || "pending",
     })),
     exams: normalizedExams,
@@ -590,23 +762,13 @@ async function buildInstructorWorkspace(pool, instructorId) {
       title: item.title,
       note: item.note,
     })),
-    gradingQueue: gradingQueue.map((item) => ({
-      id: item.queue_id,
-      exam: item.exam_title,
-      item: item.queue_item,
-      owner: item.owner_label,
-    })),
-    exportsList: exportsList.map((item) => ({
-      id: item.export_id,
-      label: item.label,
-      format: item.format,
-      status: item.status,
-    })),
-    topicPerformance: topicPerformance.map((item) => ({
-      id: item.topic_id,
-      topic: item.topic,
-      score: Number(item.score || 0),
-      note: item.note,
+    coursePerformance: coursePerformance.map((item) => ({
+      course: item.course,
+      averageScore: Number(item.averageScore || 0),
+      passRate: Number(item.passRate || 0),
+      assessments: Number(item.assessments || 0),
+      topScore: Number(item.topScore || 0),
+      bottomScore: Number(item.bottomScore || 0),
     })),
     scoreDistribution,
   };
@@ -681,15 +843,30 @@ app.get("/api/public/home-stats", async (_req, res) => {
 
 app.post("/api/auth/signup", async (req, res) => {
   try {
-    const { fullName, email, phone, password } = req.body || {};
+    const { fullName, email, phone, program, batch, password } = req.body || {};
 
     const cleanFullName = String(fullName || "").trim();
     const cleanEmail = String(email || "").trim().toLowerCase();
     const cleanPhone = String(phone || "").trim();
+    const cleanProgram = String(program || "").trim();
+    const cleanBatchInput = normalizeBatchName(batch);
+    const cleanBatch = cleanBatchInput || deriveBatchFromProgram(cleanProgram);
     const cleanPassword = String(password || "");
 
-    if (!cleanFullName || !cleanEmail || !cleanPhone || !cleanPassword) {
+    if (!cleanFullName || !cleanEmail || !cleanPhone || !cleanProgram || !cleanPassword) {
       return sendError(res, { status: 422, message: "All fields are required." });
+    }
+
+    const allowedPrograms = ["Engineering", "Varsity", "Medical"];
+    if (!allowedPrograms.includes(cleanProgram)) {
+      return sendError(res, { status: 422, message: "Please choose a valid program." });
+    }
+
+    if (!DEFAULT_BATCH_OPTIONS.includes(cleanBatch)) {
+      return sendError(res, {
+        status: 422,
+        message: "Please choose a valid batch (Engineering, Varsity, or Medical).",
+      });
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
@@ -707,14 +884,14 @@ app.post("/api/auth/signup", async (req, res) => {
     );
 
     if (existingRows.length > 0) {
-      return sendError(res, { status: 409, message: "An account with this email or phone already exists." });
+      return sendError(res, { status: 409, message: "An account already exists with this email or phone number." });
     }
 
     const passwordHash = await bcrypt.hash(cleanPassword, 10);
 
     await pool.query(
-      "INSERT INTO students (name, email, phone_number, password_hash) VALUES (?, ?, ?, ?)",
-      [cleanFullName, cleanEmail, cleanPhone, passwordHash]
+      "INSERT INTO students (name, email, phone_number, password_hash, batch_name, course_track) VALUES (?, ?, ?, ?, ?, ?)",
+      [cleanFullName, cleanEmail, cleanPhone, passwordHash, cleanBatch, cleanProgram]
     );
 
     return sendSuccess(res, { status: 201, message: "Account created successfully." });
@@ -729,7 +906,6 @@ app.post("/api/auth/signup", async (req, res) => {
     return sendError(res, { message: "Could not create account.", error: error.message });
   }
 });
-
 app.post("/api/auth/login", async (req, res) => {
   try {
     const { identifier, password, role } = req.body || {};
@@ -750,7 +926,10 @@ app.post("/api/auth/login", async (req, res) => {
     const { table, idColumn } = USER_ROLE_CONFIG[cleanRole];
 
     const [rows] = await pool.query(
-      `SELECT * FROM ${table} WHERE (email = ? OR phone_number = ?) LIMIT 1`,
+      `SELECT ${idColumn} AS id, name, email, account_status, password_hash
+       FROM ${table}
+       WHERE (email = ? OR phone_number = ?)
+       LIMIT 1`,
       [cleanIdentifier, cleanIdentifier]
     );
 
@@ -768,7 +947,7 @@ app.post("/api/auth/login", async (req, res) => {
     return sendSuccess(res, {
       message: "Login successful.",
       user: {
-        id: account[idColumn] || account.id,
+        id: account.id,
         fullName: account.name || account.full_name,
         email: account.email,
         role: cleanRole,
@@ -864,10 +1043,7 @@ app.get("/api/admin/users", async (_req, res) => {
     const userResults = await Promise.all(userQueries);
     const allUsers = userResults
       .flatMap(([rows]) => rows)
-      .map((user) => ({
-        ...user,
-        status: formatAccountStatus(user.accountStatus),
-      }))
+      .map((user) => sanitizeAdminUserPayload(user))
       .sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
 
     return res.status(200).json({
@@ -1256,7 +1432,7 @@ app.post("/api/admin/content/:id/approve", async (req, res) => {
       const [[instructorExam]] = await pool.query(
         `
         SELECT instructor_exam_id, title, batch_name, exam_date, start_time, duration_minutes,
-               join_window_minutes, rules, question_ids_json, published_exam_id
+               join_window_minutes, rules, question_ids_json, published_exam_id, audience_type
         FROM instructor_exam_schedules
         WHERE instructor_exam_id = ?
         LIMIT 1
@@ -1265,25 +1441,32 @@ app.post("/api/admin/content/:id/approve", async (req, res) => {
       );
 
       if (instructorExam) {
+        const examAudienceType = normalizeAudienceType(instructorExam.audience_type);
+        const examBatchName = examAudienceType === "all" ? null : instructorExam.batch_name;
         let publishedExamId = parseRequiredId(instructorExam.published_exam_id);
         if (!publishedExamId) {
+          const startTimeValue = parseSqlDateTime(instructorExam.start_time);
+          if (!startTimeValue) {
+            return sendError(res, { status: 422, message: "Instructor exam start time is invalid." });
+          }
           const endTime = formatSqlDateTime(
-            new Date(new Date(instructorExam.start_time).getTime() + Number(instructorExam.duration_minutes || 0) * 60000)
+            new Date(startTimeValue.getTime() + Number(instructorExam.duration_minutes || 0) * 60000)
           );
           const [examInsertResult] = await pool.query(
             `
             INSERT INTO exam_schedules
               (subject, exam_date, start_time, end_time, duration_minutes, batch_name, instructions, audience_type, join_window_minutes, created_by_admin_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, 'batch', ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             `,
             [
               instructorExam.title,
               instructorExam.exam_date,
-              instructorExam.start_time,
+              formatSqlDateTime(startTimeValue),
               endTime,
               Number(instructorExam.duration_minutes || 0),
-              instructorExam.batch_name,
+              examBatchName,
               instructorExam.rules || null,
+              examAudienceType,
               Number(instructorExam.join_window_minutes || 15),
               adminId,
             ]
@@ -1722,29 +1905,35 @@ app.post("/api/instructor/:instructorId/course-items", async (req, res) => {
   try {
     const instructorId = parseRequiredId(req.params.instructorId);
     const course = String(req.body?.course || "").trim();
-    const batch = String(req.body?.batch || "").trim();
     const type = String(req.body?.type || "").trim();
+    const audienceType = normalizeAudienceType(req.body?.audienceType || "batch");
+    const rawBatchName = normalizeBatchName(req.body?.batchName);
+    const batchName = audienceType === "all" ? ALL_BATCHES_LABEL : rawBatchName;
     const title = String(req.body?.title || "").trim();
     const summary = String(req.body?.summary || "").trim();
     const deadline = String(req.body?.deadline || "").trim();
     const link = String(req.body?.link || "").trim();
 
-    if (!instructorId || !course || !batch || !type || !title || !summary) {
-      return sendError(res, { status: 422, message: "Course, batch, type, title, and summary are required." });
+    if (!instructorId || !course || !type || !title || !summary) {
+      return sendError(res, { status: 422, message: "Course, type, title, and summary are required." });
     }
 
-    // Validate link for PDF and Video types
-    if ((type === "PDF" || type === "Video") && !link) {
-      return sendError(res, { status: 422, message: "Link is required for PDF and Video content types." });
+    if (audienceType === "batch" && !batchName) {
+      return sendError(res, { status: 422, message: "Please choose a batch for this content." });
+    }
+
+    if (!link) {
+      return sendError(res, { status: 422, message: "Content link is required for every upload." });
     }
 
     const pool = getPool();
     await pool.query(
       `
-      INSERT INTO instructor_course_items (instructor_id, course_title, batch_name, content_type, title, summary, deadline, source_ref)
-      VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?)
+      INSERT INTO instructor_course_items
+        (instructor_id, course_title, batch_name, audience_type, content_type, title, summary, deadline, source_ref)
+      VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?)
       `,
-      [instructorId, course, batch, type, title, summary, deadline, link]
+      [instructorId, course, batchName, audienceType, type, title, summary, deadline, link]
     );
 
     await pool.query(
@@ -1753,12 +1942,12 @@ app.post("/api/instructor/:instructorId/course-items", async (req, res) => {
         (instructor_id, course_title, batch_name, title, type, description, deadline, status, source_ref)
       VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), 'pending', ?)
       `,
-      [instructorId, course, batch, title, type, summary, deadline, link]
+      [instructorId, course, batchName, title, type, summary, deadline, link]
     );
 
     await pool.query(
       `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New study material uploaded', ?)`,
-      [instructorId, `${title} was uploaded for ${batch} and sent for admin approval.`]
+      [instructorId, `${title} was uploaded for ${formatAudienceLabel(audienceType, batchName)} and sent for admin approval.`]
     );
 
     return sendSuccess(res, { status: 201, message: "Course content uploaded and sent for admin approval." });
@@ -1773,36 +1962,58 @@ app.post("/api/instructor/:instructorId/question-bank", async (req, res) => {
     const subject = String(req.body?.subject || "").trim();
     const type = String(req.body?.type || "").trim();
     const text = String(req.body?.text || "").trim();
-    const options = String(req.body?.options || "").trim();
+    const audienceType = normalizeAudienceType(req.body?.audienceType || "batch");
+    const rawBatchName = normalizeBatchName(req.body?.batchName);
+    const batchName = audienceType === "all" ? ALL_BATCHES_LABEL : rawBatchName;
+    const optionsFromArray = Array.isArray(req.body?.mcqOptions)
+      ? req.body.mcqOptions.map((item) => String(item || "").trim()).filter(Boolean)
+      : [];
+    const optionsFromText = typeof req.body?.options === "string" ? String(req.body.options).trim() : "";
+    const options = optionsFromArray.length ? JSON.stringify(optionsFromArray) : optionsFromText;
     const answerKey = String(req.body?.answerKey || "").trim();
+    const questionType = String(type || "").toLowerCase();
+    const skipSubmission = Boolean(req.body?.skipSubmission);
 
-    if (!instructorId || !subject || !type || !text || !options || !answerKey) {
-      return sendError(res, { status: 422, message: "Subject, type, text, options, and answer key are required." });
+    if (!instructorId || !subject || !type || !text || !answerKey) {
+      return sendError(res, { status: 422, message: "Subject, type, question text, and answer key are required." });
+    }
+
+    if (audienceType === "batch" && !batchName) {
+      return sendError(res, { status: 422, message: "Please choose a batch for this question." });
+    }
+
+    if (questionType === "mcq" && !options) {
+      return sendError(res, { status: 422, message: "MCQ questions require options." });
+    }
+
+    if (questionType === "mcq" && optionsFromArray.length > 0 && optionsFromArray.length < 2) {
+      return sendError(res, { status: 422, message: "Please provide at least two answer options for MCQ." });
     }
 
     const pool = getPool();
     const [result] = await pool.query(
       `
       INSERT INTO instructor_question_bank
-        (instructor_id, subject, question_type, question_text, options_text, answer_key, approval_status)
-      VALUES (?, ?, ?, ?, ?, ?, 'pending')
+        (instructor_id, batch_name, audience_type, subject, question_type, question_text, options_text, answer_key, approval_status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
       `,
-      [instructorId, subject, type, text, options, answerKey]
+      [instructorId, audienceType === "all" ? null : batchName, audienceType, subject, type, text, options || null, answerKey]
     );
 
     const questionId = Number(result.insertId || 0);
-    if (questionId) {
+    if (questionId && !skipSubmission) {
       await pool.query(
         `
         INSERT INTO content_submissions
           (instructor_id, course_title, batch_name, title, type, description, status, source_ref)
-        VALUES (?, NULL, NULL, ?, ?, ?, 'pending', ?)
+        VALUES (?, NULL, ?, ?, ?, ?, 'pending', ?)
         `,
         [
           instructorId,
+          batchName,
           `${subject} question for approval`,
           `${type} Question`,
-          `${text}\n\nOptions: ${options}\nAnswer key: ${answerKey}`,
+          `Audience: ${formatAudienceLabel(audienceType, batchName)}\n${text}\n\nOptions: ${options || "N/A"}\nAnswer key: ${answerKey}`,
           `instructor_question_bank:${questionId}`,
         ]
       );
@@ -1810,7 +2021,9 @@ app.post("/api/instructor/:instructorId/question-bank", async (req, res) => {
 
     return sendSuccess(res, {
       status: 201,
-      message: "Question added and sent to admin for approval.",
+      message: skipSubmission
+        ? "Question added to draft exam."
+        : "Question added and sent to admin for approval.",
       data: { questionId },
     });
   } catch (error) {
@@ -1822,63 +2035,126 @@ app.post("/api/instructor/:instructorId/exams", async (req, res) => {
   try {
     const instructorId = parseRequiredId(req.params.instructorId);
     const title = String(req.body?.title || "").trim();
-    const batch = String(req.body?.batch || "").trim();
+    const subject = String(req.body?.subject || "").trim();
+    const audienceType = normalizeAudienceType(req.body?.audienceType || "batch");
+    const rawBatchName = normalizeBatchName(req.body?.batchName);
+    const batchName = audienceType === "all" ? ALL_BATCHES_LABEL : rawBatchName;
+    const accessMode = String(req.body?.accessMode || "scheduled").trim();
     const date = String(req.body?.date || "").trim();
     const time = String(req.body?.time || "").trim();
-    const duration = parsePositiveInteger(req.body?.duration);
-    const joinWindow = parsePositiveInteger(req.body?.joinWindow) || 15;
+    const endTimeInput = String(req.body?.endTime || "").trim();
+    let duration = parsePositiveInteger(req.body?.duration);
     const negativeMarking = String(req.body?.negativeMarking || "").trim();
+    const perMcqMark = Number(req.body?.perMcqMark || 0);
     const shuffleMode = String(req.body?.shuffleMode || "").trim();
     const examType = String(req.body?.examType || "").trim();
     const state = String(req.body?.state || "Draft").trim();
     const rules = String(req.body?.rules || "").trim();
     const questionIds = parseQuestionIds(req.body?.questionIds || []);
-    const startDate = toDateTimeValue(date, time);
 
-    if (!instructorId || !title || !batch || !date || !time || !duration || !examType) {
-      return sendError(res, { status: 422, message: "Title, batch, date, time, duration, and exam type are required." });
+    if (!instructorId || !title || !subject || !examType) {
+      return sendError(res, { status: 422, message: "Title, subject, duration, and exam type are required." });
     }
+    if (!Number.isFinite(perMcqMark) || perMcqMark <= 0) {
+      return sendError(res, { status: 422, message: "Per MCQ mark must be greater than 0." });
+    }
+
+    if (accessMode !== "scheduled" && accessMode !== "open_anytime") {
+      return sendError(res, { status: 422, message: "Access mode must be scheduled or open_anytime." });
+    }
+
+    if (audienceType === "batch" && !batchName) {
+      return sendError(res, { status: 422, message: "Please select a target batch or choose all batches." });
+    }
+
+    if (accessMode === "scheduled" && (!date || !time)) {
+      return sendError(res, { status: 422, message: "Scheduled exams require a date and time." });
+    }
+
     if (!questionIds.length) {
       return sendError(res, { status: 422, message: "Select at least one question for the exam." });
     }
-    if (!startDate) return sendError(res, { status: 422, message: "Invalid exam date or time." });
+
+    let startTime = null;
+    let startDate = null;
+    let endTimeDisplay = "";
+    if (accessMode === "scheduled") {
+      startDate = toDateTimeValue(date, time);
+      if (!startDate) return sendError(res, { status: 422, message: "Invalid exam date or time." });
+      if (endTimeInput) {
+        const parsedEnd = toDateTimeValue(date, endTimeInput);
+        if (!parsedEnd) {
+          return sendError(res, { status: 422, message: "Invalid exam end time." });
+        }
+        if (parsedEnd <= startDate) parsedEnd.setDate(parsedEnd.getDate() + 1);
+        const computedDuration = Math.round((parsedEnd.getTime() - startDate.getTime()) / 60000);
+        if (!Number.isFinite(computedDuration) || computedDuration <= 0) {
+          return sendError(res, { status: 422, message: "Exam end time must be after start time." });
+        }
+        duration = computedDuration;
+      }
+      if (!duration) {
+        return sendError(res, { status: 422, message: "Duration is required." });
+      }
+      const computedEndDate = new Date(startDate.getTime() + Number(duration || 0) * 60000);
+      endTimeDisplay = `${padDateTimePart(computedEndDate.getHours())}:${padDateTimePart(
+        computedEndDate.getMinutes()
+      )}`;
+      startTime = formatSqlDateTime(startDate);
+    } else {
+      if (!duration) {
+        return sendError(res, { status: 422, message: "Duration is required." });
+      }
+      startTime = formatSqlDateTime(new Date());
+    }
 
     const pool = getPool();
-    const startTime = formatSqlDateTime(startDate);
-    const conflict = await findInstructorExamConflict(pool, {
-      instructorId,
-      batchName: batch,
-      startTime,
-      durationMinutes: duration,
-    });
-    if (conflict) {
-      return sendError(res, {
-        status: 409,
-        message: "Schedule conflict detected for this batch.",
-        conflict: normalizeInstructorExamRecord(conflict),
+    if (accessMode === "scheduled") {
+      const conflict = await findInstructorExamConflict(pool, {
+        instructorId,
+        batchName,
+        audienceType,
+        startTime,
+        durationMinutes: duration,
       });
+      if (conflict) {
+        return sendError(res, {
+          status: 409,
+          message: "A scheduled exam already overlaps this time window.",
+        });
+      }
     }
+
+    const compiledRules = [
+      `Subject: ${subject}`,
+      `Per MCQ Mark: ${perMcqMark}`,
+      accessMode === "scheduled" ? `End Time: ${endTimeDisplay || "-"}` : null,
+      rules || null,
+    ]
+      .filter(Boolean)
+      .join("\n");
 
     const [insertResult] = await pool.query(
       `
       INSERT INTO instructor_exam_schedules
-        (instructor_id, title, batch_name, exam_date, start_time, duration_minutes, join_window_minutes, negative_marking, shuffle_mode, exam_type, publish_state, question_ids_json, approval_status, rules)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
+        (instructor_id, title, batch_name, audience_type, exam_date, start_time, duration_minutes, negative_marking, shuffle_mode, exam_type, publish_state, question_ids_json, approval_status, rules, access_mode)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
       `,
       [
         instructorId,
         title,
-        batch,
-        date,
+        batchName,
+        audienceType,
+        date || new Date().toISOString().slice(0, 10),
         startTime,
         duration,
-        joinWindow,
         negativeMarking || null,
         shuffleMode || null,
         examType,
         state,
         JSON.stringify(questionIds),
-        rules || null,
+        compiledRules || null,
+        accessMode,
       ]
     );
     const instructorExamId = Number(insertResult?.insertId || 0);
@@ -1888,13 +2164,14 @@ app.post("/api/instructor/:instructorId/exams", async (req, res) => {
         `
         INSERT INTO content_submissions
           (instructor_id, course_title, batch_name, title, type, description, status, source_ref)
-        VALUES (?, NULL, ?, ?, 'Exam', ?, 'pending', ?)
+        VALUES (?, ?, ?, ?, 'Exam', ?, 'pending', ?)
         `,
         [
           instructorId,
-          batch,
+          subject,
+          batchName,
           title,
-          `Exam Type: ${examType}\nStart: ${date} ${time}\nDuration: ${duration} min\nQuestions: ${questionIds.length}\nRules: ${rules || "-"}`,
+          `Subject: ${subject}\nAudience: ${formatAudienceLabel(audienceType, batchName)}\nExam Type: ${examType}\nPer MCQ Mark: ${perMcqMark}\nAccess: ${accessMode === "scheduled" ? `${date} ${time}${endTimeDisplay ? ` - ${endTimeDisplay}` : ""}` : "Anytime"}\nDuration: ${duration} min\nQuestions: ${questionIds.length}\nRules: ${rules || "-"}`,
           `instructor_exam_schedules:${instructorExamId}`,
         ]
       );
@@ -1902,7 +2179,7 @@ app.post("/api/instructor/:instructorId/exams", async (req, res) => {
 
     await pool.query(
       `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New exam scheduled', ?)`,
-      [instructorId, `${title} scheduled for ${batch} on ${date} ${time} and sent for admin approval.`]
+      [instructorId, `${title} for ${formatAudienceLabel(audienceType, batchName)} (${accessMode === "scheduled" ? date + " " + time : "Anytime"}) sent for admin approval.`]
     );
 
     return sendSuccess(res, { status: 201, message: "Exam created and sent for admin approval." });
@@ -2010,6 +2287,185 @@ app.post("/api/instructor/:instructorId/messages", async (req, res) => {
   }
 });
 
+app.get("/api/student/:studentId/profile", async (req, res) => {
+  try {
+    const studentId = parseRequiredId(req.params.studentId);
+    if (!studentId) {
+      return sendError(res, { status: 422, message: "Valid student ID is required." });
+    }
+
+    const pool = getPool();
+    const [rows] = await pool.query(
+      `
+      SELECT student_id, name, email, phone_number, batch_name, course_track, account_status, created_at
+      FROM students
+      WHERE student_id = ?
+      LIMIT 1
+      `,
+      [studentId]
+    );
+
+    if (!rows.length) {
+      return sendError(res, { status: 404, message: "Student profile not found." });
+    }
+
+    const student = rows[0];
+    return sendSuccess(res, {
+      data: {
+        id: student.student_id,
+        fullName: student.name || "",
+        email: student.email || "",
+        phoneNumber: student.phone_number || "",
+        batch: student.batch_name || "",
+        program: student.course_track || "",
+        accountStatus: formatAccountStatus(student.account_status),
+        password: "********",
+        createdAt: student.created_at || null,
+      },
+    });
+  } catch (error) {
+    return sendError(res, {
+      message: "Could not fetch student profile.",
+      error: error.message,
+    });
+  }
+});
+
+app.patch("/api/student/:studentId/profile", async (req, res) => {
+  try {
+    const studentId = parseRequiredId(req.params.studentId);
+    if (!studentId) {
+      return sendError(res, { status: 422, message: "Valid student ID is required." });
+    }
+
+    const fullName = String(req.body?.fullName || "").trim();
+    const phone = String(req.body?.phone || req.body?.phoneNumber || "").trim();
+    const program = String(req.body?.program || "").trim();
+
+    if (!fullName) {
+      return sendError(res, { status: 422, message: "Full name is required." });
+    }
+
+    const allowedPrograms = ["Engineering", "Varsity", "Medical"];
+    if (!allowedPrograms.includes(program)) {
+      return sendError(res, { status: 422, message: "Please choose a valid program." });
+    }
+
+    if (phone && phone.length < 6) {
+      return sendError(res, { status: 422, message: "Please provide a valid phone number." });
+    }
+
+    const pool = getPool();
+    const [rows] = await pool.query(
+      `SELECT student_id FROM students WHERE student_id = ? LIMIT 1`,
+      [studentId]
+    );
+
+    if (!rows.length) {
+      return sendError(res, { status: 404, message: "Student profile not found." });
+    }
+
+    const mappedBatch = deriveBatchFromProgram(program) || program;
+
+    await pool.query(
+      `UPDATE students SET name = ?, phone_number = ?, course_track = ?, batch_name = ? WHERE student_id = ?`,
+      [fullName, phone || null, program, mappedBatch, studentId]
+    );
+
+    return sendSuccess(res, {
+      message: "Profile updated successfully.",
+      data: {
+        id: studentId,
+        fullName,
+        phoneNumber: phone || "",
+        program,
+        batch: mappedBatch,
+      },
+    });
+  } catch (error) {
+    if (error?.code === "ER_DUP_ENTRY") {
+      return sendError(res, {
+        status: 409,
+        message: "This phone number is already used by another account.",
+      });
+    }
+
+    return sendError(res, {
+      message: "Could not update profile.",
+      error: error.message,
+    });
+  }
+});
+
+app.patch("/api/student/:studentId/password", async (req, res) => {
+  try {
+    const studentId = parseRequiredId(req.params.studentId);
+    if (!studentId) {
+      return sendError(res, { status: 422, message: "Valid student ID is required." });
+    }
+
+    const currentPassword = String(req.body?.currentPassword || "");
+    const newPassword = String(req.body?.newPassword || "");
+    const confirmPassword = String(req.body?.confirmPassword || "");
+
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      return sendError(res, {
+        status: 422,
+        message: "Current password, new password, and confirm password are required.",
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return sendError(res, {
+        status: 422,
+        message: "New password must be at least 8 characters long.",
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return sendError(res, {
+        status: 422,
+        message: "New password and confirm password do not match.",
+      });
+    }
+
+    if (currentPassword === newPassword) {
+      return sendError(res, {
+        status: 422,
+        message: "New password must be different from your current password.",
+      });
+    }
+
+    const pool = getPool();
+    const [rows] = await pool.query(
+      `SELECT password_hash FROM students WHERE student_id = ? LIMIT 1`,
+      [studentId]
+    );
+
+    if (!rows.length) {
+      return sendError(res, { status: 404, message: "Student profile not found." });
+    }
+
+    const currentPasswordOk = await bcrypt.compare(currentPassword, rows[0].password_hash || "");
+    if (!currentPasswordOk) {
+      return sendError(res, { status: 401, message: "Current password is incorrect." });
+    }
+
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await pool.query(
+      `UPDATE students SET password_hash = ? WHERE student_id = ?`,
+      [passwordHash, studentId]
+    );
+
+    return sendSuccess(res, { message: "Password reset successful." });
+  } catch (error) {
+    return sendError(res, {
+      message: "Could not reset password.",
+      error: error.message,
+    });
+  }
+});
+
 app.get("/api/student/:studentId/exams", async (req, res) => {
   try {
     const { studentId } = req.params;
@@ -2029,24 +2485,34 @@ app.get("/api/student/:studentId/exams", async (req, res) => {
     }
 
     const student = studentRows[0];
+    const studentProgramGroup = resolveStudentProgramGroup(student);
     const [rows] = await pool.query(
       `
       SELECT DISTINCT
         e.*,
-        COUNT(DISTINCT ea2.student_id) AS assigned_student_count
+        COUNT(DISTINCT ea2.student_id) AS assigned_student_count,
+        MAX(CASE WHEN ea.student_id = ? THEN 1 ELSE 0 END) AS is_assigned_to_student
       FROM exam_schedules e
       LEFT JOIN exam_assignments ea ON ea.exam_id = e.exam_id
       LEFT JOIN exam_assignments ea2 ON ea2.exam_id = e.exam_id
-      WHERE (e.audience_type = 'batch' AND e.batch_name = ?)
-         OR (ea.student_id = ?)
       GROUP BY e.exam_id
       ORDER BY e.start_time ASC
       `,
-      [student.batch_name || "", studentId]
+      [studentId]
     );
 
     const now = new Date();
-    const exams = rows.map((row) => normalizeExamRecord(row, now));
+    const visibleRows = rows.filter((row) => {
+      const explicitlyAssigned = Number(row.is_assigned_to_student || 0) === 1;
+      if (explicitlyAssigned) return true;
+      return isAudienceVisibleToStudent({
+        audienceType: row.audience_type,
+        batchName: row.batch_name,
+        studentBatchName: student.batch_name,
+        studentProgramGroup,
+      });
+    });
+    const exams = visibleRows.map((row) => normalizeExamRecord(row, now));
     const nextExam = exams.find((exam) => ["upcoming", "ongoing"].includes(exam.status)) || null;
 
     return res.status(200).json({
@@ -2091,31 +2557,43 @@ app.get("/api/student/:studentId/mock-questions", async (req, res) => {
 
     const pool = getPool();
     const [studentRows] = await pool.query(
-      `SELECT student_id, batch_name FROM students WHERE student_id = ? LIMIT 1`,
+      `SELECT student_id, batch_name, course_track FROM students WHERE student_id = ? LIMIT 1`,
       [studentId]
     );
     if (!studentRows.length) {
       return sendError(res, { status: 404, message: "Student not found." });
     }
     const student = studentRows[0];
+    const studentProgramGroup = resolveStudentProgramGroup(student);
 
     if (examId) {
       const [examRows] = await pool.query(
         `
-        SELECT DISTINCT e.exam_id
+        SELECT
+          e.exam_id,
+          e.batch_name,
+          e.audience_type,
+          MAX(CASE WHEN ea.student_id = ? THEN 1 ELSE 0 END) AS is_assigned_to_student
         FROM exam_schedules e
         LEFT JOIN exam_assignments ea ON ea.exam_id = e.exam_id
         WHERE e.exam_id = ?
-          AND (
-            (e.audience_type = 'batch' AND e.batch_name = ?)
-            OR ea.student_id = ?
-          )
+        GROUP BY e.exam_id
         LIMIT 1
         `,
-        [examId, student.batch_name || "", studentId]
+        [studentId, examId]
       );
 
       if (examRows.length) {
+        const exam = examRows[0];
+        const explicitlyAssigned = Number(exam.is_assigned_to_student || 0) === 1;
+        const visibleByAudience = isAudienceVisibleToStudent({
+          audienceType: exam.audience_type,
+          batchName: exam.batch_name,
+          studentBatchName: student.batch_name,
+          studentProgramGroup,
+        });
+
+        if (explicitlyAssigned || visibleByAudience) {
         const [mappedRows] = await pool.query(
           `
           SELECT iq.question_id, iq.subject, iq.question_text, iq.options_text, iq.answer_key, eqm.order_index
@@ -2153,6 +2631,7 @@ app.get("/api/student/:studentId/mock-questions", async (req, res) => {
           });
         }
       }
+      }
     }
 
     const params = [];
@@ -2162,10 +2641,10 @@ app.get("/api/student/:studentId/mock-questions", async (req, res) => {
       params.push(...subjects);
     }
 
-    params.push(count * 3);
+    params.push(count * 6);
     const [rows] = await pool.query(
       `
-      SELECT question_id, subject, question_text, options_text, answer_key
+      SELECT question_id, subject, question_text, options_text, answer_key, batch_name, audience_type
       FROM instructor_question_bank
       WHERE question_type = 'MCQ'
         AND approval_status = 'approved'
@@ -2177,6 +2656,14 @@ app.get("/api/student/:studentId/mock-questions", async (req, res) => {
     );
 
     const questions = rows
+      .filter((row) =>
+        isAudienceVisibleToStudent({
+          audienceType: row.audience_type,
+          batchName: row.batch_name,
+          studentBatchName: student.batch_name,
+          studentProgramGroup,
+        })
+      )
       .map((row) => {
         const options = parseMcqOptions(row.options_text);
         const answerIndex = resolveAnswerIndex(row.answer_key, options);
@@ -2213,7 +2700,7 @@ app.get("/api/student/:studentId/assignments", async (req, res) => {
     const pool = getPool();
 
     const [studentRows] = await pool.query(
-      `SELECT student_id, batch_name FROM students WHERE student_id = ? LIMIT 1`,
+      `SELECT student_id, batch_name, course_track FROM students WHERE student_id = ? LIMIT 1`,
       [studentId]
     );
 
@@ -2224,7 +2711,7 @@ app.get("/api/student/:studentId/assignments", async (req, res) => {
       });
     }
 
-    const batchName = studentRows[0].batch_name || "";
+    const student = studentRows[0];
     const [assignments] = await pool.query(
       `
       SELECT
@@ -2240,21 +2727,29 @@ app.get("/api/student/:studentId/assignments", async (req, res) => {
       LEFT JOIN instructors i ON i.instructor_id = cs.instructor_id
       WHERE cs.status = 'approved'
         AND LOWER(cs.type) = 'assignment'
-        AND cs.batch_name IS NOT NULL
-        AND cs.batch_name <> ''
-        AND LOWER(cs.batch_name) = LOWER(?)
       ORDER BY
         CASE WHEN cs.deadline IS NULL THEN 1 ELSE 0 END,
         cs.deadline ASC,
         cs.created_at DESC
-      LIMIT 12
-      `,
-      [batchName]
+      LIMIT 100
+      `
     );
+
+    const studentProgramGroup = resolveStudentProgramGroup(student);
+    const filteredAssignments = assignments
+      .filter((item) =>
+        isAudienceVisibleToStudent({
+          audienceType: "batch",
+          batchName: item.batchName || item.courseTitle || "",
+          studentBatchName: student.batch_name,
+          studentProgramGroup,
+        })
+      )
+      .slice(0, 12);
 
     return res.status(200).json({
       success: true,
-      data: assignments,
+      data: filteredAssignments,
     });
   } catch (error) {
     return res.status(500).json({
@@ -2483,6 +2978,74 @@ app.get("/api/student/:studentId/performance/recent-tests", async (req, res) => 
     return res.status(500).json({
       success: false,
       message: "Could not fetch recent tests.",
+      error: error.message,
+    });
+  }
+});
+
+app.get("/api/student/:studentId/courses", async (req, res) => {
+  try {
+    const { studentId } = req.params;
+    const pool = getPool();
+
+    // Get student's program and batch
+    const [studentRows] = await pool.query(
+      `SELECT student_id, course_track, batch_name FROM students WHERE student_id = ? LIMIT 1`,
+      [studentId]
+    );
+
+    if (studentRows.length === 0) {
+      return res.status(404).json({
+        success: false,
+        message: "Student not found.",
+      });
+    }
+
+    const student = studentRows[0];
+    const studentProgramGroup = resolveStudentProgramGroup(student);
+    const studentBatch = String(student.batch_name || "").trim();
+
+    const [courses] = await pool.query(
+      `SELECT item_id, course_title, batch_name, audience_type, content_type, title, summary, deadline, source_ref AS link
+       FROM instructor_course_items
+       ORDER BY created_at DESC
+       LIMIT 200`
+    );
+    const filteredCourses = courses.filter((item) =>
+      isAudienceVisibleToStudent({
+        audienceType: item.audience_type,
+        batchName: item.batch_name || item.course_title || "",
+        studentBatchName: studentBatch,
+        studentProgramGroup,
+      })
+    );
+
+    const activeCourseSet = new Set(filteredCourses.map((item) => String(item.course_title || "").trim()).filter(Boolean));
+    const activeCourses = activeCourseSet.size;
+    const totalLessons = filteredCourses.length;
+    const progressSamples = filteredCourses.map((item) => {
+      const deadline = item.deadline ? new Date(item.deadline) : null;
+      return deadline && !Number.isNaN(deadline.getTime()) && deadline >= new Date() ? 100 : 50;
+    });
+    const avgProgress = progressSamples.length
+      ? Math.round(progressSamples.reduce((sum, value) => sum + value, 0) / progressSamples.length)
+      : 0;
+
+    return res.status(200).json({
+      success: true,
+      data: {
+        courses: filteredCourses,
+        stats: {
+          activeCourses,
+          lessonsCompleted: totalLessons,
+          avgProgress,
+        }
+      },
+    });
+  } catch (error) {
+    return res.status(500).json({
+      success: false,
+      message: "Could not fetch courses.",
       error: error.message,
     });
   }
@@ -2798,16 +3361,78 @@ app.post("/api/study-circles/:circleId/join", async (req, res) => {
   }
 });
 
+async function cleanupSeededDiscussions(pool) {
+  const demoTitles = [
+    "Physics optics tips for admission mock?",
+    "Share your chemistry revision notes",
+    "How to manage time in full mocks?",
+    "Interview prep checklist",
+  ];
+
+  await pool.query(
+    `DELETE dr FROM discussion_replies dr
+     JOIN discussions d ON dr.discussion_id = d.discussion_id
+     WHERE d.title IN (${demoTitles.map(() => "?").join(",")})`,
+    demoTitles
+  );
+
+  await pool.query(
+    `DELETE FROM discussions WHERE title IN (${demoTitles.map(() => "?").join(",")})`,
+    demoTitles
+  );
+}
+
+async function cleanupSeededInstructorWorkspace(pool) {
+  const demoCourseTitles = [
+    "Motion chapter formula sheet",
+    "Live revision class moved to 7:00 PM",
+  ];
+  const demoMessageTitles = [
+    "New assignment uploaded",
+    "Biology viva feedback",
+  ];
+  const demoAlertTitles = [
+    "Proctoring violation flagged",
+    "Student submitted exam",
+    "Exam reminder",
+    "New student question",
+  ];
+
+  if (demoMessageTitles.length) {
+    await pool.query(
+      `DELETE FROM instructor_messages WHERE title IN (${demoMessageTitles.map(() => "?").join(",")})`,
+      demoMessageTitles
+    );
+  }
+
+  if (demoAlertTitles.length) {
+    await pool.query(
+      `DELETE FROM instructor_alerts WHERE title IN (${demoAlertTitles.map(() => "?").join(",")})`,
+      demoAlertTitles
+    );
+  }
+
+  if (demoCourseTitles.length) {
+    await pool.query(
+      `DELETE FROM instructor_course_items WHERE title IN (${demoCourseTitles.map(() => "?").join(",")})`,
+      demoCourseTitles
+    );
+  }
+}
+
 async function startServer() {
   try {
     await ensureDatabaseExists();
     await ensureSchema();
     await seedDemoAccounts();
     await seedDemoContentAndReports();
-    await seedDemoDiscussions();
     await seedDemoStudyCircles();
     await seedDemoExamSchedules();
-    await seedDemoInstructorWorkspace();
+
+    const pool = getPool();
+    await cleanupSeededDiscussions(pool);
+    await cleanupSeededInstructorWorkspace(pool);
+
     await runExamAutomation();
     startExamAutomationLoop();
 

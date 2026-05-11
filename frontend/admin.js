@@ -28,6 +28,16 @@ const filters = {
 const MANAGEABLE_ROLES = new Set(["Student", "Instructor"]);
 
 const roleToApiParam = (role) => String(role || "").trim().toLowerCase();
+const toSafeAdminUser = (user = {}) => ({
+  id: Number(user.id) || 0,
+  name: String(user.name || "").trim(),
+  email: String(user.email || "").trim(),
+  phoneNumber: String(user.phoneNumber || "").trim(),
+  role: String(user.role || "").trim(),
+  accountStatus: String(user.accountStatus || "").trim(),
+  status: String(user.status || "").trim(),
+  createdAt: user.createdAt || null,
+});
 
 const setUserFormMessage = (message, type = "neutral") => {
   const userFormMessage = document.getElementById("userFormMessage");
@@ -745,7 +755,7 @@ const loadUsers = async () => {
     const response = await fetch(`${API_BASE_URL}/admin/users`);
     const payload = await response.json();
     if (payload.success) {
-      users = payload.data || [];
+      users = Array.isArray(payload.data) ? payload.data.map((item) => toSafeAdminUser(item)) : [];
       renderUsers();
     }
   } catch (_error) {

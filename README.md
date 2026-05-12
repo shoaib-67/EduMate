@@ -94,10 +94,10 @@ The platform supports students, instructors, and administrators with role-specif
 
 1. Start Apache and MySQL from XAMPP Control Panel.
 2. Open phpMyAdmin and make sure a database named `edumate` exists.
-3. From project root, install backend dependencies:
+3. From project root, install dependencies:
 
 ```bash
-npm --prefix backend install
+npm install
 ```
 
 4. Keep `backend/.env` values as default for XAMPP local MySQL:
@@ -111,13 +111,13 @@ DB_PASSWORD=
 DB_NAME=edumate
 ```
 
-5. Run backend API server from project root:
+5. Run the backend API server from project root:
 
 ```bash
 npm start
 ```
 
-6. Frontend is optional for backend testing. You can test login API directly with Postman/Thunder Client.
+6. Open the frontend by serving the `frontend/` folder or opening `frontend/index.html` in the browser.
 
 Notes:
 - Create database and tables manually in XAMPP/phpMyAdmin before using auth APIs.

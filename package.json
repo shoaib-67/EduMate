@@ -2,7 +2,12 @@
   "name": "edumate",
   "version": "1.0.0",
   "private": true,
+  "packageManager": "npm@10.9.2",
+  "engines": {
+    "node": ">=18"
+  },
   "scripts": {
+    "postinstall": "npm --prefix backend ci",
     "dev": "npm --prefix backend run dev",
     "start": "npm --prefix backend start"
   }

@@ -97,6 +97,7 @@ function setupProfileForm() {
       setStoredUser({
         ...stored,
         fullName,
+        phone,
         program,
       });
 

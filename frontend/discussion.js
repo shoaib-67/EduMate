@@ -1,6 +1,14 @@
-const { API_BASE_URL, getStudentId, escapeHTML, requireRole, setupLogoutHandlers } = window.EduMateShared;
+const { API_BASE_URL, getStoredUser, getStudentId, escapeHTML, requireRole, setupLogoutHandlers } = window.EduMateShared;
 let allDiscussions = [];
 const discussionFilter = { query: "", subject: "all" };
+let activeDiscussionId = null;
+
+function getDiscussionUser() {
+  const user = getStoredUser();
+  const role = String(user?.role || "").trim().toLowerCase();
+  if (!user || !["student", "instructor"].includes(role)) return null;
+  return { id: Number(user.id || 0), role, name: user.name || role };
+}
 
 function showDiscussionStatus(message, type = "info") {
   const status = document.getElementById("discussionStatus");
@@ -35,6 +43,7 @@ function getTimeAgo(createdAt) {
 async function showDiscussionDetail(discussionId) {
   const detail = document.getElementById("discussionDetail");
   if (!detail) return;
+  activeDiscussionId = discussionId;
 
   try {
     const response = await fetch(`${API_BASE_URL}/discussions/${discussionId}`);
@@ -43,14 +52,29 @@ async function showDiscussionDetail(discussionId) {
 
     const data = result.data;
     const replies = data.replies || [];
+    const currentUser = getDiscussionUser();
+    const replyItems = replies.length
+      ? replies.map((reply) => `
+          <div class="thread">
+            <p>${escapeHTML(reply.content || "")}</p>
+            <span>${escapeHTML(reply.author_name || "Unknown")} (${escapeHTML(reply.author_role || "student")}) - ${escapeHTML(getTimeAgo(reply.created_at))}</span>
+          </div>
+        `).join("")
+      : '<div class="thread empty-state"><h4>No replies yet</h4><span>Be the first to respond to this discussion post.</span></div>';
 
     detail.innerHTML = `
       <h4>${escapeHTML(data.title)}</h4>
       <p>${escapeHTML(data.content || "No details available.")}</p>
       <p>${escapeHTML(String(replies.length))} replies - by ${escapeHTML(data.author_name || "Unknown")}</p>
+      <div class="list">${replyItems}</div>
+      <div class="input-row">
+        <textarea id="replyContent" placeholder="${currentUser ? "Write your reply..." : "Log in as a student or instructor to reply."}"></textarea>
+        <button class="btn btn-primary" type="button" id="postReplyBtn">${currentUser ? "Post reply" : "Login to reply"}</button>
+      </div>
     `;
+    detail.querySelector("#postReplyBtn")?.addEventListener("click", handlePostReply);
   } catch {
-    detail.innerHTML = "<h4>Unable to load thread details</h4>";
+    detail.innerHTML = "<h4>Unable to load discussion post details</h4>";
   }
 }
 
@@ -72,7 +96,7 @@ function renderDiscussions() {
 
   discussionList.innerHTML = "";
   if (!filtered.length) {
-    discussionList.innerHTML = '<div class="thread"><h4>No threads found</h4><span>Try another search or filter.</span></div>';
+    discussionList.innerHTML = '<div class="thread"><h4>No discussion posts found</h4><span>Try another search or filter.</span></div>';
     return;
   }
 
@@ -192,6 +216,45 @@ async function handlePostDiscussion() {
   }
 }
 
+async function handlePostReply() {
+  const currentUser = getDiscussionUser();
+  if (!currentUser) {
+    window.location.href = "index.html";
+    return;
+  }
+
+  const replyInput = document.getElementById("replyContent");
+  const content = String(replyInput?.value || "").trim();
+  if (!activeDiscussionId || !content) {
+    showDiscussionStatus("Please write a reply first.", "error");
+    return;
+  }
+
+  try {
+    showDiscussionStatus("Posting your reply...", "info");
+    const response = await fetch(`${API_BASE_URL}/discussions/${activeDiscussionId}/reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: currentUser.id,
+        userRole: currentUser.role,
+        content,
+      }),
+    });
+    const result = await response.json();
+    if (!result.success) {
+      showDiscussionStatus(`Error posting reply: ${result.message || "Unknown error"}`, "error");
+      return;
+    }
+
+    showDiscussionStatus("Reply posted successfully.", "success");
+    await Promise.all([loadDiscussions(), showDiscussionDetail(activeDiscussionId)]);
+  } catch (error) {
+    console.error("Error posting reply:", error);
+    showDiscussionStatus("Could not post reply.", "error");
+  }
+}
+
 async function loadStudyCircles() {
   // Study circles removed as requested
   const circlesContainer = document.querySelector(".section-spacer");
@@ -201,7 +264,8 @@ async function loadStudyCircles() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const user = requireRole("student", { allowAnonymous: true });
+  const currentUser = getDiscussionUser();
+  const user = requireRole(["student", "instructor"], { allowAnonymous: true });
   const postButton = document.querySelector(".input-row .btn-primary");
   if (user) {
     setupLogoutHandlers();
@@ -210,7 +274,7 @@ document.addEventListener("DOMContentLoaded", () => {
       link.textContent = "Login";
       link.setAttribute("aria-label", "Login");
     });
-    showDiscussionStatus("You can read discussions without logging in. Log in as a student to post.", "info");
+    showDiscussionStatus("You can read discussion posts without logging in. Log in as a student to post or as a student/instructor to reply.", "info");
     if (postButton) {
       postButton.textContent = "Login to post";
     }
@@ -222,6 +286,10 @@ document.addEventListener("DOMContentLoaded", () => {
   postButton?.addEventListener("click", () => {
     if (!user) {
       window.location.href = "index.html";
+      return;
+    }
+    if (currentUser?.role !== "student") {
+      showDiscussionStatus("Only students can start a new discussion post.", "info");
       return;
     }
     handlePostDiscussion();

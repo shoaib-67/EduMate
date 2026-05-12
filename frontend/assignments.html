@@ -24,8 +24,8 @@
           <span class="logo-text">Edu<span>Mate</span></span>
         </div>
                 <div class="nav-section">
-          <p class="nav-label">Student</p>
-          <a class="nav-item" href="student.html">
+                  <p class="nav-label">Student</p>
+                  <a class="nav-item" href="student.html">
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
             Dashboard
           </a>
@@ -41,10 +41,6 @@
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
             Courses
           </a>
-          <a class="nav-item active" href="assignments.html">
-            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6M7 4h7l3 3v13a1 1 0 01-1 1H7a1 1 0 01-1-1V5a1 1 0 011-1zm7 0v4h4"/></svg>
-            Assignments
-          </a>
           <a class="nav-item" href="performance.html">
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/></svg>
             Performance
@@ -56,6 +52,10 @@
           <a class="nav-item" href="student-profile.html">
             <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0115 0A17.933 17.933 0 0112 21.75a17.933 17.933 0 01-7.5-1.632z"/></svg>
             Profile
+          </a>
+          <a class="nav-item" href="student-report-bug.html">
+            <svg fill="none" viewBox="0 0 24 24" stroke-width="1.8" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"/></svg>
+            Report a bug
           </a>
         </div>      </aside>
 
@@ -74,51 +74,16 @@
         <div class="content">
           <div class="page-header">
             <h1>Assignments</h1>
-            <p>Track assigned tasks, instructions, and due dates.</p>
+            <p>This feature has been removed from the student panel.</p>
           </div>
 
-          <section class="assignment-panel" id="assignmentsSection">
-            <div class="assignment-hero">
-              <div>
-                <span class="section-kicker">Assignment Desk</span>
-                <h2>Assignments</h2>
-                <p>Assigned tasks, instructions, and deadlines from your instructors.</p>
-              </div>
-              <span class="soft-pill" id="assignmentCount">Loading</span>
-            </div>
-            <div class="assignment-summary" id="assignmentSummary" aria-label="Assignment summary">
-              <div class="assignment-summary-card">
-                <span>Active</span>
-                <strong id="assignmentActiveCount">--</strong>
-              </div>
-              <div class="assignment-summary-card">
-                <span>Next Due</span>
-                <strong id="assignmentNextDue">--</strong>
-              </div>
-              <div class="assignment-summary-card">
-                <span>Courses</span>
-                <strong id="assignmentCourseCount">--</strong>
-              </div>
-            </div>
-            <div class="assignment-toolbar" aria-label="Assignment filters">
-              <label class="assignment-search">
-                <span>Search assignments</span>
-                <input id="assignmentSearch" type="search" placeholder="Search title, course, or instructions" />
-              </label>
-              <label class="assignment-filter">
-                <span>Due status</span>
-                <select id="assignmentDueFilter">
-                  <option value="all">All assignments</option>
-                  <option value="soon">Due soon</option>
-                  <option value="overdue">Overdue</option>
-                  <option value="open">No deadline</option>
-                </select>
-              </label>
-            </div>
-            <div class="assignment-list" id="assignmentList">
+          <section class="panel panel-full">
+            <h2>Assignments removed</h2>
+            <p>Assignments are no longer available for students. Please use Announcements or Courses for instructor materials.</p>
+            <div class="list">
               <div class="empty-card">
-                <strong>Loading assignments</strong>
-                <span>Assignments will appear here.</span>
+                <strong>No assignments panel</strong>
+                <span>The assignments feature has been deleted from the student dashboard navigation.</span>
               </div>
             </div>
           </section>
@@ -126,7 +91,6 @@
       </div>
     </div>
     <script src="shared.js"></script>
-    <script src="assignments.js"></script>
   </body>
 </html>
 

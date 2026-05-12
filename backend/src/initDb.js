@@ -202,15 +202,27 @@ async function ensureDiscussionRepliesTable(pool) {
     CREATE TABLE IF NOT EXISTS \`discussion_replies\` (
       \`reply_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       \`discussion_id\` INT UNSIGNED NOT NULL,
-      \`student_id\` INT UNSIGNED NOT NULL,
+      \`student_id\` INT UNSIGNED NULL,
+      \`instructor_id\` INT UNSIGNED NULL,
+      \`author_role\` VARCHAR(20) NOT NULL DEFAULT 'student',
       \`content\` TEXT NOT NULL,
       \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       FOREIGN KEY (\`discussion_id\`) REFERENCES \`discussions\`(\`discussion_id\`) ON DELETE CASCADE,
       FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`instructor_id\`) REFERENCES \`instructors\`(\`instructor_id\`) ON DELETE CASCADE,
       INDEX \`idx_discussion\` (\`discussion_id\`),
       INDEX \`idx_created\` (\`created_at\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureColumn(pool, "discussion_replies", "instructor_id", "instructor_id INT UNSIGNED NULL");
+  await ensureColumn(
+    pool,
+    "discussion_replies",
+    "author_role",
+    "author_role VARCHAR(20) NOT NULL DEFAULT 'student'"
+  );
+  await pool.query("ALTER TABLE `discussion_replies` MODIFY COLUMN `student_id` INT UNSIGNED NULL");
 }
 
 async function ensureStudyCirclesTable(pool) {
@@ -934,7 +946,7 @@ async function seedDemoInstructorWorkspace() {
   const examItems = [
     ["Physics Weekly Mock 3", "Engineering A", "2026-05-06", "2026-05-06 09:00:00", 90, 15, "-0.25 per MCQ", "Questions and options", "Mock Test", "Published", "Calculator allowed. No retake after submission."],
     ["Medical Biology Short Test", "Medical+Versity", "2026-05-06", "2026-05-06 10:00:00", 60, 10, "None", "Questions only", "Batch Exam", "Draft", "Short-answer review needed before final publish."],
-    ["Engineering Math Speed Quiz", "Engineering A", "2026-05-04", "2026-05-04 18:30:00", 45, 10, "-0.25 per MCQ", "Questions only", "Assignment Quiz", "Published", "Fast drill for algebra and trigonometry."],
+    ["Engineering Math Speed Quiz", "Engineering A", "2026-05-04", "2026-05-04 18:30:00", 45, 10, "-0.25 per MCQ", "Questions only", "Practice Quiz", "Published", "Fast drill for algebra and trigonometry."],
   ];
   for (const item of examItems) {
     const [existing] = await pool.query(
@@ -984,7 +996,6 @@ async function seedDemoInstructorWorkspace() {
   }
 
   const messages = [
-    ["Announcement", "Engineering A", "New assignment uploaded", "Solve the motion chapter worksheet before Friday night."],
     ["Exam Feedback", "Sadia Rahman", "Biology viva feedback", "Excellent structure. Add clearer examples in the final answer."],
   ];
   for (const message of messages) {
@@ -1031,7 +1042,7 @@ async function seedDemoInstructorWorkspace() {
 
   const gradingQueue = [
     ["Medical Biology Short Test", "4 short answers pending", "Medical+Versity"],
-    ["Engineering Physics Assignment", "12 manual comments pending", "Engineering A"],
+    ["Engineering Physics Quiz Review", "12 manual comments pending", "Engineering A"],
   ];
   for (const queueItem of gradingQueue) {
     const [existing] = await pool.query(
@@ -1143,14 +1154,6 @@ async function seedDemoContentAndReports() {
       batchName: "Engineering A",
       description: "20 questions covering algebra fundamentals",
       deadline: null,
-    },
-    {
-      title: "Chemistry lab worksheet",
-      type: "Assignment",
-      courseTitle: "Organic Chemistry",
-      batchName: "Medical+Versity",
-      description: "Practical chemistry lab exercises",
-      deadline: "2026-05-12",
     },
   ];
 

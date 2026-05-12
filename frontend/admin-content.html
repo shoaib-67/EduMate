@@ -35,7 +35,7 @@
 
       <div class="main">
         <div class="topbar">
-          <span class="topbar-title">Content Review</span>
+          <span class="topbar-title">Exam & Content Review</span>
           <div class="topbar-right">
             <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
           </div>
@@ -43,32 +43,58 @@
 
         <div class="content admin-content">
           <div class="page-header">
-            <h1>Content moderation</h1>
-            <p>Approve and manage newly uploaded resources before they appear to students.</p>
+            <h1>Exam and content moderation</h1>
+            <p>Review pending mock tests, announcements, question submissions, and study materials before they go live.</p>
+          </div>
+
+          <div class="stats-grid review-stats-grid">
+            <article class="stat-card">
+              <p class="s-label">Pending Exams</p>
+              <p class="s-val" id="pendingExamCount">0</p>
+              <p class="s-sub">Mock tests waiting for approval</p>
+            </article>
+            <article class="stat-card">
+              <p class="s-label">Study Materials</p>
+              <p class="s-val" id="pendingContentCount">0</p>
+              <p class="s-sub">Courses, notes, and resource links</p>
+            </article>
+            <article class="stat-card">
+              <p class="s-label">Announcements</p>
+              <p class="s-val" id="pendingAnnouncementCount">0</p>
+              <p class="s-sub">Posts queued for students</p>
+            </article>
+            <article class="stat-card">
+              <p class="s-label">Question Items</p>
+              <p class="s-val" id="pendingQuestionCount">0</p>
+              <p class="s-sub">Question bank entries to verify</p>
+            </article>
           </div>
 
           <section class="panel" id="content">
             <div class="panel-header">
-              <h2>Review submissions</h2>
-              <div style="display: flex; gap: 8px;">
+              <div class="panel-title-group">
+                <h2>Review submissions</h2>
+                <p id="contentStatusNote">Approve or deny newly submitted exams and learning material.</p>
+              </div>
+              <div class="panel-actions">
                 <button class="btn btn-small" id="refreshContent">Refresh</button>
-                <button class="btn btn-small" id="approveAll">Approve all</button>
+                <button class="btn btn-small" id="approveAll" type="button">Approve all</button>
               </div>
             </div>
-            <p>Approve or deny newly submitted learning material.</p>
+
             <div class="panel-tools">
               <input type="search" id="contentSearch" class="filter-input" placeholder="Search pending content by title" />
               <select id="contentTypeFilter" class="filter-select">
                 <option value="all">All types</option>
               </select>
             </div>
-            <ul class="content-list" id="contentList"></ul>
+            <div class="content-review-board" id="contentList"></div>
           </section>
         </div>
       </div>
     </div>
 
     <script src="shared.js"></script>
-    <script src="admin.js"></script>
+    <script type="module" src="admin/index.js"></script>
   </body>
 </html>

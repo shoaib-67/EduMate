@@ -425,6 +425,15 @@
   flex-wrap: wrap;
 }
 
+.panel-header-actions {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+}
+
 .badge {
   display: inline-flex;
   padding: 0.55rem 0.85rem;
@@ -554,6 +563,126 @@ tbody tr:hover {
   padding: 0;
 }
 
+.review-stats-grid {
+  margin-bottom: 1.5rem;
+}
+
+.content-review-board {
+  display: grid;
+  gap: 1.1rem;
+}
+
+.content-review-section {
+  display: grid;
+  gap: 0.9rem;
+}
+
+.content-review-section-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+}
+
+.content-review-section-head h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+}
+
+.content-review-section-head p {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.88rem;
+}
+
+.content-review-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+
+.review-card {
+  display: grid;
+  gap: 0.9rem;
+  padding: 1rem 1.05rem;
+  border-radius: 14px;
+  border: 1px solid rgba(207, 225, 240, 0.95);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+  box-shadow: 0 16px 32px rgba(13, 53, 89, 0.05);
+}
+
+.review-card-exam {
+  border-color: rgba(12, 122, 167, 0.28);
+}
+
+.review-card-announcement {
+  border-color: rgba(238, 163, 23, 0.3);
+}
+
+.review-card-question {
+  border-color: rgba(64, 123, 87, 0.28);
+}
+
+.review-card-head,
+.review-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.8rem;
+}
+
+.review-card-pills,
+.review-card-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+.review-card-time {
+  color: var(--muted);
+  font-size: 0.82rem;
+  white-space: nowrap;
+}
+
+.review-card-body {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.review-card-body h3 {
+  margin: 0;
+  font-size: 1.02rem;
+}
+
+.review-card-line,
+.review-card-copy,
+.review-card-meta span {
+  margin: 0;
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.45;
+}
+
+.review-pill {
+  display: inline-flex;
+  align-items: center;
+  border-radius: 999px;
+  padding: 0.36rem 0.65rem;
+  font-size: 0.76rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.review-pill-type {
+  background: #eaf4ff;
+  color: #1b5c90;
+}
+
+.review-pill-subtle {
+  background: #f3f7fb;
+  color: #556d88;
+}
+
 .content-list li {
   background: var(--surface-soft);
   border-radius: 10px;
@@ -561,8 +690,48 @@ tbody tr:hover {
   padding: 1rem 1.1rem;
   display: flex;
   justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+}
+
+.content-item .content-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.content-item .content-meta strong {
+  font-size: 0.95rem;
+}
+
+.content-item .content-meta span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.content-actions {
+  display: inline-flex;
+  flex-wrap: nowrap;
   align-items: center;
-  gap: 0.9rem;
+  gap: 0.35rem;
+  flex-shrink: 0;
+}
+
+.content-actions .btn-small {
+  padding: 0.38rem 0.55rem;
+  font-size: 0.72rem;
+  border-radius: 8px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.panel-header .btn-small {
+  padding: 0.4rem 0.65rem;
+  font-size: 0.78rem;
+  border-radius: 8px;
+  white-space: nowrap;
 }
 
 .content-item-body {
@@ -736,16 +905,27 @@ tbody tr:hover {
 
 .user-action-group {
   display: flex;
-  flex-wrap: wrap;
-  gap: 0.45rem;
+  flex-wrap: nowrap;
+  gap: 0.3rem;
   justify-content: flex-start;
+  align-items: center;
+  white-space: nowrap;
 }
 
 .user-action-group .btn {
-  min-height: 34px;
-  padding: 0.5rem 0.7rem;
-  border-radius: 8px;
-  font-size: 0.8rem;
+  min-height: 30px;
+  padding: 0.38rem 0.55rem;
+  border-radius: 7px;
+  font-size: 0.72rem;
+  line-height: 1;
+  white-space: nowrap;
+  flex: 0 0 auto;
+}
+
+#users table th:last-child,
+#users table td:last-child {
+  width: 1%;
+  white-space: nowrap;
 }
 
 .user-modal {
@@ -937,12 +1117,19 @@ tbody tr:hover {
 
 .report-actions {
   display: flex;
-  gap: 8px;
+  flex-wrap: nowrap;
+  gap: 0.35rem;
   margin-top: auto;
+  justify-content: flex-end;
 }
 
 .report-actions .btn {
-  flex: 1;
+  flex: 0 0 auto;
+  padding: 0.38rem 0.55rem;
+  font-size: 0.72rem;
+  border-radius: 8px;
+  font-weight: 700;
+  white-space: nowrap;
 }
 
 .report-card-complaint {
@@ -1115,6 +1302,9 @@ tbody tr:hover {
   .exams-admin-grid {
     grid-template-columns: 1fr;
   }
+  .content-review-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1171,10 +1361,19 @@ tbody tr:hover {
     width: 100%;
     justify-content: flex-start;
   }
+  .panel-header-actions {
+    width: 100%;
+    justify-content: flex-start;
+  }
   .panel-header h2 {
     font-size: 1rem;
   }
   .panel-tools {
+    flex-direction: column;
+  }
+  .content-review-section-head,
+  .review-card-head,
+  .review-card-foot {
     flex-direction: column;
   }
   .form-grid {
@@ -1227,8 +1426,9 @@ tbody tr:hover {
     flex-direction: column;
     align-items: stretch;
   }
-  .content-item-actions {
+  .content-actions {
     justify-content: flex-start;
+    flex-wrap: wrap;
   }
 }
 
@@ -1278,6 +1478,10 @@ tbody tr:hover {
   .user-cell,
   .user-action-group {
     justify-content: flex-end;
+  }
+
+  .user-action-group {
+    flex-wrap: wrap;
   }
   .content-item-actions .btn {
     flex: 1 1 calc(50% - 0.25rem);

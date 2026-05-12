@@ -13,9 +13,9 @@ const state = {
     exams: [],
     students: [],
     communications: [],
-    alerts: [],
     coursePerformance: [],
     scoreDistribution: [],
+    mockTestResults: [],
   },
 };
 
@@ -94,11 +94,9 @@ function getNextExam(exams) {
 
 function buildAttentionItems() {
   const exams = state.workspace.exams || [];
-  const alerts = state.workspace.alerts || [];
   const coursePerformance = state.workspace.coursePerformance || [];
   const upcoming = exams.filter((exam) => exam.status === "Upcoming");
   const drafts = exams.filter((exam) => exam.state === "Draft");
-  const urgentAlerts = alerts.filter((item) => item.level === "urgent");
 
   return [
     {
@@ -108,10 +106,6 @@ function buildAttentionItems() {
     {
       title: `${coursePerformance.length} course-level metric${coursePerformance.length === 1 ? "" : "s"} ready`,
       note: coursePerformance.length ? "Real-time scores and pass rates are available for your active subjects." : "Course analytics will appear after students complete exams.",
-    },
-    {
-      title: `${urgentAlerts.length} urgent alert${urgentAlerts.length === 1 ? "" : "s"}`,
-      note: urgentAlerts.length ? "Submissions, violations, or questions need a fast look." : "Nothing urgent is flashing at the moment.",
     },
     {
       title: `${drafts.length} draft exam${drafts.length === 1 ? "" : "s"}`,
@@ -154,9 +148,7 @@ function renderStats() {
 
 function renderWorkspaceOverview() {
   const exams = state.workspace.exams || [];
-  const alerts = state.workspace.alerts || [];
   const nextExam = getNextExam(exams);
-  const urgentAlerts = alerts.filter((item) => item.level === "urgent").length;
   const drafts = exams.filter((exam) => exam.state === "Draft").length;
   const nextExamLabel = nextExam
     ? nextExam.accessMode === "open_anytime"
@@ -173,11 +165,9 @@ function renderWorkspaceOverview() {
   $("#nextExamPill").textContent = nextExam
     ? `${nextExam.batch} · ${nextExamLabel}`
     : "No scheduled upcoming exam";
-  $("#attentionPill").textContent = urgentAlerts
-    ? `${urgentAlerts} urgent alert${urgentAlerts === 1 ? "" : "s"} to review`
-    : drafts
-      ? `${drafts} draft exam${drafts === 1 ? "" : "s"} waiting to publish`
-      : "No urgent blockers";
+  $("#attentionPill").textContent = drafts
+    ? `${drafts} draft exam${drafts === 1 ? "" : "s"} waiting to publish`
+    : "No drafts pending";
 
   $("#attentionList").innerHTML = buildAttentionItems()
     .map(
@@ -210,7 +200,7 @@ function renderCourseContent() {
       `
         )
         .join("")
-    : renderEmptyCard("No study materials yet", "Your course items will show up here once you upload the first PDF, note, assignment, or announcement.");
+    : renderEmptyCard("No study materials yet", "Your course items will show up here once you upload the first PDF, note, or announcement.");
 }
 
 function renderQuestionBank() {
@@ -353,7 +343,7 @@ function renderExams() {
       `
         )
         .join("")
-    : renderEmptyCard("No exams created yet", "Create a mock test or assignment quiz to start filling the assessment board.");
+    : renderEmptyCard("No exams created yet", "Create a mock test to start filling the assessment board.");
 }
 
 function renderStudents() {
@@ -381,21 +371,64 @@ function renderAnalytics() {
 
   $("#distributionList").innerHTML = scoreDistribution.length
     ? scoreDistribution
-        .map((item) => `<div class="list-item"><div><h4>${escapeHTML(item.band)}</h4><span>Students in this range</span></div><span class="chip">${escapeHTML(String(item.count || 0))}</span></div>`)
+        .map((item) => `<div class="list-item"><div><h4>${escapeHTML(item.band)}</h4><span>Students by avg mock score</span></div><span class="chip">${escapeHTML(String(item.count || 0))}</span></div>`)
         .join("")
-    : renderEmptyCard("No score distribution yet", "Once students take an objective exam, performance bands will appear here.");
+    : renderEmptyCard("No mock distribution yet", "Assign students and have them complete mock tests to see score bands.");
 
   $("#coursePerformanceList").innerHTML = coursePerformance.length
     ? coursePerformance
-        .map((item) => `<div class="list-item"><div><h4>${escapeHTML(item.course)}</h4><span>Avg ${escapeHTML(String(item.averageScore || 0))}% from ${escapeHTML(String(item.assessments || 0))} records</span><span>Top ${escapeHTML(String(item.topScore || 0))}% · Low ${escapeHTML(String(item.bottomScore || 0))}%</span></div><span class="chip ${getStatusChipClass(Number(item.averageScore || 0))}">${escapeHTML(String(item.passRate || 0))}% pass</span></div>`)
+        .map(
+          (item) =>
+            `<div class="list-item"><div><h4>${escapeHTML(item.course)}</h4><span>Avg ${escapeHTML(String(item.averageScore || 0))}% across ${escapeHTML(String(item.assessments || 0))} mock attempt${Number(item.assessments) === 1 ? "" : "s"}</span><span>Top ${escapeHTML(String(item.topScore || 0))}% · Low ${escapeHTML(String(item.bottomScore || 0))}%</span></div><span class="chip ${getStatusChipClass(Number(item.averageScore || 0))}">${escapeHTML(String(item.passRate || 0))}% pass</span></div>`
+        )
         .join("")
-    : renderEmptyCard("No course performance data yet", "Student assessments will populate this panel automatically.");
+    : renderEmptyCard("No mock performance by subject yet", "Mock results grouped by subject appear after students finish mocks.");
 
   $("#passRateList").innerHTML = coursePerformance.length
     ? coursePerformance
-        .map((item) => `<div class="list-item"><div><h4>${escapeHTML(item.course)}</h4><span>${escapeHTML(String(item.assessments || 0))} scored · ${escapeHTML(String(item.passRate || 0))}% pass rate</span></div></div>`)
+        .map(
+          (item) =>
+            `<div class="list-item"><div><h4>${escapeHTML(item.course)}</h4><span>${escapeHTML(String(item.assessments || 0))} mock attempt${Number(item.assessments) === 1 ? "" : "s"} · ${escapeHTML(String(item.passRate || 0))}% pass rate (≥50%)</span></div></div>`
+        )
         .join("")
-    : renderEmptyCard("No pass rate data yet", "Course pass rates appear once test scores are recorded for your batches.");
+    : renderEmptyCard("No mock pass rates yet", "Pass rates are computed from mock attempts scored at 50% or above.");
+}
+
+function renderMockTestResults() {
+  const rows = state.workspace.mockTestResults || [];
+  const tbody = $("#mockTestResultsBody");
+  if (!tbody) return;
+
+  tbody.innerHTML = rows.length
+    ? rows
+        .map((row) => {
+          const scoreLabel =
+            row.score != null && Number.isFinite(Number(row.score)) ? `${Math.round(Number(row.score) * 10) / 10}%` : "—";
+          const total = row.totalQuestions != null ? Number(row.totalQuestions) : null;
+          const correct = row.correctAnswers != null ? Number(row.correctAnswers) : null;
+          const frac =
+            total != null && total > 0 && correct != null && Number.isFinite(correct)
+              ? `${correct}/${total}`
+              : "—";
+          let when = "—";
+          if (row.createdAt) {
+            const d = new Date(row.createdAt);
+            when = Number.isNaN(d.getTime()) ? "—" : d.toLocaleString();
+          }
+          return `
+        <tr>
+          <td>${escapeHTML(row.studentName || "")}</td>
+          <td>${escapeHTML(row.batch || "")}</td>
+          <td>${escapeHTML(row.testName || "")}</td>
+          <td>${escapeHTML(row.subject || "")}</td>
+          <td><span class="${getStatusChipClass(Number(row.score || 0))}">${escapeHTML(scoreLabel)}</span></td>
+          <td>${escapeHTML(frac)}</td>
+          <td>${escapeHTML(when)}</td>
+        </tr>
+      `;
+        })
+        .join("")
+    : `<tr><td colspan="7">${renderEmptyCard("No mock test results yet", "When assigned students submit mocks, each attempt appears here with score and timing.")}</td></tr>`;
 }
 
 function renderCommunications() {
@@ -418,25 +451,6 @@ function renderCommunications() {
     : renderEmptyCard("No messages posted yet", "Announcements, discussion starters, and direct notices will appear here after you send them.");
 }
 
-function renderAlerts() {
-  const items = state.workspace.alerts || [];
-  $("#alertList").innerHTML = items.length
-    ? items
-        .map(
-          (item) => `
-        <div class="list-item">
-          <div>
-            <h4>${escapeHTML(item.title)}</h4>
-            <span>${escapeHTML(item.note)}</span>
-          </div>
-          <span class="chip ${item.level === "urgent" ? "red" : "blue"}">${item.level === "urgent" ? "Urgent" : "Info"}</span>
-        </div>
-      `
-        )
-        .join("")
-    : renderEmptyCard("No active alerts", "Submission events, student questions, and exam reminders will show up here.");
-}
-
 function renderAll() {
   renderWorkspaceOverview();
   renderStats();
@@ -446,8 +460,8 @@ function renderAll() {
   renderExams();
   renderStudents();
   renderAnalytics();
+  renderMockTestResults();
   renderCommunications();
-  renderAlerts();
 }
 
 async function submitForm(button, task) {
@@ -923,45 +937,47 @@ function bindEvents() {
 function bindSectionNav() {
   const sectionLinks = Array.from(document.querySelectorAll('a[href^="#"]'));
   const navItems = Array.from(document.querySelectorAll('.nav-item[href^="#"]'));
+  const sections = Array.from(document.querySelectorAll(".workspace-section"));
+
+  function activateSection(targetId, { updateHash = false } = {}) {
+    if (!targetId) return false;
+    const targetSection = document.getElementById(targetId);
+    if (!targetSection) return false;
+
+    sections.forEach((section) => {
+      section.classList.toggle("active", section.id === targetId);
+    });
+
+    navItems.forEach((navItem) => {
+      navItem.classList.toggle("active", navItem.getAttribute("href") === `#${targetId}`);
+    });
+
+    if (updateHash) {
+      window.location.hash = targetId;
+    }
+
+    return true;
+  }
 
   sectionLinks.forEach((item) => {
-    item.addEventListener('click', (event) => {
+    item.addEventListener("click", (event) => {
       event.preventDefault();
-      const targetId = item.getAttribute('href').substring(1); // Remove the '#'
-      const targetSection = document.getElementById(targetId);
-
-      if (targetSection) {
-        // Hide all sections
-        document.querySelectorAll('.workspace-section').forEach(section => {
-          section.classList.remove('active');
-        });
-
-        // Show the target section
-        targetSection.classList.add('active');
-
-        // Update active nav item only for sidebar links
-        navItems.forEach(navItem => navItem.classList.remove('active'));
-        if (item.classList.contains('nav-item')) {
-          item.classList.add('active');
-        } else {
-          const matchingNav = navItems.find(navItem => navItem.getAttribute('href') === `#${targetId}`);
-          if (matchingNav) {
-            matchingNav.classList.add('active');
-          }
-        }
-      }
+      const targetId = item.getAttribute("href").substring(1);
+      activateSection(targetId, { updateHash: true });
     });
   });
 
-  // Set overview as default active section
-  const overviewSection = document.getElementById('overviewSection');
-  if (overviewSection) {
-    overviewSection.classList.add('active');
+  const initialHash = String(window.location.hash || "").replace(/^#/, "");
+  if (!activateSection(initialHash)) {
+    activateSection("overviewSection");
   }
-  const overviewNav = navItems.find(item => item.getAttribute('href') === '#overviewSection');
-  if (overviewNav) {
-    overviewNav.classList.add('active');
-  }
+
+  window.addEventListener("hashchange", () => {
+    const nextHash = String(window.location.hash || "").replace(/^#/, "");
+    if (!activateSection(nextHash) && !nextHash) {
+      activateSection("overviewSection");
+    }
+  });
 }
 
 document.addEventListener("DOMContentLoaded", async () => {

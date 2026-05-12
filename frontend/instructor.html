@@ -33,7 +33,8 @@
           <a class="nav-item" href="#studentsSection">Students</a>
           <a class="nav-item" href="#resultsSection">Results & Analytics</a>
           <a class="nav-item" href="#communicationSection">Communication</a>
-          <a class="nav-item" href="#alertsSection">Alerts</a>
+          <a class="nav-item" href="#reportBugSection">Report a bug</a>
+          <a class="nav-item" href="instructor-profile.html">Profile</a>
         </div>
       </aside>
 
@@ -60,24 +61,6 @@
 
             <div class="workspace-banner" id="workspaceBanner" role="status" aria-live="polite"></div>
 
-            <section class="workspace-band" aria-label="Instructor overview">
-              <div class="workspace-card workspace-card-highlight">
-                <div>
-                  <p class="workspace-eyebrow">Today</p>
-                  <h2 id="workspaceHeadline">Workspace loading</h2>
-                  <p id="workspaceSummary">Pulling the latest courses, exams, and student updates for this instructor.</p>
-                </div>
-                <div class="workspace-meta">
-                  <span class="workspace-pill" id="nextExamPill">No exam data yet</span>
-                  <span class="workspace-pill" id="attentionPill">No alerts yet</span>
-                </div>
-              </div>
-              <div class="workspace-card workspace-card-side">
-                <h2>Needs attention</h2>
-                <div class="attention-list" id="attentionList"></div>
-              </div>
-            </section>
-
             <div class="stat-row">
               <div class="stat-card highlight">
                 <p class="s-label">Active Courses</p>
@@ -95,11 +78,29 @@
                 <p class="s-sub">Across assigned batches</p>
               </div>
               <div class="stat-card">
-                <p class="s-label">Average Batch Score</p>
+                <p class="s-label">Avg mock score (roster)</p>
                 <p class="s-val" id="batchAverageScore">0%</p>
                 <p class="s-sub">Auto + manual grading combined</p>
               </div>
             </div>
+
+            <section class="workspace-band" aria-label="Instructor overview">
+              <div class="workspace-card workspace-card-highlight">
+                <div>
+                  <p class="workspace-eyebrow">Today</p>
+                  <h2 id="workspaceHeadline">Workspace loading</h2>
+                  <p id="workspaceSummary">Pulling the latest courses, exams, and student updates for this instructor.</p>
+                </div>
+                <div class="workspace-meta">
+                  <span class="workspace-pill" id="nextExamPill">No exam data yet</span>
+                  <span class="workspace-pill" id="attentionPill">No drafts pending</span>
+                </div>
+              </div>
+              <div class="workspace-card workspace-card-side">
+                <h2>Needs attention</h2>
+                <div class="attention-list" id="attentionList"></div>
+              </div>
+            </section>
           </div>
 
           <div class="panel-grid panel-grid-spaced instructor-grid">
@@ -108,7 +109,7 @@
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Course & content</h2>
-                  <p>Create subjects, upload resources, write lesson notes, and post assignments.</p>
+                  <p>Create subjects, upload resources, and write lesson notes.</p>
                 </div>
                 <span class="panel-kicker">Resources</span>
               </div>
@@ -122,11 +123,11 @@
                   <label for="contentType">Content Type</label>
                   <select id="contentType" name="contentType" required>
                     <option value="">Select type</option>
+                    <option value="Question Bank">Question Bank Link</option>
                     <option value="PDF">PDF</option>
                     <option value="Video">Video</option>
                     <option value="Slides">Slides</option>
                     <option value="Notes">Notes</option>
-                    <option value="Assignment">Assignment</option>
                     <option value="Announcement">Announcement</option>
                     <option value="Lesson Summary">Lesson Summary</option>
                   </select>
@@ -356,7 +357,7 @@
                       <th>Student</th>
                       <th>Batch</th>
                       <th>Progress</th>
-                      <th>Latest Score</th>
+                      <th>Mock avg %</th>
                       <th>Profile Note</th>
                     </tr>
                   </thead>
@@ -371,24 +372,53 @@
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Results & analytics</h2>
-                  <p>View auto-graded score distribution and course-wise student performance in real time.</p>
+                  <p>
+                    Mock test outcomes for students assigned to you: distribution by average mock score, subject
+                    summaries, and each completed attempt below.
+                  </p>
                 </div>
                 <span class="panel-kicker">Insights</span>
               </div>
 
               <div class="analytics-grid">
                 <div class="analytics-card">
-                  <h3>Score distribution</h3>
+                  <h3>Mock score distribution</h3>
+                  <p class="s-sub" style="margin: 0 0 0.75rem">By each student’s average mock score across attempts.</p>
                   <div class="list compact-list" id="distributionList"></div>
                 </div>
                 <div class="analytics-card">
-                  <h3>Course performance</h3>
+                  <h3>Mock performance by subject</h3>
+                  <p class="s-sub" style="margin: 0 0 0.75rem">Aggregates only mock test attempts.</p>
                   <div class="list compact-list" id="coursePerformanceList"></div>
                 </div>
                 <div class="analytics-card">
-                  <h3>Course pass rates</h3>
+                  <h3>Mock pass rates by subject</h3>
+                  <p class="s-sub" style="margin: 0 0 0.75rem">Pass threshold: 50% on each attempt.</p>
                   <div class="list compact-list" id="passRateList"></div>
                 </div>
+              </div>
+
+              <div class="panel-header" style="margin-top: 1.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border, #e2e8f0)">
+                <div class="panel-title-group">
+                  <h2 style="font-size: 1.15rem">Recent mock test results</h2>
+                  <p>Latest mock attempts from your assigned students (newest first).</p>
+                </div>
+              </div>
+              <div class="table-wrap" style="margin-top: 0.75rem">
+                <table class="marks-table">
+                  <thead>
+                    <tr>
+                      <th>Student</th>
+                      <th>Batch</th>
+                      <th>Test</th>
+                      <th>Subject</th>
+                      <th>Score %</th>
+                      <th>Correct / total</th>
+                      <th>Completed</th>
+                    </tr>
+                  </thead>
+                  <tbody id="mockTestResultsBody"></tbody>
+                </table>
               </div>
             </section>
           </div>
@@ -444,17 +474,40 @@
             </section>
           </div>
 
-          <div class="workspace-section" id="alertsSection">
+          <div class="workspace-section" id="reportBugSection">
             <section class="panel">
               <div class="panel-header">
                 <div class="panel-title-group">
-                  <h2>Instructor alerts</h2>
-                  <p>Incoming events for submissions, exam starts, violations, and student questions.</p>
+                  <h2>Report a platform bug</h2>
+                  <p>
+                    Students and instructors can flag issues here. Submissions appear in the admin
+                    <strong>Reports</strong> queue for review.
+                  </p>
                 </div>
-                <span class="panel-kicker">Activity</span>
+                <span class="panel-kicker">Help</span>
               </div>
-
-              <div class="list compact-list" id="alertList"></div>
+              <div class="workspace-banner" data-bug-report-status role="status" aria-live="polite"></div>
+              <form data-edumate-bug-report-form class="form-grid">
+                <div class="form-group form-group-full">
+                  <label for="bugReportTitle">Title</label>
+                  <input id="bugReportTitle" name="title" type="text" maxlength="200" required placeholder="Short summary of the issue" />
+                </div>
+                <div class="form-group form-group-full">
+                  <label for="bugReportDescription">Details</label>
+                  <textarea id="bugReportDescription" name="description" rows="4" required placeholder="Steps to reproduce, expected vs actual behavior, browser/device if relevant."></textarea>
+                </div>
+                <div class="form-group">
+                  <label for="bugReportPriority">Priority</label>
+                  <select id="bugReportPriority" name="priority">
+                    <option value="low">Low</option>
+                    <option value="medium" selected>Medium</option>
+                    <option value="high">High</option>
+                  </select>
+                </div>
+                <div class="form-footer form-group-full">
+                  <button class="btn btn-primary" type="submit">Submit report</button>
+                </div>
+              </form>
             </section>
           </div>
           </div>
@@ -463,6 +516,7 @@
     </div>
 
     <script src="shared.js"></script>
+    <script src="report-bug.js"></script>
     <script src="instructor.js"></script>
   </body>
 </html>

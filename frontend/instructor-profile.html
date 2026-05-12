@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Instructor Profile - EduMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="shared.css" />
+    <link rel="stylesheet" href="instructor.css" />
+    <link rel="stylesheet" href="student.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <span class="logo-text">Edu<span>Mate</span></span>
+        </div>
+
+        <div class="nav-section">
+          <p class="nav-label">Instructor</p>
+          <a class="nav-item" href="instructor.html#overviewSection">Overview</a>
+          <a class="nav-item" href="instructor.html#coursesSection">Courses</a>
+          <a class="nav-item" href="instructor.html#examSection">Exams & Mock Tests</a>
+          <a class="nav-item" href="instructor.html#studentsSection">Students</a>
+          <a class="nav-item" href="instructor.html#resultsSection">Results & Analytics</a>
+          <a class="nav-item" href="instructor.html#communicationSection">Communication</a>
+          <a class="nav-item" href="instructor.html#reportBugSection">Report a bug</a>
+          <a class="nav-item active" href="instructor-profile.html">Profile</a>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <span class="topbar-title">Instructor Profile</span>
+          <div class="topbar-right">
+            <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="page-header">
+            <h1 id="profileHeading">My Profile</h1>
+            <p>View your instructor account details and change your password anytime.</p>
+          </div>
+
+          <div class="profile-grid">
+            <section class="panel profile-panel">
+              <h2>Account Details</h2>
+              <p>Your profile info from the instructor account.</p>
+              <div id="profileStatus" class="profile-status" role="status" aria-live="polite"></div>
+              <form id="profileForm" class="profile-form">
+                <label class="profile-field">
+                  <span>Full Name</span>
+                  <input type="text" name="fullName" id="profileFullName" required />
+                </label>
+                <label class="profile-field">
+                  <span>Email</span>
+                  <input type="email" name="email" id="profileEmail" disabled />
+                </label>
+                <label class="profile-field">
+                  <span>Phone Number</span>
+                  <input type="tel" name="phone" id="profilePhone" placeholder="01XXXXXXXXX" inputmode="tel" />
+                </label>
+                <label class="profile-field">
+                  <span>Password</span>
+                  <input type="text" value="********" disabled />
+                </label>
+                <p class="s-sub">Updating your profile keeps your contact info current for batches, notices, and approvals.</p>
+                <button type="submit" class="btn btn-primary" id="profileSaveBtn">Save Profile</button>
+              </form>
+            </section>
+
+            <section class="panel profile-panel">
+              <h2>Reset Password</h2>
+              <p>For security, your current password is never shown. Set a new one here.</p>
+              <div id="passwordStatus" class="profile-status" role="status" aria-live="polite"></div>
+              <form id="passwordForm" class="profile-form">
+                <label class="profile-field">
+                  <span>Current Password</span>
+                  <input type="password" name="currentPassword" id="currentPassword" minlength="8" required />
+                </label>
+                <label class="profile-field">
+                  <span>New Password</span>
+                  <input type="password" name="newPassword" id="newPassword" minlength="8" required />
+                </label>
+                <label class="profile-field">
+                  <span>Confirm New Password</span>
+                  <input type="password" name="confirmPassword" id="confirmPassword" minlength="8" required />
+                </label>
+                <button type="submit" class="btn btn-primary" id="passwordSaveBtn">Reset Password</button>
+              </form>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="instructor-profile.js"></script>
+  </body>
+</html>

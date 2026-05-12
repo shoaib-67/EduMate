@@ -68,6 +68,10 @@
     return getStoredUser()?.id || null;
   }
 
+  function getInstructorId() {
+    return getStoredUser()?.id || null;
+  }
+
   function escapeHTML(value) {
     return String(value ?? "")
       .replace(/&/g, "&amp;")
@@ -149,6 +153,7 @@
     requireRole,
     setupLogoutHandlers,
     getStudentId,
+    getInstructorId,
     escapeHTML,
     enhanceResponsiveTables,
     setupCommonUiEnhancements,

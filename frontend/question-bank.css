@@ -1,18 +1,177 @@
-.bank-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
-  gap: 1.25rem;
+.page-header h1 {
+  font-family: "Playfair Display", serif;
 }
 
-.bank-card {
-  background: #ffffff;
+.bank-hero {
+  position: relative;
+  background: linear-gradient(135deg, rgba(229, 245, 255, 0.9), rgba(247, 250, 252, 0.95));
+  border: 1px solid rgba(214, 226, 238, 0.9);
+  border-radius: 18px;
+  padding: 1.6rem 1.8rem;
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 0.8fr);
+  gap: 1.6rem;
+  overflow: hidden;
+  box-shadow: var(--shadow-panel);
+  margin-bottom: 1.6rem;
+}
+
+.bank-hero::before,
+.bank-hero::after {
+  content: "";
+  position: absolute;
+  border-radius: 999px;
+  opacity: 0.6;
+  filter: blur(0px);
+}
+
+.bank-hero::before {
+  width: 240px;
+  height: 240px;
+  background: radial-gradient(circle, rgba(12, 122, 167, 0.18), rgba(12, 122, 167, 0));
+  top: -80px;
+  right: 140px;
+  animation: floatOrb 12s ease-in-out infinite;
+}
+
+.bank-hero::after {
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(31, 119, 182, 0.16), rgba(31, 119, 182, 0));
+  bottom: -100px;
+  left: 80px;
+  animation: floatOrb 14s ease-in-out infinite;
+}
+
+.bank-hero-copy {
+  position: relative;
+  z-index: 1;
+}
+
+.eyebrow {
+  text-transform: uppercase;
+  letter-spacing: 0.2em;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--primary-dark);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid rgba(12, 122, 167, 0.16);
+}
+
+.bank-hero h2 {
+  font-size: 28px;
+  color: #12345a;
+  margin: 12px 0 8px;
+  font-family: "Playfair Display", serif;
+}
+
+.bank-hero p {
+  color: var(--muted);
+  max-width: 520px;
+}
+
+.hero-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.pill {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid rgba(214, 226, 238, 0.9);
+  font-size: 12px;
+  font-weight: 600;
+  color: #1b3f5f;
+}
+
+.bank-hero-card {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.hero-card {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 16px;
+  padding: 1.2rem 1.3rem;
   border: 1px solid rgba(214, 226, 238, 0.95);
-  border-radius: var(--radius);
-  padding: 1.25rem;
-  min-height: 225px;
+  box-shadow: 0 16px 30px rgba(18, 37, 63, 0.08);
   display: flex;
   flex-direction: column;
   gap: 10px;
+}
+
+.hero-card-title {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+  font-weight: 700;
+}
+
+.hero-card-value {
+  font-size: 22px;
+  font-weight: 800;
+  color: #12345a;
+}
+
+.hero-card-sub {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.hero-card-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 6px;
+}
+
+.hero-card-label {
+  display: block;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--muted);
+}
+
+.hero-card-meta {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #173f65;
+}
+
+.bank-filters {
+  margin-bottom: 1.2rem;
+}
+
+.bank-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
+  gap: 1.3rem;
+}
+
+.bank-card {
+  position: relative;
+  background: linear-gradient(180deg, #ffffff 0%, #f7fafc 100%);
+  border: 1px solid rgba(214, 226, 238, 0.95);
+  border-radius: 16px;
+  padding: 1.3rem;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
   box-shadow: var(--shadow-soft);
   transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
 }
@@ -26,34 +185,58 @@
 }
 
 .bank-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 16px 30px rgba(18, 37, 63, 0.12);
-  border-color: #b8d8ee;
+  transform: translateY(-4px);
+  box-shadow: 0 18px 34px rgba(18, 37, 63, 0.14);
+  border-color: rgba(12, 122, 167, 0.35);
 }
 
 .bank-card h3 {
-  font-size: 16px;
-  color: #173f65;
+  font-size: 17px;
+  color: #113a5f;
 }
 
 .bank-card p {
-  font-size: 13px;
+  font-size: 13.5px;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.bank-card .chip {
+  font-weight: 600;
 }
 
 .no-bank-message {
   grid-column: 1 / -1;
   font-size: 14px;
   color: var(--muted);
-  background: #ffffff;
+  background: rgba(255, 255, 255, 0.9);
   border: 1px dashed var(--border);
-  border-radius: var(--radius);
-  padding: 1rem;
+  border-radius: 14px;
+  padding: 1.1rem 1.2rem;
+  text-align: center;
 }
 
 @media (max-width: 520px) {
+  .bank-hero {
+    grid-template-columns: 1fr;
+    padding: 1.2rem 1.3rem;
+  }
+
+  .bank-hero h2 {
+    font-size: 22px;
+  }
+
   .bank-card {
     min-height: auto;
+  }
+}
+
+@keyframes floatOrb {
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(12px);
   }
 }

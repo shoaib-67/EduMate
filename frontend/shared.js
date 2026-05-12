@@ -2,26 +2,88 @@
   const API_BASE_URL = "http://localhost:5000/api";
   const STORAGE_KEY = "edumateCurrentUser";
   const LEGACY_STORAGE_KEY = "user";
+  const IS_FILE_ORIGIN = window.location.protocol === "file:" || window.location.origin === "null";
 
-  function getStoredUser() {
+  function readStorageItem(key) {
     try {
-      return JSON.parse(
-        localStorage.getItem(STORAGE_KEY) || localStorage.getItem(LEGACY_STORAGE_KEY) || "null"
-      );
+      return localStorage.getItem(key);
     } catch {
       return null;
     }
   }
 
+  function writeStorageItem(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch {
+      // Ignore storage failures (e.g., file:// origin or privacy mode).
+    }
+  }
+
+  function removeStorageItem(key) {
+    try {
+      localStorage.removeItem(key);
+    } catch {
+      // Ignore storage failures.
+    }
+  }
+
+  function readWindowNameUser() {
+    try {
+      return JSON.parse(window.name || "null");
+    } catch {
+      return null;
+    }
+  }
+
+  function writeWindowNameUser(user) {
+    try {
+      window.name = JSON.stringify(user || {});
+    } catch {
+      // Ignore write failures.
+    }
+  }
+
+  function clearWindowNameUser() {
+    try {
+      window.name = "";
+    } catch {
+      // Ignore clear failures.
+    }
+  }
+
+  function getStoredUser() {
+    try {
+      const serialized = readStorageItem(STORAGE_KEY) || readStorageItem(LEGACY_STORAGE_KEY);
+      if (serialized) {
+        return JSON.parse(serialized);
+      }
+
+      if (IS_FILE_ORIGIN) {
+        return readWindowNameUser();
+      }
+
+      return null;
+    } catch {
+      return IS_FILE_ORIGIN ? readWindowNameUser() : null;
+    }
+  }
+
   function setStoredUser(user) {
     const serializedUser = JSON.stringify(user || {});
-    localStorage.setItem(STORAGE_KEY, serializedUser);
-    localStorage.setItem(LEGACY_STORAGE_KEY, serializedUser);
+    writeStorageItem(STORAGE_KEY, serializedUser);
+    writeStorageItem(LEGACY_STORAGE_KEY, serializedUser);
+    if (IS_FILE_ORIGIN) {
+      writeWindowNameUser(user);
+    }
   }
 
   function clearStoredUser() {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(LEGACY_STORAGE_KEY);
+    removeStorageItem(STORAGE_KEY);
+    removeStorageItem(LEGACY_STORAGE_KEY);
+    if (IS_FILE_ORIGIN) {
+      clearWindowNameUser();
+    }
   }
 
   function getUserRole(user = getStoredUser()) {

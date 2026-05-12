@@ -53,7 +53,11 @@ if (adminLoginForm) {
         return;
       }
 
-      localStorage.setItem("edumateCurrentUser", JSON.stringify(payload.user || {}));
+      if (window.EduMateShared?.setStoredUser) {
+        window.EduMateShared.setStoredUser(payload.user || {});
+      } else {
+        localStorage.setItem("edumateCurrentUser", JSON.stringify(payload.user || {}));
+      }
       showAdminStatus("Login successful. Opening the admin dashboard.", "success");
       window.location.href = "admin.html";
     } catch (_error) {

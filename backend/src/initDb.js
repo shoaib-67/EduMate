@@ -1,5 +1,6 @@
 const bcrypt = require("bcryptjs");
 const { getPool } = require("./db");
+const DEMO_SEEDING_ENABLED = false;
 
 const roleTableConfig = [
   { tableName: "students", idColumn: "student_id" },
@@ -137,6 +138,7 @@ async function ensureReportsTable(pool) {
   await ensureColumn(pool, "reports", "category", "category VARCHAR(50) NOT NULL DEFAULT 'bug'");
   await ensureColumn(pool, "reports", "reporter_name", "reporter_name VARCHAR(100) NULL");
   await ensureColumn(pool, "reports", "reporter_email", "reporter_email VARCHAR(120) NULL");
+  await ensureColumn(pool, "reports", "reporter_role", "reporter_role VARCHAR(20) NULL");
   await ensureColumn(pool, "reports", "admin_note", "admin_note TEXT NULL");
 }
 
@@ -161,6 +163,7 @@ async function ensureStudentPerformanceTable(pool) {
     CREATE TABLE IF NOT EXISTS \`student_performance\` (
       \`performance_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
       \`student_id\` INT UNSIGNED NOT NULL,
+      \`exam_id\` INT UNSIGNED NULL,
       \`subject\` VARCHAR(100) NOT NULL,
       \`test_type\` VARCHAR(50) NOT NULL DEFAULT 'mock',
       \`score\` DECIMAL(5, 2) NOT NULL,
@@ -175,6 +178,8 @@ async function ensureStudentPerformanceTable(pool) {
       INDEX \`idx_subject\` (\`subject\`)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureColumn(pool, "student_performance", "exam_id", "exam_id INT UNSIGNED NULL");
 }
 
 async function ensureDiscussionsTable(pool) {
@@ -304,30 +309,6 @@ async function ensureExamAssignmentsTable(pool) {
       INDEX \`idx_student_exam\` (\`student_id\`, \`exam_id\`),
       FOREIGN KEY (\`exam_id\`) REFERENCES \`exam_schedules\`(\`exam_id\`) ON DELETE CASCADE,
       FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE
-    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-  `);
-}
-
-async function ensureNotificationsTable(pool) {
-  await pool.query(`
-    CREATE TABLE IF NOT EXISTS \`notifications\` (
-      \`notification_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
-      \`student_id\` INT UNSIGNED NOT NULL,
-      \`exam_id\` INT UNSIGNED NULL,
-      \`channel\` VARCHAR(20) NOT NULL DEFAULT 'in_app',
-      \`type\` VARCHAR(40) NOT NULL DEFAULT 'exam_reminder',
-      \`title\` VARCHAR(160) NOT NULL,
-      \`message\` TEXT NOT NULL,
-      \`status\` VARCHAR(20) NOT NULL DEFAULT 'unread',
-      \`scheduled_for\` DATETIME NULL,
-      \`sent_at\` DATETIME NULL,
-      \`read_at\` DATETIME NULL,
-      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      INDEX \`idx_student_status\` (\`student_id\`, \`status\`),
-      INDEX \`idx_scheduled\` (\`scheduled_for\`, \`status\`),
-      UNIQUE KEY \`unique_exam_channel_notice\` (\`student_id\`, \`exam_id\`, \`channel\`, \`title\`),
-      FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE,
-      FOREIGN KEY (\`exam_id\`) REFERENCES \`exam_schedules\`(\`exam_id\`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
 }
@@ -633,7 +614,6 @@ async function ensureSchema() {
   await ensureStudyCircleMembersTable(pool);
   await ensureExamSchedulesTable(pool);
   await ensureExamAssignmentsTable(pool);
-  await ensureNotificationsTable(pool);
   await ensureProctoringEventsTable(pool);
   await ensureInstructorCourseItemsTable(pool);
   await ensureInstructorQuestionBankTable(pool);
@@ -649,6 +629,7 @@ async function ensureSchema() {
 }
 
 async function seedDemoAccounts() {
+  if (!DEMO_SEEDING_ENABLED) return;
   const pool = getPool();
 
   const demoAccounts = [
@@ -714,6 +695,7 @@ async function seedDemoAccounts() {
 }
 
 async function seedDemoExamSchedules() {
+  if (!DEMO_SEEDING_ENABLED) return;
   const pool = getPool();
 
   const [students] = await pool.query(
@@ -845,6 +827,7 @@ async function seedDemoExamSchedules() {
 }
 
 async function seedDemoInstructorWorkspace() {
+  if (!DEMO_SEEDING_ENABLED) return;
   const pool = getPool();
   const demoStudentPassword = await bcrypt.hash("EduMate@123", 10);
   const demoStudents = [
@@ -920,7 +903,7 @@ async function seedDemoInstructorWorkspace() {
 
   const questionItems = [
     ["Physics", "MCQ", "A body starts from rest and accelerates uniformly. Which graph becomes linear?", "A) v-t | B) s-t^2 | C) a-v | D) s-v", "A"],
-    ["Biology", "Essay", "Explain the role of mitochondria in aerobic respiration.", "Long answer prompt", "ATP production, Krebs cycle linkage, membrane role"],
+    ["Biology", "MCQ", "Which organelle is known as the powerhouse of the cell?", "A) Nucleus | B) Mitochondria | C) Ribosome | D) Golgi apparatus", "B"],
   ];
   for (const item of questionItems) {
     const [existing] = await pool.query(
@@ -1135,178 +1118,11 @@ async function seedDemoInstructorWorkspace() {
 }
 
 async function seedDemoContentAndReports() {
-  const pool = getPool();
-
-  // Seed content submissions
-  const contentSubmissions = [
-    {
-      title: "Physics: Work & Energy",
-      type: "PDF",
-      courseTitle: "Engineering Physics",
-      batchName: "Engineering A",
-      description: "Comprehensive guide on work and energy concepts",
-      deadline: null,
-    },
-    {
-      title: "Math Quiz Set - Algebra",
-      type: "Quiz",
-      courseTitle: "Engineering Math",
-      batchName: "Engineering A",
-      description: "20 questions covering algebra fundamentals",
-      deadline: null,
-    },
-  ];
-
-  for (const content of contentSubmissions) {
-    await pool.query(
-      `
-      INSERT INTO \`content_submissions\` (title, type, course_title, batch_name, description, deadline, status)
-      VALUES (?, ?, ?, ?, ?, ?, 'pending')
-      ON DUPLICATE KEY UPDATE
-        title = VALUES(title)
-      `,
-      [content.title, content.type, content.courseTitle, content.batchName, content.description, content.deadline]
-    );
-  }
-
-  // Seed reports
-  const reportsList = [
-    {
-      title: "Student cannot access mock test",
-      description: "A student reported that the mock test page opens but the start button does not respond.",
-      category: "bug",
-      reporterName: "Demo Student",
-      reporterEmail: "demo@edumate.com",
-      status: "open",
-      priority: "high",
-      value: "Mock test",
-    },
-    {
-      title: "Incorrect content in chemistry worksheet",
-      description: "A content issue was reported for an instructor worksheet with mismatched answer options.",
-      category: "content",
-      reporterName: "Demo Instructor",
-      reporterEmail: "instructor@edumate.com",
-      status: "open",
-      priority: "medium",
-      value: "Worksheet",
-    },
-    {
-      title: "Account freeze request",
-      description: "A user complaint was submitted about suspicious activity from a shared account.",
-      category: "complaint",
-      reporterName: "Support Desk",
-      reporterEmail: "support@edumate.com",
-      status: "completed",
-      priority: "high",
-      value: "Account",
-    },
-  ];
-
-  await pool.query(
-    `
-    DELETE old_reports FROM \`reports\` old_reports
-    JOIN \`reports\` newer_reports
-      ON old_reports.title = newer_reports.title
-     AND old_reports.report_id < newer_reports.report_id
-    WHERE old_reports.title IN (?, ?, ?, ?, ?, ?)
-    `,
-    [
-      "Login spike review",
-      "Content approval delay",
-      "System warning alert",
-      "Student cannot access mock test",
-      "Incorrect content in chemistry worksheet",
-      "Account freeze request",
-    ]
-  );
-
-  for (const report of reportsList) {
-    const [existingReports] = await pool.query(
-      "SELECT report_id FROM `reports` WHERE title = ? LIMIT 1",
-      [report.title]
-    );
-
-    if (existingReports.length > 0) {
-      await pool.query(
-        `
-        UPDATE \`reports\`
-        SET description = ?, category = ?, reporter_name = ?, reporter_email = ?,
-            status = ?, priority = ?, value = ?
-        WHERE report_id = ?
-        `,
-        [
-          report.description,
-          report.category,
-          report.reporterName,
-          report.reporterEmail,
-          report.status,
-          report.priority,
-          report.value,
-          existingReports[0].report_id,
-        ]
-      );
-    } else {
-      await pool.query(
-        `
-        INSERT INTO \`reports\`
-          (title, description, category, reporter_name, reporter_email, status, priority, value)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        `,
-        [
-          report.title,
-          report.description,
-          report.category,
-          report.reporterName,
-          report.reporterEmail,
-          report.status,
-          report.priority,
-          report.value,
-        ]
-      );
-    }
-  }
-
-  // Seed student performance data
-  const [studentRows] = await pool.query("SELECT student_id FROM students LIMIT 1");
-  if (studentRows.length > 0) {
-    const studentId = studentRows[0].student_id;
-    
-    const performanceData = [
-      { subject: "Physics", testType: "mock", score: 84, totalQuestions: 100, correctAnswers: 84, testName: "Full Admission Mock - Set 11", rank: 42, totalParticipants: 210 },
-      { subject: "Chemistry", testType: "mock", score: 72, totalQuestions: 80, correctAnswers: 58, testName: "Chemistry Midterm", rank: 58, totalParticipants: 180 },
-      { subject: "Math", testType: "practice", score: 63, totalQuestions: 50, correctAnswers: 32, testName: "Algebra Practice Set", rank: null, totalParticipants: null },
-      { subject: "Physics", testType: "practice", score: 82, totalQuestions: 30, correctAnswers: 26, testName: "Physics Speed Drill", rank: null, totalParticipants: null },
-      { subject: "Chemistry", testType: "mock", score: 78, totalQuestions: 100, correctAnswers: 78, testName: "Chemistry Full Test", rank: 35, totalParticipants: 150 },
-      { subject: "Math", testType: "mock", score: 79, totalQuestions: 100, correctAnswers: 79, testName: "Math Practice Mock Set 4", rank: null, totalParticipants: null },
-    ];
-
-    for (const perf of performanceData) {
-      await pool.query(
-        `
-        INSERT INTO \`student_performance\` 
-        (student_id, subject, test_type, score, total_questions, correct_answers, test_name, rank, total_participants)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-        ON DUPLICATE KEY UPDATE
-          score = VALUES(score)
-        `,
-        [
-          studentId,
-          perf.subject,
-          perf.testType,
-          perf.score,
-          perf.totalQuestions,
-          perf.correctAnswers,
-          perf.testName,
-          perf.rank,
-          perf.totalParticipants,
-        ]
-      );
-    }
-  }
+  if (!DEMO_SEEDING_ENABLED) return;
 }
 
 async function seedDemoDiscussions() {
+  if (!DEMO_SEEDING_ENABLED) return;
   const pool = getPool();
   const [studentRows] = await pool.query("SELECT student_id FROM students LIMIT 1");
   if (studentRows.length === 0) return;
@@ -1355,6 +1171,7 @@ async function seedDemoDiscussions() {
 }
 
 async function seedDemoStudyCircles() {
+  if (!DEMO_SEEDING_ENABLED) return;
   const pool = getPool();
   const [studentRows] = await pool.query("SELECT student_id FROM students LIMIT 1");
   if (studentRows.length === 0) return;

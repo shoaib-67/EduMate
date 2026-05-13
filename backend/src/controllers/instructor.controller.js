@@ -2,15 +2,18 @@ const bcrypt = require("bcryptjs");
 
 const { getPool } = require("../db");
 const { sendSuccess, sendError } = require("../lib/http");
-const { parseRequiredId, parsePositiveInteger, parseQuestionIds } = require("../lib/parsers");
+const { parseRequiredId, parsePositiveInteger, parseQuestionIds, parseMcqOptions } = require("../lib/parsers");
 const {
   normalizeBatchName,
   normalizeAudienceType,
   formatAudienceLabel,
   ALL_BATCHES_LABEL,
+  deriveProgramGroup,
 } = require("../lib/audience");
-const { toDateTimeValue, padDateTimePart, formatSqlDateTime } = require("../lib/examUtils");
-const { buildInstructorWorkspace, findInstructorExamConflict } = require("../services/instructor.service");
+const { formatSqlDateTime } = require("../lib/examUtils");
+const {
+  buildInstructorWorkspace,
+} = require("../services/instructor.service");
 const { formatAccountStatus } = require("../services/admin.service");
 
 const instructorController = {
@@ -141,7 +144,6 @@ const instructorController = {
       const batchName = audienceType === "all" ? ALL_BATCHES_LABEL : rawBatchName;
       const title = String(req.body?.title || "").trim();
       const summary = String(req.body?.summary || "").trim();
-      const deadline = String(req.body?.deadline || "").trim();
       const link = String(req.body?.link || "").trim();
 
       if (!instructorId || !course || !type || !title || !summary) {
@@ -161,30 +163,80 @@ const instructorController = {
       }
 
       const pool = getPool();
-      await pool.query(
+      const [existingCourseItems] = await pool.query(
         `
-        INSERT INTO instructor_course_items
-          (instructor_id, course_title, batch_name, audience_type, content_type, title, summary, deadline, source_ref)
-        VALUES (?, ?, ?, ?, ?, ?, ?, NULLIF(?, ''), ?)
+        SELECT item_id
+        FROM instructor_course_items
+        WHERE instructor_id = ?
+          AND LOWER(TRIM(source_ref)) = LOWER(TRIM(?))
+          AND LOWER(TRIM(title)) = LOWER(TRIM(?))
+          AND LOWER(TRIM(COALESCE(batch_name, ''))) = LOWER(TRIM(COALESCE(?, '')))
+          AND LOWER(TRIM(course_title)) = LOWER(TRIM(?))
+          AND LOWER(TRIM(content_type)) = LOWER(TRIM(?))
+        LIMIT 1
         `,
-        [instructorId, course, batchName, audienceType, type, title, summary, deadline, link]
+        [instructorId, link, title, batchName, course, type]
       );
 
-      await pool.query(
+      if (existingCourseItems.length > 0) {
+        await pool.query(
+          `
+          UPDATE instructor_course_items
+          SET course_title = ?,
+              batch_name = ?,
+              audience_type = ?,
+              content_type = ?,
+              title = ?,
+              summary = ?,
+              source_ref = ?
+          WHERE item_id = ?
+          `,
+          [course, batchName, audienceType, type, title, summary, link, existingCourseItems[0].item_id]
+        );
+      } else {
+        await pool.query(
+          `
+          INSERT INTO instructor_course_items
+            (instructor_id, course_title, batch_name, audience_type, content_type, title, summary, deadline, source_ref)
+          VALUES (?, ?, ?, ?, ?, ?, ?, NULL, ?)
+          `,
+          [instructorId, course, batchName, audienceType, type, title, summary, link]
+        );
+      }
+
+      const [existingPendingSubmissions] = await pool.query(
         `
-        INSERT INTO content_submissions
-          (instructor_id, course_title, batch_name, title, type, description, deadline, status, source_ref)
-        VALUES (?, ?, ?, ?, ?, ?, NULLIF(?, ''), 'pending', ?)
+        SELECT submission_id
+        FROM content_submissions
+        WHERE instructor_id = ?
+          AND status = 'pending'
+          AND source_ref = ?
+          AND LOWER(TRIM(title)) = LOWER(TRIM(?))
+          AND LOWER(TRIM(COALESCE(batch_name, ''))) = LOWER(TRIM(COALESCE(?, '')))
+        LIMIT 1
         `,
-        [instructorId, course, batchName, title, type, summary, deadline, link]
+        [instructorId, link, title, batchName]
       );
 
-      await pool.query(
-        `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New study material uploaded', ?)`,
-        [instructorId, `${title} was uploaded for ${formatAudienceLabel(audienceType, batchName)} and sent for admin approval.`]
-      );
+      if (existingPendingSubmissions.length === 0) {
+        await pool.query(
+          `
+          INSERT INTO content_submissions
+            (instructor_id, course_title, batch_name, title, type, description, deadline, status, source_ref)
+          VALUES (?, ?, ?, ?, ?, ?, NULL, 'pending', ?)
+          `,
+          [instructorId, course, batchName, title, type, summary, link]
+        );
 
-      return sendSuccess(res, { status: 201, message: "Course content uploaded and sent for admin approval." });
+        await pool.query(
+          `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New study material uploaded', ?)`,
+          [instructorId, `${title} was uploaded for ${formatAudienceLabel(audienceType, batchName)} and sent for admin approval.`]
+        );
+
+        return sendSuccess(res, { status: 201, message: "Course content uploaded and sent for admin approval." });
+      }
+
+      return sendSuccess(res, { message: "This content is already pending admin approval." });
     } catch (error) {
       return sendError(res, { message: "Could not upload course content.", error: error.message });
     }
@@ -211,6 +263,9 @@ const instructorController = {
       if (!instructorId || !subject || !type || !text || !answerKey) {
         return sendError(res, { status: 422, message: "Subject, type, question text, and answer key are required." });
       }
+      if (questionType !== "mcq") {
+        return sendError(res, { status: 422, message: "Only MCQ questions are supported." });
+      }
       if (audienceType === "batch" && !batchName) {
         return sendError(res, { status: 422, message: "Please choose a batch for this question." });
       }
@@ -228,7 +283,7 @@ const instructorController = {
           (instructor_id, batch_name, audience_type, subject, question_type, question_text, options_text, answer_key, approval_status)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'pending')
         `,
-        [instructorId, audienceType === "all" ? null : batchName, audienceType, subject, type, text, options || null, answerKey]
+        [instructorId, audienceType === "all" ? null : batchName, audienceType, subject, "MCQ", text, options || null, answerKey]
       );
 
       const questionId = Number(result.insertId || 0);
@@ -243,7 +298,7 @@ const instructorController = {
             instructorId,
             batchName,
             `${subject} question for approval`,
-            `${type} Question`,
+            "MCQ Question",
             `Audience: ${formatAudienceLabel(audienceType, batchName)}\n${text}\n\nOptions: ${options || "N/A"}\nAnswer key: ${answerKey}`,
             `instructor_question_bank:${questionId}`,
           ]
@@ -261,6 +316,7 @@ const instructorController = {
   },
 
   createExam: async (req, res) => {
+    let connection = null;
     try {
       const instructorId = parseRequiredId(req.params.instructorId);
       const title = String(req.body?.title || "").trim();
@@ -268,18 +324,15 @@ const instructorController = {
       const audienceType = normalizeAudienceType(req.body?.audienceType || "batch");
       const rawBatchName = normalizeBatchName(req.body?.batchName);
       const batchName = audienceType === "all" ? ALL_BATCHES_LABEL : rawBatchName;
-      const accessMode = String(req.body?.accessMode || "scheduled").trim();
-      const date = String(req.body?.date || "").trim();
-      const time = String(req.body?.time || "").trim();
-      const endTimeInput = String(req.body?.endTime || "").trim();
+      const accessMode = "open_anytime";
       let duration = parsePositiveInteger(req.body?.duration);
       const negativeMarking = String(req.body?.negativeMarking || "").trim();
       const perMcqMark = Number(req.body?.perMcqMark || 0);
       const shuffleMode = String(req.body?.shuffleMode || "").trim();
       const examType = String(req.body?.examType || "").trim();
-      const publishState = String(req.body?.state || "Draft").trim();
       const rules = String(req.body?.rules || "").trim();
-      const questionIds = parseQuestionIds(req.body?.questionIds || []);
+      const submittedQuestionIds = parseQuestionIds(req.body?.questionIds || []);
+      const draftQuestionsInput = Array.isArray(req.body?.draftQuestions) ? req.body.draftQuestions : [];
 
       if (!instructorId || !title || !subject || !examType) {
         return sendError(res, { status: 422, message: "Title, subject, duration, and exam type are required." });
@@ -287,84 +340,123 @@ const instructorController = {
       if (!Number.isFinite(perMcqMark) || perMcqMark <= 0) {
         return sendError(res, { status: 422, message: "Per MCQ mark must be greater than 0." });
       }
-      if (accessMode !== "scheduled" && accessMode !== "open_anytime") {
-        return sendError(res, { status: 422, message: "Access mode must be scheduled or open_anytime." });
-      }
       if (audienceType === "batch" && !batchName) {
         return sendError(res, { status: 422, message: "Please select a target batch or choose all batches." });
       }
-      if (accessMode === "scheduled" && (!date || !time)) {
-        return sendError(res, { status: 422, message: "Scheduled exams require a date and time." });
-      }
-      if (!questionIds.length) {
+      if (!submittedQuestionIds.length && !draftQuestionsInput.length) {
         return sendError(res, { status: 422, message: "Select at least one question for the exam." });
       }
 
-      let startTime = null;
-      let endTimeDisplay = "";
-      if (accessMode === "scheduled") {
-        const startDate = toDateTimeValue(date, time);
-        if (!startDate) return sendError(res, { status: 422, message: "Invalid exam date or time." });
-        if (endTimeInput) {
-          const parsedEnd = toDateTimeValue(date, endTimeInput);
-          if (!parsedEnd) return sendError(res, { status: 422, message: "Invalid exam end time." });
-          if (parsedEnd <= startDate) parsedEnd.setDate(parsedEnd.getDate() + 1);
-          const computedDuration = Math.round((parsedEnd.getTime() - startDate.getTime()) / 60000);
-          if (!Number.isFinite(computedDuration) || computedDuration <= 0) {
-            return sendError(res, { status: 422, message: "Exam end time must be after start time." });
-          }
-          duration = computedDuration;
-        }
-        if (!duration) return sendError(res, { status: 422, message: "Duration is required." });
-        const computedEndDate = new Date(startDate.getTime() + Number(duration || 0) * 60000);
-        endTimeDisplay = `${padDateTimePart(computedEndDate.getHours())}:${padDateTimePart(computedEndDate.getMinutes())}`;
-        startTime = formatSqlDateTime(startDate);
-      } else {
-        if (!duration) return sendError(res, { status: 422, message: "Duration is required." });
-        startTime = formatSqlDateTime(new Date());
-      }
+      if (!duration) return sendError(res, { status: 422, message: "Duration is required." });
+
+      const startTimeValue = new Date();
+      const examDateLabel = startTimeValue.toISOString().slice(0, 10);
+
+      const startTime = formatSqlDateTime(startTimeValue || new Date());
 
       const pool = getPool();
-      if (accessMode === "scheduled") {
-        const conflict = await findInstructorExamConflict(pool, {
-          instructorId,
-          batchName,
-          audienceType,
-          startTime,
-          durationMinutes: duration,
-        });
-        if (conflict) {
-          return sendError(res, { status: 409, message: "A scheduled exam already overlaps this time window." });
-        }
-      }
 
       const compiledRules = [
         `Subject: ${subject}`,
         `Per MCQ Mark: ${perMcqMark}`,
-        accessMode === "scheduled" ? `End Time: ${endTimeDisplay || "-"}` : null,
         rules || null,
       ]
         .filter(Boolean)
         .join("\n");
 
-      const [insertResult] = await pool.query(
+      connection = await pool.getConnection();
+      await connection.beginTransaction();
+
+      let questionIds = [...submittedQuestionIds];
+      if (!questionIds.length && draftQuestionsInput.length) {
+        const draftQuestions = draftQuestionsInput.map((draftQuestion, index) => {
+          const questionSubject = String(draftQuestion?.subject || subject).trim();
+          const questionType = String(draftQuestion?.type || "MCQ").trim().toUpperCase();
+          const questionText = String(draftQuestion?.text || "").trim();
+          const questionAudienceType = normalizeAudienceType(draftQuestion?.audienceType || audienceType);
+          const draftBatchSource = draftQuestion?.batchName ?? (questionAudienceType === "all" ? ALL_BATCHES_LABEL : batchName);
+          const questionBatchRaw = normalizeBatchName(draftBatchSource);
+          const questionBatchName = questionAudienceType === "all" ? ALL_BATCHES_LABEL : questionBatchRaw;
+          const optionsFromArray = Array.isArray(draftQuestion?.mcqOptions)
+            ? draftQuestion.mcqOptions.map((item) => String(item || "").trim()).filter(Boolean)
+            : [];
+          const optionsFromText = parseMcqOptions(String(draftQuestion?.options || ""));
+          const normalizedOptions = optionsFromArray.length ? optionsFromArray : optionsFromText;
+          const answerKey = String(draftQuestion?.answerKey || "").trim().toUpperCase();
+
+          if (!questionSubject || !questionText || !answerKey) {
+            throw new Error(`Draft question ${index + 1} is missing subject, text, or answer key.`);
+          }
+          if (questionType !== "MCQ") {
+            throw new Error(`Draft question ${index + 1} must be MCQ.`);
+          }
+          if (questionAudienceType === "batch" && !questionBatchName) {
+            throw new Error(`Draft question ${index + 1} is missing batch.`);
+          }
+          if (normalizedOptions.length < 2) {
+            throw new Error(`Draft question ${index + 1} requires at least two options.`);
+          }
+
+          return {
+            questionSubject,
+            questionAudienceType,
+            questionBatchName,
+            questionText,
+            optionsText: JSON.stringify(normalizedOptions),
+            answerKey,
+          };
+        });
+
+        const placeholders = draftQuestions.map(() => "(?, ?, ?, ?, ?, ?, ?, ?, 'pending')").join(", ");
+        const insertParams = [];
+        draftQuestions.forEach((question) => {
+          insertParams.push(
+            instructorId,
+            question.questionAudienceType === "all" ? null : question.questionBatchName,
+            question.questionAudienceType,
+            question.questionSubject,
+            "MCQ",
+            question.questionText,
+            question.optionsText,
+            question.answerKey
+          );
+        });
+
+        const [questionInsertResult] = await connection.query(
+          `
+          INSERT INTO instructor_question_bank
+            (instructor_id, batch_name, audience_type, subject, question_type, question_text, options_text, answer_key, approval_status)
+          VALUES ${placeholders}
+          `,
+          insertParams
+        );
+
+        const firstQuestionId = Number(questionInsertResult?.insertId || 0);
+        const insertedCount = Number(questionInsertResult?.affectedRows || 0);
+        if (!Number.isInteger(firstQuestionId) || firstQuestionId <= 0 || insertedCount !== draftQuestions.length) {
+          throw new Error("Could not save draft questions for this exam.");
+        }
+        questionIds = Array.from({ length: insertedCount }, (_, index) => firstQuestionId + index);
+      }
+
+      const [insertResult] = await connection.query(
         `
         INSERT INTO instructor_exam_schedules
           (instructor_id, title, batch_name, audience_type, exam_date, start_time, duration_minutes, negative_marking, shuffle_mode, exam_type, publish_state, question_ids_json, approval_status, rules, access_mode)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'pending', ?, ?)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'approved', ?, ?)
         `,
         [
           instructorId,
           title,
           batchName,
           audienceType,
-          date || new Date().toISOString().slice(0, 10),
+          examDateLabel,
           startTime,
           duration,
           negativeMarking || null,
           shuffleMode || null,
           examType,
-          publishState,
+          "Published",
           JSON.stringify(questionIds),
           compiledRules || null,
           accessMode,
@@ -373,38 +465,125 @@ const instructorController = {
       const instructorExamId = Number(insertResult?.insertId || 0);
 
       if (instructorExamId) {
-        await pool.query(
+        const examBatchName = audienceType === "all" ? null : batchName;
+        const endTimeValue = new Date((startTimeValue || new Date()).getTime() + Number(duration || 0) * 60000);
+        const endTime = formatSqlDateTime(endTimeValue);
+
+        const [examInsertResult] = await connection.query(
           `
-          INSERT INTO content_submissions
-            (instructor_id, course_title, batch_name, title, type, description, status, source_ref)
-          VALUES (?, ?, ?, ?, 'Exam', ?, 'pending', ?)
+          INSERT INTO exam_schedules
+            (subject, exam_date, start_time, end_time, duration_minutes, batch_name, instructions, audience_type, join_window_minutes, created_by_admin_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
           [
-            instructorId,
-            subject,
-            batchName,
             title,
-            `Subject: ${subject}\nAudience: ${formatAudienceLabel(audienceType, batchName)}\nExam Type: ${examType}\nPer MCQ Mark: ${perMcqMark}\nAccess: ${
-              accessMode === "scheduled" ? `${date} ${time}${endTimeDisplay ? ` - ${endTimeDisplay}` : ""}` : "Anytime"
-            }\nDuration: ${duration} min\nQuestions: ${questionIds.length}\nRules: ${rules || "-"}`,
-            `instructor_exam_schedules:${instructorExamId}`,
+            examDateLabel,
+            startTime,
+            endTime,
+            Number(duration || 0),
+            examBatchName,
+            compiledRules || null,
+            audienceType,
+            15,
+            null,
           ]
         );
+
+        const publishedExamId = Number(examInsertResult.insertId || 0);
+
+        await connection.query(
+          `
+          UPDATE instructor_exam_schedules
+          SET approval_status = 'approved',
+              approved_at = NOW(),
+              published_exam_id = ?,
+              publish_state = 'Published'
+          WHERE instructor_exam_id = ?
+          `,
+          [publishedExamId || null, instructorExamId]
+        );
+
+        if (publishedExamId && questionIds.length) {
+          for (let index = 0; index < questionIds.length; index += 1) {
+            await connection.query(
+              `
+              INSERT IGNORE INTO exam_question_mappings (exam_id, question_id, order_index)
+              VALUES (?, ?, ?)
+              `,
+              [publishedExamId, questionIds[index], index + 1]
+            );
+          }
+
+          const placeholders = questionIds.map(() => "?").join(", ");
+          await connection.query(
+            `
+            UPDATE instructor_question_bank
+            SET approval_status = 'approved',
+                approved_at = NOW(),
+                approved_by_admin_id = NULL
+            WHERE question_id IN (${placeholders})
+            `,
+            questionIds
+          );
+        }
+
+        if (publishedExamId && audienceType === "batch") {
+          const normalizedBatch = normalizeBatchName(batchName);
+          const batchKey = String(normalizedBatch || "").trim().toLowerCase();
+          const batchGroup = deriveProgramGroup(normalizedBatch);
+          if (batchKey) {
+            const [studentRows] = await connection.query(
+              `SELECT student_id, batch_name, course_track FROM students`
+            );
+            const matchingStudents = studentRows.filter((student) => {
+              const studentBatch = String(student.batch_name || "");
+              const studentTrack = String(student.course_track || "");
+              const studentGroup = deriveProgramGroup(studentTrack) || deriveProgramGroup(studentBatch);
+              const studentGroups = new Set();
+              const combined = `${studentBatch} ${studentTrack}`.toLowerCase();
+              if (combined.includes("engineering")) studentGroups.add("engineering");
+              if (combined.includes("varsity") || combined.includes("versity")) studentGroups.add("varsity");
+              if (combined.includes("medical")) studentGroups.add("medical");
+              if (batchKey === ALL_BATCHES_LABEL.toLowerCase()) return true;
+              if (batchGroup && studentGroup) return batchGroup === studentGroup;
+              if (batchGroup && studentGroups.has(batchGroup)) return true;
+              return combined.includes(batchKey);
+            });
+
+            for (const student of matchingStudents) {
+              await connection.query(
+                `
+                INSERT IGNORE INTO exam_assignments (exam_id, student_id)
+                VALUES (?, ?)
+                `,
+                [publishedExamId, student.student_id]
+              );
+            }
+          }
+        }
       }
 
-      await pool.query(
-        `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New exam scheduled', ?)`,
+      await connection.query(
+        `INSERT INTO instructor_alerts (instructor_id, level, title, note) VALUES (?, 'info', 'New exam published', ?)`,
         [
           instructorId,
-          `${title} for ${formatAudienceLabel(audienceType, batchName)} (${
-            accessMode === "scheduled" ? date + " " + time : "Anytime"
-          }) sent for admin approval.`,
+          `${title} for ${formatAudienceLabel(audienceType, batchName)} is now open for students.`,
         ]
       );
 
-      return sendSuccess(res, { status: 201, message: "Exam created and sent for admin approval." });
+      await connection.commit();
+      return sendSuccess(res, { status: 201, message: "Exam created and published." });
     } catch (error) {
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch {
+          // Ignore rollback errors and return the original error below.
+        }
+      }
       return sendError(res, { message: "Could not create instructor exam.", error: error.message });
+    } finally {
+      if (connection) connection.release();
     }
   },
 
@@ -520,6 +699,26 @@ const instructorController = {
       }
 
       const pool = getPool();
+      const [existingPending] = await pool.query(
+        `
+        SELECT submission_id
+        FROM content_submissions
+        WHERE instructor_id = ?
+          AND status = 'pending'
+          AND type = 'Announcement'
+          AND LOWER(TRIM(title)) = LOWER(TRIM(?))
+          AND LOWER(TRIM(COALESCE(description, ''))) = LOWER(TRIM(?))
+          AND LOWER(TRIM(COALESCE(batch_name, ''))) = LOWER(TRIM(COALESCE(?, '')))
+          AND created_at >= DATE_SUB(NOW(), INTERVAL 10 MINUTE)
+        LIMIT 1
+        `,
+        [instructorId, title, content, batchName]
+      );
+
+      if (existingPending.length > 0) {
+        return sendSuccess(res, { message: "This announcement is already pending admin approval." });
+      }
+
       await pool.query(
         `
         INSERT INTO content_submissions

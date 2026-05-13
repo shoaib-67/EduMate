@@ -1,4 +1,4 @@
-const { API_BASE_URL, getStoredUser, getStudentId, escapeHTML, requireRole, setupLogoutHandlers } = window.EduMateShared;
+const { API_BASE_URL, getStoredUser, getStudentId, escapeHTML, requireRole, setupLogoutHandlers, setupTabSync } = window.EduMateShared;
 
 function toDisplayPercent(value) {
   const num = Number(value);
@@ -256,65 +256,17 @@ async function loadAnnouncements() {
   }
 }
 
-async function loadBellNotifications() {
-  const studentId = getStudentId();
-  if (!studentId) return;
-
-  try {
-    const response = await fetch(`${API_BASE_URL}/student/${studentId}/notifications`);
-    const payload = await response.json();
-    if (!response.ok || !payload.success) return;
-
-    const items = payload.data?.items || [];
-    const unreadCount = Number(payload.data?.unreadCount || 0);
-    const bell = document.querySelector(".notif-btn");
-    const dot = document.querySelector(".notif-dot");
-    if (!bell) return;
-
-    let panel = bell.querySelector(".notif-panel");
-    if (!panel) {
-      panel = document.createElement("div");
-      panel.className = "notif-panel";
-      panel.innerHTML = `<h3>Notifications</h3><div class="notif-panel-list"></div>`;
-      bell.appendChild(panel);
-
-      bell.addEventListener("click", (event) => {
-        event.stopPropagation();
-        panel.classList.toggle("is-open");
-      });
-      document.addEventListener("click", () => panel.classList.remove("is-open"));
-    }
-
-    const list = panel.querySelector(".notif-panel-list");
-    list.innerHTML = items.length
-      ? items
-          .map(
-            (item) => `
-              <div class="list-item">
-                <div>
-                  <h4>${escapeHTML(item.title)}</h4>
-                  <span>${escapeHTML(item.message)}</span>
-                </div>
-              </div>
-            `
-          )
-          .join("")
-      : `<div class="empty-state">No notifications yet.</div>`;
-
-    if (dot) {
-      dot.style.display = unreadCount > 0 ? "block" : "none";
-    }
-  } catch (error) {
-    console.error("Error loading notifications:", error);
-  }
-}
-
 document.addEventListener("DOMContentLoaded", () => {
   if (!requireRole("student")) return;
   setupLogoutHandlers();
-  updatePageHeader();
-  loadDashboardStats();
-  loadUpcomingExams();
-  loadAnnouncements();
-  loadBellNotifications();
+
+  const refreshStudentDashboard = () => {
+    updatePageHeader();
+    loadDashboardStats();
+    loadUpcomingExams();
+    loadAnnouncements();
+  };
+
+  refreshStudentDashboard();
+  setupTabSync(refreshStudentDashboard, { minIntervalMs: 1000 });
 });

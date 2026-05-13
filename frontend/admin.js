@@ -4,6 +4,7 @@ const {
   requireRole,
   setupLogoutHandlers: setupSharedLogoutHandlers,
   escapeHTML,
+  setupTabSync,
 } = window.EduMateShared;
 
 const isAdminUser = (user) => String(user?.role || "").toLowerCase() === "admin";
@@ -551,7 +552,9 @@ const renderContent = () => {
   if (!contentList) return;
   
   // Filter to show only pending content
-  const pendingItems = pendingContent.filter((item) => item.status === "pending");
+  const pendingItems = pendingContent.filter(
+    (item) => String(item.status || "").trim().toLowerCase() === "pending"
+  );
   const query = filters.content.query.trim().toLowerCase();
   const typeFilter = filters.content.type;
   const filteredItems = pendingItems.filter((item) => {
@@ -1024,6 +1027,7 @@ const startStatsAutoRefresh = () => {
 const stopStatsAutoRefresh = () => {
   if (statsRefreshInterval) {
     clearInterval(statsRefreshInterval);
+    statsRefreshInterval = null;
   }
 };
 
@@ -1099,6 +1103,10 @@ const setupFilters = () => {
 // Load all data on page load
 async function initAdminDashboard() {
   if (!requireAdminAccess()) return;
+
+  const refreshAdminDashboard = async () => {
+    await Promise.allSettled([loadUsers(), loadContent(), loadReports(), loadActivityLogs(), updateStats()]);
+  };
 
   // Get element references after DOM is ready
   const userTableBody = document.getElementById("userTableBody");
@@ -1214,7 +1222,9 @@ async function initAdminDashboard() {
       approveAll.disabled = true;
       try {
         // Approve all pending content
-        const pendingItems = pendingContent.filter((item) => item.status === "pending");
+        const pendingItems = pendingContent.filter(
+          (item) => String(item.status || "").trim().toLowerCase() === "pending"
+        );
         for (const item of pendingItems) {
           try {
             await fetch(`${API_BASE_URL}/admin/content/${item.id}/approve`, {
@@ -1239,11 +1249,12 @@ async function initAdminDashboard() {
     });
   }
   
-  await loadUsers();
-  await loadContent();
-  await loadReports();
-  await loadActivityLogs();
+  await refreshAdminDashboard();
   startStatsAutoRefresh();
+  setupTabSync(async () => {
+    startStatsAutoRefresh();
+    await refreshAdminDashboard();
+  }, { minIntervalMs: 1000 });
   
   // Handle page visibility changes
   document.addEventListener("visibilitychange", () => {

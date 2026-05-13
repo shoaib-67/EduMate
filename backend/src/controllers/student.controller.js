@@ -142,15 +142,23 @@ const studentController = {
         `
         SELECT DISTINCT
           e.*,
+          e.subject AS title,
           COUNT(DISTINCT ea2.student_id) AS assigned_student_count,
+          COUNT(DISTINCT eqm.question_id) AS question_count,
+          COUNT(DISTINCT sp.performance_id) AS attempt_count,
           MAX(CASE WHEN ea.student_id = ? THEN 1 ELSE 0 END) AS is_assigned_to_student
         FROM exam_schedules e
         LEFT JOIN exam_assignments ea ON ea.exam_id = e.exam_id
         LEFT JOIN exam_assignments ea2 ON ea2.exam_id = e.exam_id
+        LEFT JOIN exam_question_mappings eqm ON eqm.exam_id = e.exam_id
+        LEFT JOIN student_performance sp
+          ON sp.exam_id = e.exam_id
+          AND sp.student_id = ?
+          AND LOWER(COALESCE(sp.test_type, '')) = 'mock'
         GROUP BY e.exam_id
         ORDER BY e.start_time ASC
         `,
-        [studentId]
+        [studentId, studentId]
       );
 
       const now = new Date();
@@ -204,6 +212,24 @@ const studentController = {
       const studentProgramGroup = resolveStudentProgramGroup(student);
 
       if (examId) {
+        const [attemptRows] = await pool.query(
+          `
+          SELECT COUNT(*) AS attempt_count
+          FROM student_performance
+          WHERE student_id = ?
+            AND exam_id = ?
+            AND LOWER(COALESCE(test_type, '')) = 'mock'
+          `,
+          [studentId, examId]
+        );
+        const usedAttempts = Number(attemptRows[0]?.attempt_count || 0);
+        if (usedAttempts >= 3) {
+          return sendError(res, {
+            status: 403,
+            message: "You have already used all 3 attempts for this mock test.",
+          });
+        }
+
         const [examRows] = await pool.query(
           `
           SELECT
@@ -357,62 +383,6 @@ const studentController = {
     }
   },
 
-  notifications: async (req, res) => {
-    try {
-      const { studentId } = req.params;
-      const pool = getPool();
-
-      const [notifications] = await pool.query(
-        `
-        SELECT notification_id, exam_id, channel, type, title, message, status, scheduled_for, sent_at, created_at
-        FROM notifications
-        WHERE student_id = ? AND channel = 'in_app'
-        ORDER BY COALESCE(sent_at, created_at) DESC
-        LIMIT 15
-        `,
-        [studentId]
-      );
-
-      const [summaryRows] = await pool.query(
-        `
-        SELECT COUNT(*) AS unread_count
-        FROM notifications
-        WHERE student_id = ? AND channel = 'in_app' AND status = 'unread'
-        `,
-        [studentId]
-      );
-
-      return res.status(200).json({
-        success: true,
-        data: {
-          unreadCount: Number(summaryRows[0]?.unread_count || 0),
-          items: notifications,
-        },
-      });
-    } catch (error) {
-      return res.status(500).json({ success: false, message: "Could not fetch notifications.", error: error.message });
-    }
-  },
-
-  markNotificationRead: async (req, res) => {
-    try {
-      const { studentId, notificationId } = req.params;
-      const pool = getPool();
-      await pool.query(
-        `
-        UPDATE notifications
-        SET status = 'read', read_at = NOW()
-        WHERE student_id = ? AND notification_id = ? AND channel = 'in_app'
-        `,
-        [studentId, notificationId]
-      );
-
-      return res.status(200).json({ success: true, message: "Notification marked as read." });
-    } catch (error) {
-      return res.status(500).json({ success: false, message: "Could not update notification.", error: error.message });
-    }
-  },
-
   dashboard: async (req, res) => {
     // Keep the existing SQL/shape by delegating to legacy logic via inline copy in later pass.
     // For now, re-use the exact query blocks from the original server file.
@@ -549,19 +519,25 @@ const studentController = {
           cs.created_at AS createdAt
         FROM content_submissions cs
         WHERE cs.status = 'approved'
+          AND LOWER(COALESCE(cs.type, '')) <> 'exam'
+          AND LOWER(COALESCE(cs.type, '')) <> 'announcement'
+          AND LOWER(COALESCE(cs.type, '')) <> 'assignment'
         ORDER BY cs.created_at DESC
         LIMIT 200
         `
       );
 
-      const visible = rows.filter((item) =>
-        isAudienceVisibleToStudent({
-          audienceType: "batch",
-          batchName: item.batchName || item.courseTitle || "",
-          studentBatchName: student.batch_name,
-          studentProgramGroup,
-        })
-      );
+      const hasAudienceInfo = Boolean(student.batch_name || student.course_track || studentProgramGroup);
+      const visible = hasAudienceInfo
+        ? rows.filter((item) =>
+            isAudienceVisibleToStudent({
+              audienceType: "batch",
+              batchName: item.batchName || item.courseTitle || "",
+              studentBatchName: student.batch_name,
+              studentProgramGroup,
+            })
+          )
+        : rows;
       return res.status(200).json({ success: true, data: visible });
     } catch (error) {
       return res.status(500).json({ success: false, message: "Could not fetch courses.", error: error.message });
@@ -575,6 +551,7 @@ const studentController = {
 
       const subject = String(req.body?.subject || "").trim();
       const testType = String(req.body?.testType || "").trim();
+      const requestedExamId = parseRequiredId(req.body?.examId);
       const score = Number(req.body?.score || 0);
       const totalQuestions = Number(req.body?.totalQuestions || 0);
       const correctAnswers = Number(req.body?.correctAnswers || 0);
@@ -587,13 +564,19 @@ const studentController = {
       }
 
       const pool = getPool();
+      let examId = null;
+      if (requestedExamId) {
+        const [examRows] = await pool.query(`SELECT exam_id FROM exam_schedules WHERE exam_id = ? LIMIT 1`, [requestedExamId]);
+        examId = examRows.length ? requestedExamId : null;
+      }
+
       await pool.query(
         `
         INSERT INTO student_performance
-          (student_id, subject, test_type, score, total_questions, correct_answers, test_name, rank, total_participants)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (student_id, exam_id, subject, test_type, score, total_questions, correct_answers, test_name, rank, total_participants)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
-        [studentId, subject, testType, score, totalQuestions, correctAnswers, testName, rank, totalParticipants]
+        [studentId, examId, subject, testType, score, totalQuestions, correctAnswers, testName, rank, totalParticipants]
       );
 
       return sendSuccess(res, { status: 201, message: "Performance recorded." });

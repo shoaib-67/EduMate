@@ -1,13 +1,15 @@
-const { API_BASE_URL, getStoredUser, getStudentId, escapeHTML, requireRole, setupLogoutHandlers } = window.EduMateShared;
+const { API_BASE_URL, getStudentId, escapeHTML, requireRole, setupLogoutHandlers } = window.EduMateShared;
 let allDiscussions = [];
 const discussionFilter = { query: "", subject: "all" };
 let activeDiscussionId = null;
 
 function getDiscussionUser() {
-  const user = getStoredUser();
+  const currentPath = String(window.location.pathname || "").toLowerCase();
+  const preferredRoles = currentPath.includes("instructor") ? ["instructor", "student"] : ["student", "instructor"];
+  const user = requireRole(preferredRoles, { allowAnonymous: true });
   const role = String(user?.role || "").trim().toLowerCase();
   if (!user || !["student", "instructor"].includes(role)) return null;
-  return { id: Number(user.id || 0), role, name: user.name || role };
+  return { id: Number(user.id || 0), role, name: user.fullName || user.name || role };
 }
 
 function showDiscussionStatus(message, type = "info") {
@@ -264,8 +266,7 @@ async function loadStudyCircles() {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-  const currentUser = getDiscussionUser();
-  const user = requireRole(["student", "instructor"], { allowAnonymous: true });
+  const user = getDiscussionUser();
   const postButton = document.querySelector(".input-row .btn-primary");
   if (user) {
     setupLogoutHandlers();
@@ -284,7 +285,8 @@ document.addEventListener("DOMContentLoaded", () => {
   loadStudyCircles();
 
   postButton?.addEventListener("click", () => {
-    if (!user) {
+    const currentUser = getDiscussionUser();
+    if (!currentUser) {
       window.location.href = "index.html";
       return;
     }

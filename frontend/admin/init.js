@@ -7,7 +7,7 @@ import {
   createReportNoteModal,
 } from "./ui/modals.js";
 import { loadUsers, renderUsers, bindUserCreateForm } from "./features/users.js";
-import { loadContent, renderContent } from "./features/content.js";
+import { loadContent, renderContent, startContentAutoRefresh, stopContentAutoRefresh } from "./features/content.js";
 import { loadReports, renderReports } from "./features/reports.js";
 import { loadActivityLogs, renderActivityLogs } from "./features/activity.js";
 import { updateStats, startStatsAutoRefresh, stopStatsAutoRefresh } from "./features/stats.js";
@@ -119,6 +119,7 @@ export async function initAdminDashboard() {
     if (document.getElementById("contentList")) {
       await loadContent();
       renderContent();
+      startContentAutoRefresh();
     }
     if (document.getElementById("reportCards")) {
       await loadReports();
@@ -137,8 +138,19 @@ export async function initAdminDashboard() {
   }
 
   document.addEventListener("visibilitychange", () => {
-    if (document.hidden) stopStatsAutoRefresh();
-    else if (document.getElementById("userCount")) startStatsAutoRefresh();
+    if (document.hidden) {
+      stopStatsAutoRefresh();
+      stopContentAutoRefresh();
+      return;
+    }
+
+    if (document.getElementById("userCount")) startStatsAutoRefresh();
+    if (document.getElementById("contentList")) {
+      loadContent()
+        .then(() => renderContent())
+        .catch(() => {});
+      startContentAutoRefresh();
+    }
   });
 }
 

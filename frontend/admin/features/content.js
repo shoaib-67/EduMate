@@ -11,14 +11,73 @@ export async function loadContent() {
   return state.pendingContent;
 }
 
+let contentRefreshTimer = null;
+
+export function startContentAutoRefresh() {
+  if (contentRefreshTimer || !document.getElementById("contentList")) return;
+  contentRefreshTimer = window.setInterval(async () => {
+    try {
+      await loadContent();
+      renderContent();
+    } catch {
+      // Keep background refresh silent to avoid noisy admin UI.
+    }
+  }, 15000);
+}
+
+export function stopContentAutoRefresh() {
+  if (!contentRefreshTimer) return;
+  window.clearInterval(contentRefreshTimer);
+  contentRefreshTimer = null;
+}
+
 function normalizeText(value) {
   return String(value || "").trim().toLowerCase();
+}
+
+function normalizeFingerprintText(value) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, " ");
+}
+
+function buildSubmissionFingerprint(item) {
+  const sourceRef = normalizeFingerprintText(item.sourceRef || item.source_ref);
+  if (sourceRef) {
+    return `source:${sourceRef}`;
+  }
+
+  const fields = [
+    item.instructorName,
+    item.type,
+    item.title,
+    item.courseTitle,
+    item.batchName,
+    item.description,
+    item.deadline,
+  ].map((value) => normalizeFingerprintText(value));
+
+  return fields.join("|");
+}
+
+function dedupePendingSubmissions(items) {
+  const seen = new Set();
+  const unique = [];
+  for (const item of items) {
+    const fingerprint = buildSubmissionFingerprint(item);
+    if (seen.has(fingerprint)) continue;
+    seen.add(fingerprint);
+    unique.push(item);
+  }
+  return unique;
 }
 
 function getCategory(item) {
   const type = normalizeText(item.type);
   if (type === "exam") return "exam";
   if (type === "announcement") return "announcement";
+  if (type.includes("question bank")) return "content";
   if (type.includes("question")) return "question";
   return "content";
 }
@@ -59,7 +118,6 @@ function setSummaryCounts(items) {
   );
 
   const bindings = [
-    ["pendingExamCount", counts.exam],
     ["pendingContentCount", counts.content],
     ["pendingAnnouncementCount", counts.announcement],
     ["pendingQuestionCount", counts.question],
@@ -74,7 +132,7 @@ function setSummaryCounts(items) {
   if (statusNote) {
     statusNote.textContent = items.length
       ? `${items.length} pending item${items.length === 1 ? "" : "s"} ready for review.`
-      : "Approve or deny newly submitted exams and learning material.";
+      : "Approve or deny newly submitted learning material.";
   }
 }
 
@@ -161,19 +219,22 @@ export function renderContent() {
   const query = state.filters.content.query.trim().toLowerCase();
   const type = state.filters.content.type;
 
-  const pendingOnly = state.pendingContent.filter((item) => normalizeText(item.status) === "pending");
-  const types = Array.from(new Set(pendingOnly.map((item) => String(item.type || "Unknown")))).sort((left, right) =>
+  const pendingOnly = state.pendingContent.filter(
+    (item) => normalizeText(item.status) === "pending" && getCategory(item) !== "exam"
+  );
+  const dedupedPending = dedupePendingSubmissions(pendingOnly);
+  const types = Array.from(new Set(dedupedPending.map((item) => String(item.type || "Unknown")))).sort((left, right) =>
     left.localeCompare(right)
   );
 
-  setSummaryCounts(pendingOnly);
+  setSummaryCounts(dedupedPending);
 
   if (typeFilter) {
     typeFilter.innerHTML = ['<option value="all">All types</option>', ...types.map((value) => `<option value="${escapeHTML(value)}">${escapeHTML(value)}</option>`)].join("");
     typeFilter.value = types.includes(type) ? type : "all";
   }
 
-  const filtered = pendingOnly.filter((item) => {
+  const filtered = dedupedPending.filter((item) => {
     const haystack = `${item.title} ${item.courseTitle || ""} ${item.batchName || ""} ${item.description || ""}`.toLowerCase();
     const matchesQuery = !query || haystack.includes(query);
     const matchesType = type === "all" || String(item.type) === type;
@@ -188,22 +249,20 @@ export function renderContent() {
       </div>
     `;
   } else {
-    const exams = filtered.filter((item) => getCategory(item) === "exam");
     const announcements = filtered.filter((item) => getCategory(item) === "announcement");
     const questions = filtered.filter((item) => getCategory(item) === "question");
     const resources = filtered.filter((item) => getCategory(item) === "content");
 
     contentList.innerHTML = [
-      renderSection("Pending exams", "Scheduled mock tests and assessment submissions.", exams),
       renderSection("Pending announcements", "Student-facing notices queued by instructors.", announcements),
-      renderSection("Pending question items", "Question bank entries waiting for review.", questions),
+      renderSection("Pending question items", "Question bank entries and standalone assessment questions.", questions),
       renderSection("Pending study materials", "Notes, links, and learning resources.", resources),
     ].join("");
   }
 
   contentList.querySelectorAll("[data-content-id]").forEach((node) => {
     const id = Number(node.dataset.contentId || 0);
-    const item = state.pendingContent.find((entry) => Number(entry.id) === id);
+    const item = filtered.find((entry) => Number(entry.id) === id);
     if (!item) return;
 
     node.querySelector('[data-action="details"]')?.addEventListener("click", () => showContentDetail(item));

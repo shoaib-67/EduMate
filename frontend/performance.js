@@ -1,11 +1,5 @@
 const { API_BASE_URL, getStudentId, requireRole, setupLogoutHandlers } = window.EduMateShared;
 
-function getAccuracyColorClass(accuracy) {
-  if (accuracy >= 80) return "bar-primary";
-  if (accuracy >= 70) return "bar-amber";
-  return "bar-red";
-}
-
 function getPerformanceChip(score) {
   if (score >= 80) return { class: "", text: "Strong" };
   if (score >= 70) return { class: "amber", text: "Good" };
@@ -51,10 +45,12 @@ async function loadPerformanceStats() {
       <p class="s-sub">Latest achievement</p>
     `;
 
+    const completedMocks = Number(data.completedMocks ?? data.mockTestsCompleted ?? 0);
+    const totalAttempts = Number(data.totalAttempts ?? data.totalTests ?? 0);
     statCards[2].innerHTML = `
       <p class="s-label">Mock Tests</p>
-      <p class="s-val">${data.mockTestsCompleted}</p>
-      <p class="s-sub">${data.totalTests} total</p>
+      <p class="s-val">${completedMocks}</p>
+      <p class="s-sub">${totalAttempts} total</p>
     `;
 
     statCards[3].innerHTML = `
@@ -67,44 +63,6 @@ async function loadPerformanceStats() {
   }
 }
 
-async function loadSubjectAccuracy() {
-  try {
-    const studentId = getStudentId();
-    if (!studentId) return;
-
-    const response = await fetch(`${API_BASE_URL}/student/${studentId}/performance/subjects`);
-    const result = await response.json();
-    const subjectList = document.querySelector(".panel-grid .panel:first-child .list");
-    if (!subjectList) return;
-    subjectList.innerHTML = "";
-
-    if (result.success && result.data && result.data.length > 0) {
-      result.data.forEach((subject) => {
-        const colorClass = getAccuracyColorClass(subject.accuracy);
-        const width = clampPercent(subject.accuracy);
-
-        const listItem = document.createElement("div");
-        listItem.className = "list-item";
-        listItem.innerHTML = `
-          <div>
-            <h4>${subject.subject}</h4>
-            <span>${subject.test_count} tests taken</span>
-          </div>
-          <div class="metric">
-            <div class="bar"><div class="bar-fill ${colorClass}" style="width: ${width}%;"></div></div>
-            <span class="metric-value">${toDisplayPercent(subject.accuracy)}%</span>
-          </div>
-        `;
-        subjectList.appendChild(listItem);
-      });
-    } else {
-      subjectList.innerHTML = '<div class="list-item"><div><h4>No performance data yet</h4><span>Take a mock test to see subject analytics.</span></div><span class="chip">New</span></div>';
-    }
-  } catch (error) {
-    console.error("Error loading subject accuracy:", error);
-  }
-}
-
 async function loadRecentTests() {
   try {
     const studentId = getStudentId();
@@ -112,9 +70,8 @@ async function loadRecentTests() {
 
     const response = await fetch(`${API_BASE_URL}/student/${studentId}/performance/recent-tests`);
     const result = await response.json();
-    const panels = document.querySelectorAll(".panel-grid .panel");
-    if (panels.length <= 1) return;
-    const recentTestsPanel = panels[1];
+    const recentTestsPanel = document.querySelector(".panel-grid .panel");
+    if (!recentTestsPanel) return;
     const testList = recentTestsPanel.querySelector(".list");
     if (!testList) return;
     testList.innerHTML = "";
@@ -143,19 +100,14 @@ async function loadRecentTests() {
   }
 }
 
-async function loadTrendAndActions() {
+async function loadTrend() {
   try {
     const studentId = getStudentId();
     if (!studentId) return;
 
-    const [recentRes, subjectRes] = await Promise.all([
-      fetch(`${API_BASE_URL}/student/${studentId}/performance/recent-tests`),
-      fetch(`${API_BASE_URL}/student/${studentId}/performance/subjects`),
-    ]);
+    const recentRes = await fetch(`${API_BASE_URL}/student/${studentId}/performance/recent-tests`);
     const recentPayload = await recentRes.json();
-    const subjectPayload = await subjectRes.json();
     const recentTests = recentPayload.success ? recentPayload.data || [] : [];
-    const subjects = subjectPayload.success ? subjectPayload.data || [] : [];
 
     const trendChart = document.getElementById("scoreTrendChart");
     if (trendChart) {
@@ -179,29 +131,8 @@ async function loadTrendAndActions() {
       }
     }
 
-    const nextActionsList = document.getElementById("nextActionsList");
-    if (nextActionsList) {
-      if (!subjects.length) {
-        nextActionsList.innerHTML = '<div class="list-item"><div><h4>No recommendations yet</h4><span>Complete a few mocks first.</span></div><span class="chip">New</span></div>';
-      } else {
-        const weakSubjects = [...subjects].sort((a, b) => Number(a.accuracy) - Number(b.accuracy)).slice(0, 3);
-        nextActionsList.innerHTML = weakSubjects
-          .map(
-            (subject) => `
-              <div class="list-item">
-                <div>
-                  <h4>${subject.subject} revision</h4>
-                  <span>Current accuracy ${toDisplayPercent(subject.accuracy)}% - ${subject.test_count} tests</span>
-                </div>
-                <a class="action-link" href="mock-test.html">Practice now</a>
-              </div>
-            `
-          )
-          .join("");
-      }
-    }
   } catch (error) {
-    console.error("Error loading trends/actions:", error);
+    console.error("Error loading trend:", error);
   }
 }
 
@@ -209,7 +140,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (!requireRole("student")) return;
   setupLogoutHandlers();
   loadPerformanceStats();
-  loadSubjectAccuracy();
   loadRecentTests();
-  loadTrendAndActions();
+  loadTrend();
 });

@@ -19,6 +19,14 @@
 
 .panel-grid-spaced { margin-top: 1.25rem; }
 
+.performance-two-up {
+  align-items: start;
+}
+
+.performance-two-up .panel {
+  min-width: 0;
+}
+
 .trend-chart {
   display: grid;
   gap: 0.6rem;
@@ -70,5 +78,9 @@
 
   .metric {
     width: 100%;
+  }
+
+  .performance-two-up {
+    grid-template-columns: 1fr;
   }
 }

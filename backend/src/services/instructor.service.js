@@ -24,6 +24,222 @@ async function findInstructorExamConflict(pool, { instructorId, batchName, audie
   return rows[0] || null;
 }
 
+function getRuleValue(rules, label) {
+  const pattern = new RegExp(`^${label}\\s*:\\s*(.+)$`, "im");
+  const match = String(rules || "").match(pattern);
+  return String(match?.[1] || "").trim();
+}
+
+function normalizeExamDateLabel(value) {
+  if (!value) return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const year = value.getFullYear();
+    const month = String(value.getMonth() + 1).padStart(2, "0");
+    const day = String(value.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  }
+
+  const text = String(value).trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(text)) return text;
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return text;
+  return normalizeExamDateLabel(parsed);
+}
+
+function normalizeExamTimeLabel(value) {
+  if (!value) return "";
+  if (value instanceof Date && !Number.isNaN(value.getTime())) {
+    const hours = String(value.getHours()).padStart(2, "0");
+    const minutes = String(value.getMinutes()).padStart(2, "0");
+    return `${hours}:${minutes}`;
+  }
+
+  const text = String(value).trim();
+  const timeMatch = text.match(/(\d{2}:\d{2})/);
+  if (timeMatch) return timeMatch[1];
+
+  const parsed = new Date(text);
+  if (Number.isNaN(parsed.getTime())) return text;
+  return normalizeExamTimeLabel(parsed);
+}
+
+function parseQuestionCount(questionIdsJson) {
+  if (Array.isArray(questionIdsJson)) return questionIdsJson.filter(Boolean).length;
+  if (!questionIdsJson) return 0;
+
+  try {
+    const parsed = JSON.parse(questionIdsJson);
+    return Array.isArray(parsed) ? parsed.filter(Boolean).length : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function getCustomRuleSummary(rules) {
+  const customRules = String(rules || "")
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => !/^(subject|per mcq mark|end time)\s*:/i.test(line));
+
+  return customRules.length ? customRules.join(" | ") : "-";
+}
+
+function buildInstructorExamSubmissionPayload(exam = {}) {
+  const sourceRef = `instructor_exam_schedules:${Number(exam.instructorExamId || exam.instructor_exam_id || 0)}`;
+  const audienceType = normalizeAudienceType(exam.audienceType || exam.audience_type || "batch");
+  const batchName = String(exam.batchName || exam.batch_name || "").trim() || null;
+  const subject = String(exam.subject || getRuleValue(exam.rules, "Subject") || "").trim();
+  const perMcqMark = String(exam.perMcqMark || getRuleValue(exam.rules, "Per MCQ Mark") || "").trim();
+  const endTimeDisplay = String(exam.endTimeDisplay || getRuleValue(exam.rules, "End Time") || "").trim();
+  const accessMode = String(exam.accessMode || exam.access_mode || "open_anytime").trim();
+  const examDate = normalizeExamDateLabel(exam.date || exam.examDate || exam.exam_date);
+  const startTime = normalizeExamTimeLabel(exam.time || exam.startTime || exam.start_time);
+  const duration = Number(exam.duration || exam.durationMinutes || exam.duration_minutes || 0);
+  const questionCount = parseQuestionCount(exam.questionIdsJson || exam.question_ids_json);
+  const accessLabel =
+    accessMode === "scheduled"
+      ? `${[examDate, startTime].filter(Boolean).join(" ")}${endTimeDisplay ? ` - ${endTimeDisplay}` : ""}`.trim() || "Scheduled"
+      : "Open immediately";
+
+  return {
+    instructorId: Number(exam.instructorId || exam.instructor_id || 0) || null,
+    courseTitle: subject || null,
+    batchName,
+    title: String(exam.title || "").trim(),
+    status: String(exam.status || "pending").trim().toLowerCase() || "pending",
+    sourceRef,
+    description: [
+      subject ? `Subject: ${subject}` : null,
+      `Audience: ${formatAudienceLabel(audienceType, batchName)}`,
+      exam.examType || exam.exam_type ? `Exam Type: ${String(exam.examType || exam.exam_type).trim()}` : null,
+      perMcqMark ? `Per MCQ Mark: ${perMcqMark}` : null,
+      `Access: ${accessLabel}`,
+      duration > 0 ? `Duration: ${duration} min` : null,
+      questionCount > 0 ? `Questions: ${questionCount}` : null,
+      `Rules: ${getCustomRuleSummary(exam.rules)}`,
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  };
+}
+
+async function upsertInstructorExamSubmission(connection, exam = {}) {
+  const payload = buildInstructorExamSubmissionPayload(exam);
+  if (!payload.instructorId || !payload.title || /:0$/.test(payload.sourceRef)) {
+    throw new Error("A valid instructor exam submission payload is required.");
+  }
+
+  const [existingRows] = await connection.query(
+    `
+    SELECT submission_id
+    FROM content_submissions
+    WHERE source_ref = ?
+    ORDER BY submission_id DESC
+    LIMIT 1
+    `,
+    [payload.sourceRef]
+  );
+
+  if (existingRows.length > 0) {
+    const submissionId = Number(existingRows[0].submission_id || 0);
+    await connection.query(
+      `
+      UPDATE content_submissions
+      SET instructor_id = ?,
+          course_title = ?,
+          batch_name = ?,
+          title = ?,
+          type = 'Exam',
+          description = ?,
+          status = ?,
+          source_ref = ?
+      WHERE submission_id = ?
+      `,
+      [
+        payload.instructorId,
+        payload.courseTitle,
+        payload.batchName,
+        payload.title,
+        payload.description,
+        payload.status,
+        payload.sourceRef,
+        submissionId,
+      ]
+    );
+    return submissionId;
+  }
+
+  const [insertResult] = await connection.query(
+    `
+    INSERT INTO content_submissions
+      (instructor_id, course_title, batch_name, title, type, description, status, source_ref)
+    VALUES (?, ?, ?, ?, 'Exam', ?, ?, ?)
+    `,
+    [
+      payload.instructorId,
+      payload.courseTitle,
+      payload.batchName,
+      payload.title,
+      payload.description,
+      payload.status,
+      payload.sourceRef,
+    ]
+  );
+
+  return Number(insertResult?.insertId || 0);
+}
+
+async function syncPendingInstructorExamSubmissions(pool) {
+  const [pendingExams] = await pool.query(
+    `
+    SELECT
+      instructor_exam_id,
+      instructor_id,
+      title,
+      batch_name,
+      audience_type,
+      exam_date,
+      start_time,
+      duration_minutes,
+      exam_type,
+      question_ids_json,
+      rules,
+      access_mode
+    FROM instructor_exam_schedules
+    WHERE LOWER(COALESCE(approval_status, 'pending')) = 'pending'
+    ORDER BY created_at DESC
+    `
+  );
+
+  let syncedCount = 0;
+  for (const exam of pendingExams) {
+    const sourceRef = `instructor_exam_schedules:${Number(exam.instructor_exam_id || 0)}`;
+    if (/:0$/.test(sourceRef)) continue;
+
+    const [existingRows] = await pool.query(
+      `
+      SELECT submission_id, status
+      FROM content_submissions
+      WHERE source_ref = ?
+      ORDER BY submission_id DESC
+      LIMIT 1
+      `,
+      [sourceRef]
+    );
+
+    const hasPendingSubmission =
+      existingRows.length > 0 && String(existingRows[0].status || "").trim().toLowerCase() === "pending";
+    if (hasPendingSubmission) continue;
+
+    await upsertInstructorExamSubmission(pool, { ...exam, status: "pending" });
+    syncedCount += 1;
+  }
+
+  return syncedCount;
+}
+
 async function buildInstructorWorkspace(pool, instructorId) {
   const [courseItems] = await pool.query(
     `
@@ -37,10 +253,26 @@ async function buildInstructorWorkspace(pool, instructorId) {
 
   const [questionBank] = await pool.query(
     `
-    SELECT question_id, subject, question_type, question_text, options_text, answer_key, approval_status, batch_name, audience_type
-    FROM instructor_question_bank
-    WHERE instructor_id = ?
-    ORDER BY created_at DESC
+    SELECT
+      iqb.question_id,
+      iqb.subject,
+      iqb.question_type,
+      iqb.question_text,
+      iqb.options_text,
+      iqb.answer_key,
+      iqb.approval_status,
+      iqb.batch_name,
+      iqb.audience_type
+    FROM instructor_question_bank iqb
+    WHERE iqb.instructor_id = ?
+      AND UPPER(COALESCE(iqb.question_type, '')) = 'MCQ'
+      AND LOWER(COALESCE(iqb.approval_status, 'pending')) = 'pending'
+      AND EXISTS (
+        SELECT 1
+        FROM content_submissions cs
+        WHERE cs.source_ref = CONCAT('instructor_question_bank:', iqb.question_id)
+      )
+    ORDER BY iqb.created_at DESC
     `,
     [instructorId]
   );
@@ -71,7 +303,18 @@ async function buildInstructorWorkspace(pool, instructorId) {
     LEFT JOIN instructor_student_notes isn
       ON isn.instructor_id = isa.instructor_id AND isn.student_id = isa.student_id
     LEFT JOIN student_performance sp
-      ON sp.student_id = isa.student_id AND LOWER(sp.test_type) = 'mock'
+      ON sp.student_id = isa.student_id
+      AND LOWER(sp.test_type) = 'mock'
+      AND EXISTS (
+        SELECT 1
+        FROM instructor_exam_schedules ies
+        WHERE ies.instructor_id = isa.instructor_id
+          AND LOWER(COALESCE(ies.approval_status, 'approved')) = 'approved'
+          AND (
+            ies.published_exam_id = sp.exam_id
+            OR (sp.exam_id IS NULL AND LOWER(TRIM(ies.title)) = LOWER(TRIM(sp.test_name)))
+          )
+      )
     WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     GROUP BY s.student_id, s.name, isa.assigned_batch, isn.progress_label, isn.note
     ORDER BY s.name ASC
@@ -99,7 +342,19 @@ async function buildInstructorWorkspace(pool, instructorId) {
       ROUND(MAX(sp.score), 1) AS topScore,
       ROUND(MIN(sp.score), 1) AS bottomScore
     FROM instructor_student_assignments isa
-    JOIN student_performance sp ON sp.student_id = isa.student_id AND LOWER(sp.test_type) = 'mock'
+    JOIN student_performance sp
+      ON sp.student_id = isa.student_id
+      AND LOWER(sp.test_type) = 'mock'
+      AND EXISTS (
+        SELECT 1
+        FROM instructor_exam_schedules ies
+        WHERE ies.instructor_id = isa.instructor_id
+          AND LOWER(COALESCE(ies.approval_status, 'approved')) = 'approved'
+          AND (
+            ies.published_exam_id = sp.exam_id
+            OR (sp.exam_id IS NULL AND LOWER(TRIM(ies.title)) = LOWER(TRIM(sp.test_name)))
+          )
+      )
     WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     GROUP BY sp.subject
     ORDER BY averageScore DESC, passRate DESC
@@ -122,7 +377,19 @@ async function buildInstructorWorkspace(pool, instructorId) {
       sp.created_at AS createdAt
     FROM instructor_student_assignments isa
     JOIN students s ON s.student_id = isa.student_id
-    JOIN student_performance sp ON sp.student_id = isa.student_id AND LOWER(sp.test_type) = 'mock'
+    JOIN student_performance sp
+      ON sp.student_id = isa.student_id
+      AND LOWER(sp.test_type) = 'mock'
+      AND EXISTS (
+        SELECT 1
+        FROM instructor_exam_schedules ies
+        WHERE ies.instructor_id = isa.instructor_id
+          AND LOWER(COALESCE(ies.approval_status, 'approved')) = 'approved'
+          AND (
+            ies.published_exam_id = sp.exam_id
+            OR (sp.exam_id IS NULL AND LOWER(TRIM(ies.title)) = LOWER(TRIM(sp.test_name)))
+          )
+      )
     WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     ORDER BY sp.created_at DESC
     LIMIT 200
@@ -205,5 +472,11 @@ async function buildInstructorWorkspace(pool, instructorId) {
   };
 }
 
-module.exports = { findInstructorExamConflict, buildInstructorWorkspace };
+module.exports = {
+  findInstructorExamConflict,
+  buildInstructorWorkspace,
+  buildInstructorExamSubmissionPayload,
+  upsertInstructorExamSubmission,
+  syncPendingInstructorExamSubmissions,
+};
 

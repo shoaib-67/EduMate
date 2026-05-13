@@ -273,8 +273,7 @@ const createObserver = (callback, options) =>
 
 async function loadHomeStats() {
   const heroCounters = $$(".hero-stats [data-count]");
-  const bandCounters = $$(".stats-band [data-count]");
-  if (heroCounters.length < 3 || bandCounters.length < 4) return;
+  if (heroCounters.length < 3) return;
 
   try {
     const response = await fetch(`${API_BASE_URL}/public/home-stats`);
@@ -282,14 +281,9 @@ async function loadHomeStats() {
     if (!response.ok || !payload?.success || !payload?.data) return;
 
     const { hero = {}, band = {} } = payload.data;
-    heroCounters[0].setAttribute("data-count", String(Number(hero.practiceSets) || 0));
-    heroCounters[1].setAttribute("data-count", String(Number(hero.videoLessons) || 0));
-    heroCounters[2].setAttribute("data-count", String(Number(hero.activeLearners) || 0));
-
-    bandCounters[0].setAttribute("data-count", String(Number(band.practiceAttempts) || 0));
-    bandCounters[1].setAttribute("data-count", String(Number(band.freeVideoClasses) || 0));
-    bandCounters[2].setAttribute("data-count", String(Number(band.freePdfNotes) || 0));
-    bandCounters[3].setAttribute("data-count", String(Number(band.freeTrialDays) || 0));
+    heroCounters[0].setAttribute("data-count", String(Number(hero.activeStudents ?? hero.activeLearners) || 0));
+    heroCounters[1].setAttribute("data-count", String(Number(hero.freePdfNotes ?? band.freePdfNotes) || 0));
+    heroCounters[2].setAttribute("data-count", String(Number(hero.freeExams) || 0));
   } catch (_error) {
     // Keep existing values in DOM if API is unavailable.
   }
@@ -336,7 +330,7 @@ const revealObserver = createObserver(
 
 revealElements.forEach((item) => revealObserver.observe(item));
 
-const sectionIds = ["home", "features", "packages", "contact"];
+const sectionIds = ["home", "features", "contact"];
 const allNavLinks = $$(".nav-links a");
 const setActiveNavLink = (id) => {
   allNavLinks.forEach((link) => {

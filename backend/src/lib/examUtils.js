@@ -87,6 +87,7 @@ function normalizeExamRecord(exam, now = new Date()) {
   return {
     id: exam.exam_id,
     subject: exam.subject,
+    title: exam.title || exam.subject,
     examDate: exam.exam_date,
     startTime: start || exam.start_time,
     endTime: end || exam.end_time,
@@ -99,6 +100,8 @@ function normalizeExamRecord(exam, now = new Date()) {
     joinAvailable: canJoinExam(exam, now),
     joinUrl: buildJoinExamLink(exam.exam_id),
     assignedStudentCount: Number(exam.assigned_student_count || 0),
+    questionCount: Number(exam.question_count || 0),
+    attemptCount: Number(exam.attempt_count || 0),
   };
 }
 
@@ -120,7 +123,7 @@ function normalizeInstructorExamRecord(exam, now = new Date()) {
     parsedQuestionIds = [];
   }
 
-  const accessMode = exam.access_mode || "scheduled";
+  const accessMode = exam.access_mode || "open_anytime";
   const audienceType = normalizeAudienceType(exam.audience_type);
   const status =
     accessMode === "open_anytime" ? "always_open" : deriveInstructorExamStatus(exam.start_time, exam.duration_minutes, now);

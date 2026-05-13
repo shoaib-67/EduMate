@@ -17,7 +17,7 @@ The platform supports students, instructors, and administrators with role-specif
 - Offer an online mock test system for practice and self-assessment.
 - Improve student performance through result analysis and progress tracking.
 - Deliver a responsive and user-friendly interface for students, instructors, and administrators.
-- Automate core services such as user management, exam handling, and notifications.
+- Automate core services such as user management, exam handling, and progress services.
 
 ## Measurable Goals
 
@@ -50,7 +50,7 @@ The platform supports students, instructors, and administrators with role-specif
 ### Integrations
 
 - Payment gateway integration for premium content and course purchase
-- Email/SMS APIs for notifications and verification
+- Email/SMS APIs for account verification
 - YouTube integration for storing and streaming course videos
 - Chart.js for performance analysis and visualization
 

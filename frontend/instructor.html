@@ -30,8 +30,7 @@
           <a class="nav-item" href="#coursesSection">Courses</a>
           <a class="nav-item" href="#examSection">Exams & Mock Tests</a>
 
-          <a class="nav-item" href="#studentsSection">Students</a>
-          <a class="nav-item" href="#resultsSection">Results & Analytics</a>
+          <a class="nav-item" href="#resultsSection">Students Performance</a>
           <a class="nav-item" href="#communicationSection">Communication</a>
           <a class="nav-item" href="#reportBugSection">Report a bug</a>
           <a class="nav-item" href="instructor-profile.html">Profile</a>
@@ -51,7 +50,7 @@
           <div class="workspace-section active" id="overviewSection">
             <div class="page-header">
               <h1>Instructor command desk</h1>
-              <p>Manage your own courses, exams, students, and notices without touching platform-wide admin controls.</p>
+              <p>Manage your own courses, exams, student performance, and notices without touching platform-wide admin controls.</p>
               <div class="page-actions">
                 <a class="btn btn-primary" href="#examSection">Create exam</a>
                 <a class="btn btn-light" href="#coursesSection">Upload content</a>
@@ -73,7 +72,7 @@
                 <p class="s-sub">Live for assigned batches</p>
               </div>
               <div class="stat-card">
-                <p class="s-label">Managed Students</p>
+                <p class="s-label">Tracked Students</p>
                 <p class="s-val" id="managedStudentCount">0</p>
                 <p class="s-sub">Across assigned batches</p>
               </div>
@@ -89,7 +88,7 @@
                 <div>
                   <p class="workspace-eyebrow">Today</p>
                   <h2 id="workspaceHeadline">Workspace loading</h2>
-                  <p id="workspaceSummary">Pulling the latest courses, exams, and student updates for this instructor.</p>
+                  <p id="workspaceSummary">Pulling the latest courses, exams, and student performance updates for this instructor.</p>
                 </div>
                 <div class="workspace-meta">
                   <span class="workspace-pill" id="nextExamPill">No exam data yet</span>
@@ -127,9 +126,6 @@
                     <option value="PDF">PDF</option>
                     <option value="Video">Video</option>
                     <option value="Slides">Slides</option>
-                    <option value="Notes">Notes</option>
-                    <option value="Announcement">Announcement</option>
-                    <option value="Lesson Summary">Lesson Summary</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -151,10 +147,6 @@
                   <label for="contentLink">Content Link</label>
                   <input id="contentLink" name="contentLink" type="url" placeholder="https://example.com/document.pdf" required />
                 </div>
-                <div class="form-group">
-                  <label for="contentDeadline">Deadline</label>
-                  <input id="contentDeadline" name="contentDeadline" type="date" />
-                </div>
                 <div class="form-group form-group-full">
                   <label for="contentTitle">Content Title</label>
                   <input id="contentTitle" name="contentTitle" type="text" placeholder="Motion chapter formula sheet" required />
@@ -167,6 +159,7 @@
                   <p>Use this for notes, slides, assignments, and announcements tied to one batch.</p>
                   <button class="btn btn-primary" type="submit">Upload content</button>
                 </div>
+                <div class="workspace-banner" id="courseFormStatus" role="status" aria-live="polite"></div>
               </form>
 
               <div class="list compact-list" id="courseContentList"></div>
@@ -178,7 +171,7 @@
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Exam & mock test management</h2>
-                  <p>Create exams, question-bank items, access windows, and publishing states.</p>
+                  <p>Create exams, add question-bank items, and publish mock tests without scheduling setup.</p>
                 </div>
                 <span class="panel-kicker">Assessment</span>
               </div>
@@ -193,7 +186,7 @@
                   <input id="examSubject" name="examSubject" type="text" placeholder="Physics" required />
                 </div>
                 <div class="form-group">
-                  <label for="examBatch">Batch</label>
+                  <label for="examBatch">Program</label>
                   <select id="examBatch" name="examBatch" required>
                     <option value="Engineering">Engineering</option>
                     <option value="Varsity">Varsity</option>
@@ -201,20 +194,8 @@
                   </select>
                 </div>
                 <div class="form-group">
-                  <label for="examDate">Date</label>
-                  <input id="examDate" name="examDate" type="date" required />
-                </div>
-                <div class="form-group">
-                  <label for="examTime">Start Time</label>
-                  <input id="examTime" name="examTime" type="time" required />
-                </div>
-                <div class="form-group">
                   <label for="examDuration">Duration (minutes)</label>
                   <input id="examDuration" name="examDuration" type="number" min="15" step="15" value="60" required />
-                </div>
-                <div class="form-group">
-                  <label for="examEndTime">End Time (optional)</label>
-                  <input id="examEndTime" name="examEndTime" type="time" />
                 </div>
                 <div class="form-group">
                   <label for="negativeMarking">Negative Marking</label>
@@ -243,13 +224,13 @@
                   <textarea id="examRules" name="examRules" rows="3" placeholder="Access rules, proctoring note, preview note"></textarea>
                 </div>
                 <input id="examAudienceType" name="examAudienceType" type="hidden" value="batch" />
-                <input id="accessMode" name="accessMode" type="hidden" value="scheduled" />
+                <input id="accessMode" name="accessMode" type="hidden" value="open_anytime" />
                 <input id="publishState" name="publishState" type="hidden" value="Draft" />
               </form>
 
               <div class="split-block">
                 <div>
-                  <h3 class="subsection-title">Upcoming exam board</h3>
+                  <h3 class="subsection-title">Active exam board</h3>
                   <div class="list compact-list" id="examList"></div>
                 </div>
                 <div>
@@ -259,8 +240,6 @@
                       <label for="questionType">Question Type</label>
                       <select id="questionType" name="questionType" required>
                         <option value="MCQ">MCQ</option>
-                        <option value="Short Answer">Short Answer</option>
-                        <option value="Essay">Essay</option>
                       </select>
                     </div>
                     <div class="form-group form-group-full">
@@ -285,10 +264,6 @@
                         </select>
                       </div>
                     </div>
-                    <div class="form-group form-group-full is-hidden" id="nonMcqAnswerGroup">
-                      <label for="nonMcqAnswer">Expected Answer / Rubric</label>
-                      <textarea id="nonMcqAnswer" name="nonMcqAnswer" rows="3" placeholder="Write expected points, marking rubric, or sample answer"></textarea>
-                    </div>
                     <div class="form-footer form-group-full">
                       <p>Each click adds this question to the draft list below. Nothing is submitted before final submit.</p>
                       <button class="btn btn-secondary" type="submit">Add question to mock test</button>
@@ -296,74 +271,14 @@
                   </form>
                   <h3 class="subsection-title">Questions added for this mock test</h3>
                   <div class="list compact-list" id="examDraftQuestionList"></div>
-                  <h3 class="subsection-title">Reusable question bank</h3>
-                  <div class="list compact-list" id="questionBankList"></div>
                 </div>
               </div>
               <div class="form-footer final-submit-row">
-                <p>Questions ready: <strong id="selectedQuestionCount">0</strong> <span id="draftQuestionMeta">(0 draft, 0 from bank)</span></p>
-                <button class="btn btn-secondary" type="button" id="clearSelectedQuestionsBtn">Clear selected questions</button>
+                <p>Questions ready: <strong id="selectedQuestionCount">0</strong> <span id="draftQuestionMeta">(0 draft)</span></p>
                 <button class="btn btn-secondary" type="button" id="clearDraftQuestionsBtn">Clear draft questions</button>
-                <button class="btn btn-primary" type="submit" form="examForm" id="finalExamSubmitBtn" disabled>Final submit for admin approval</button>
+                <button class="btn btn-primary" type="submit" form="examForm" id="finalExamSubmitBtn" disabled>Final submit</button>
               </div>
-            </section>
-          </div>
-
-          <div class="workspace-section" id="studentsSection">
-            <section class="panel">
-              <div class="panel-header">
-                <div class="panel-title-group">
-                  <h2>Student management</h2>
-                  <p>Track batch members, progress, and notices for enrolled students.</p>
-                </div>
-                <span class="panel-kicker">Batch</span>
-              </div>
-
-              <form id="studentActionForm" class="form-grid form-grid-tight">
-                <div class="form-group">
-                  <label for="studentName">Student Name</label>
-                  <input id="studentName" name="studentName" type="text" placeholder="Farzana Islam" required />
-                </div>
-                <div class="form-group">
-                  <label for="studentBatch">Batch</label>
-                  <input id="studentBatch" name="studentBatch" type="text" placeholder="Engineering A" required />
-                </div>
-                <div class="form-group">
-                  <label for="studentAction">Action</label>
-                  <select id="studentAction" name="studentAction" required>
-                    <option value="Enroll">Enroll</option>
-                    <option value="Remove">Remove</option>
-                    <option value="Notice">Send Notice</option>
-                  </select>
-                </div>
-                <div class="form-group">
-                  <label for="studentProgress">Progress</label>
-                  <input id="studentProgress" name="studentProgress" type="text" placeholder="72% complete" />
-                </div>
-                <div class="form-group form-group-full">
-                  <label for="studentMessage">Message / note</label>
-                  <textarea id="studentMessage" name="studentMessage" rows="3" placeholder="Specific note for this student or batch"></textarea>
-                </div>
-                <div class="form-footer form-group-full">
-                  <p>Use notices for a whole batch, or keep private notes on a single student profile.</p>
-                  <button class="btn btn-primary" type="submit">Apply action</button>
-                </div>
-              </form>
-
-              <div class="table-wrap">
-                <table class="marks-table">
-                  <thead>
-                    <tr>
-                      <th>Student</th>
-                      <th>Batch</th>
-                      <th>Progress</th>
-                      <th>Mock avg %</th>
-                      <th>Profile Note</th>
-                    </tr>
-                  </thead>
-                  <tbody id="studentTableBody"></tbody>
-                </table>
-              </div>
+              <div class="workspace-banner" id="examFormStatus" role="status" aria-live="polite"></div>
             </section>
           </div>
 
@@ -371,37 +286,17 @@
             <section class="panel panel-full">
               <div class="panel-header">
                 <div class="panel-title-group">
-                  <h2>Results & analytics</h2>
+                  <h2>Students performance</h2>
                   <p>
-                    Mock test outcomes for students assigned to you: distribution by average mock score, subject
-                    summaries, and each completed attempt below.
+                    Live database performance for students assigned to you, with each completed mock attempt listed below.
                   </p>
                 </div>
-                <span class="panel-kicker">Insights</span>
+                <span class="panel-kicker">Performance</span>
               </div>
-
-              <div class="analytics-grid">
-                <div class="analytics-card">
-                  <h3>Mock score distribution</h3>
-                  <p class="s-sub" style="margin: 0 0 0.75rem">By each student’s average mock score across attempts.</p>
-                  <div class="list compact-list" id="distributionList"></div>
-                </div>
-                <div class="analytics-card">
-                  <h3>Mock performance by subject</h3>
-                  <p class="s-sub" style="margin: 0 0 0.75rem">Aggregates only mock test attempts.</p>
-                  <div class="list compact-list" id="coursePerformanceList"></div>
-                </div>
-                <div class="analytics-card">
-                  <h3>Mock pass rates by subject</h3>
-                  <p class="s-sub" style="margin: 0 0 0.75rem">Pass threshold: 50% on each attempt.</p>
-                  <div class="list compact-list" id="passRateList"></div>
-                </div>
-              </div>
-
               <div class="panel-header" style="margin-top: 1.75rem; padding-top: 0.5rem; border-top: 1px solid var(--border, #e2e8f0)">
                 <div class="panel-title-group">
-                  <h2 style="font-size: 1.15rem">Recent mock test results</h2>
-                  <p>Latest mock attempts from your assigned students (newest first).</p>
+                  <h2 style="font-size: 1.15rem">Recent student results</h2>
+                  <p>Latest mock attempts from your assigned students, loaded dynamically from the database.</p>
                 </div>
               </div>
               <div class="table-wrap" style="margin-top: 0.75rem">
@@ -520,3 +415,5 @@
     <script src="instructor.js"></script>
   </body>
 </html>
+
+

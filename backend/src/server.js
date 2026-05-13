@@ -2,17 +2,9 @@ const dotenv = require("dotenv");
 const path = require("path");
 
 const { ensureDatabaseExists, getPool } = require("./db");
-const {
-  ensureSchema,
-  seedDemoAccounts,
-  seedDemoContentAndReports,
-  seedDemoStudyCircles,
-  seedDemoExamSchedules,
-  seedDemoInstructorWorkspace,
-} = require("./initDb");
+const { ensureSchema } = require("./initDb");
 const { createApp } = require("./app");
 const { runExamAutomation, startExamAutomationLoop } = require("./services/examAutomation.service");
-const { cleanupSeededDiscussions, cleanupSeededInstructorWorkspace } = require("./services/demoCleanup.service");
 
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
@@ -22,15 +14,7 @@ async function startServer() {
   try {
     await ensureDatabaseExists();
     await ensureSchema();
-    await seedDemoAccounts();
-    await seedDemoContentAndReports();
-    await seedDemoStudyCircles();
-    await seedDemoExamSchedules();
-    await seedDemoInstructorWorkspace();
-
-    const pool = getPool();
-    await cleanupSeededDiscussions(pool);
-    await cleanupSeededInstructorWorkspace(pool);
+    getPool();
 
     await runExamAutomation();
     startExamAutomationLoop();

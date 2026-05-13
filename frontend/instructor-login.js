@@ -3,6 +3,7 @@ const toggleInstructorPassword = document.getElementById("toggleInstructorPasswo
 const instructorPassword = instructorLoginForm?.querySelector("input[name='password']");
 const instructorLoginStatus = document.getElementById("instructorLoginStatus");
 const API_BASE_URL = "http://localhost:5000/api";
+const { setStoredUser } = window.EduMateShared || {};
 
 function showInstructorStatus(message, type = "info") {
   if (!instructorLoginStatus) return;
@@ -53,7 +54,11 @@ if (instructorLoginForm) {
         return;
       }
 
-      localStorage.setItem("edumateCurrentUser", JSON.stringify(payload.user || {}));
+      if (typeof setStoredUser === "function") {
+        setStoredUser(payload.user || {});
+      } else {
+        localStorage.setItem("edumateCurrentUser", JSON.stringify(payload.user || {}));
+      }
       showInstructorStatus("Login successful. Opening your workspace.", "success");
       window.location.href = "instructor.html";
     } catch (_error) {

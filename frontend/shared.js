@@ -2,6 +2,11 @@
   const API_BASE_URL = "http://localhost:5000/api";
   const STORAGE_KEY = "edumateCurrentUser";
   const LEGACY_STORAGE_KEY = "user";
+  const ROLE_STORAGE_KEYS = {
+    student: "edumateCurrentUser_student",
+    instructor: "edumateCurrentUser_instructor",
+    admin: "edumateCurrentUser_admin",
+  };
   const IS_FILE_ORIGIN = window.location.protocol === "file:" || window.location.origin === "null";
 
   function readStorageItem(key) {
@@ -53,34 +58,94 @@
   }
 
   function getStoredUser() {
+    return getStoredUserByRole();
+  }
+
+  function normalizeRoleValue(value) {
+    return String(value || "").trim().toLowerCase();
+  }
+
+  function getRoleStorageKey(role) {
+    const normalizedRole = normalizeRoleValue(role);
+    return ROLE_STORAGE_KEYS[normalizedRole] || null;
+  }
+
+  function parseStoredUser(serialized) {
+    if (!serialized) return null;
     try {
-      const serialized = readStorageItem(STORAGE_KEY) || readStorageItem(LEGACY_STORAGE_KEY);
-      if (serialized) {
-        return JSON.parse(serialized);
+      const parsed = JSON.parse(serialized);
+      if (parsed && typeof parsed === "object") return parsed;
+      return null;
+    } catch {
+      return null;
+    }
+  }
+
+  function getStoredUserByRole(expectedRole = null) {
+    const allowedRoles = Array.isArray(expectedRole)
+      ? expectedRole.map((role) => normalizeRoleValue(role)).filter(Boolean)
+      : expectedRole
+        ? [normalizeRoleValue(expectedRole)]
+        : [];
+
+    try {
+      for (const role of allowedRoles) {
+        const roleKey = getRoleStorageKey(role);
+        if (!roleKey) continue;
+        const roleUser = parseStoredUser(readStorageItem(roleKey));
+        if (roleUser) return roleUser;
+      }
+
+      const genericUser = parseStoredUser(readStorageItem(STORAGE_KEY)) || parseStoredUser(readStorageItem(LEGACY_STORAGE_KEY));
+      if (genericUser) {
+        if (!allowedRoles.length) return genericUser;
+        if (allowedRoles.includes(normalizeRoleValue(genericUser.role))) return genericUser;
       }
 
       if (IS_FILE_ORIGIN) {
-        return readWindowNameUser();
+        const windowUser = readWindowNameUser();
+        if (!allowedRoles.length) return windowUser;
+        if (allowedRoles.includes(normalizeRoleValue(windowUser?.role))) return windowUser;
       }
 
       return null;
     } catch {
-      return IS_FILE_ORIGIN ? readWindowNameUser() : null;
+      if (!IS_FILE_ORIGIN) return null;
+      const windowUser = readWindowNameUser();
+      if (!allowedRoles.length) return windowUser;
+      return allowedRoles.includes(normalizeRoleValue(windowUser?.role)) ? windowUser : null;
     }
   }
 
   function setStoredUser(user) {
     const serializedUser = JSON.stringify(user || {});
+    const roleKey = getRoleStorageKey(user?.role);
     writeStorageItem(STORAGE_KEY, serializedUser);
     writeStorageItem(LEGACY_STORAGE_KEY, serializedUser);
+    if (roleKey) {
+      writeStorageItem(roleKey, serializedUser);
+    }
     if (IS_FILE_ORIGIN) {
       writeWindowNameUser(user);
     }
   }
 
-  function clearStoredUser() {
-    removeStorageItem(STORAGE_KEY);
-    removeStorageItem(LEGACY_STORAGE_KEY);
+  function clearStoredUser(role = null) {
+    const roleKey = getRoleStorageKey(role);
+    if (roleKey) {
+      removeStorageItem(roleKey);
+
+      const genericUser = parseStoredUser(readStorageItem(STORAGE_KEY)) || parseStoredUser(readStorageItem(LEGACY_STORAGE_KEY));
+      if (normalizeRoleValue(genericUser?.role) === normalizeRoleValue(role)) {
+        removeStorageItem(STORAGE_KEY);
+        removeStorageItem(LEGACY_STORAGE_KEY);
+      }
+    } else {
+      removeStorageItem(STORAGE_KEY);
+      removeStorageItem(LEGACY_STORAGE_KEY);
+      Object.values(ROLE_STORAGE_KEYS).forEach((key) => removeStorageItem(key));
+    }
+
     if (IS_FILE_ORIGIN) {
       clearWindowNameUser();
     }
@@ -98,7 +163,7 @@
 
   function requireRole(expectedRole, options = {}) {
     const { redirectTo = "index.html", allowAnonymous = false } = options;
-    const user = getStoredUser();
+    const user = getStoredUserByRole(expectedRole);
 
     if (!user) {
       if (allowAnonymous) {
@@ -121,17 +186,18 @@
       if (button.dataset.logoutReady === "true") return;
       button.dataset.logoutReady = "true";
       button.addEventListener("click", () => {
-        clearStoredUser();
+        const currentRole = getStoredUser()?.role;
+        clearStoredUser(currentRole || null);
       });
     });
   }
 
   function getStudentId() {
-    return getStoredUser()?.id || null;
+    return getStoredUserByRole("student")?.id || null;
   }
 
   function getInstructorId() {
-    return getStoredUser()?.id || null;
+    return getStoredUserByRole("instructor")?.id || null;
   }
 
   function escapeHTML(value) {
@@ -177,6 +243,61 @@
     setupFilterButtonGroups(root);
   }
 
+  function setupTabSync(onRefresh, options = {}) {
+    if (typeof onRefresh !== "function") return () => {};
+
+    const minIntervalMs = Number(options.minIntervalMs || 1500);
+    let lastRunAt = 0;
+    let refreshTimer = null;
+
+    const runRefresh = (force = false) => {
+      const now = Date.now();
+      if (!force && now - lastRunAt < minIntervalMs) return;
+      lastRunAt = now;
+      windowObject.clearTimeout(refreshTimer);
+      refreshTimer = null;
+      Promise.resolve()
+        .then(() => onRefresh())
+        .catch(() => {});
+    };
+
+    const scheduleRefresh = (force = false) => {
+      windowObject.clearTimeout(refreshTimer);
+      refreshTimer = windowObject.setTimeout(() => runRefresh(force), 120);
+    };
+
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        scheduleRefresh();
+      }
+    };
+
+    const handleFocus = () => {
+      scheduleRefresh();
+    };
+
+    const handlePageShow = () => {
+      scheduleRefresh(true);
+    };
+
+    const handleStorage = () => {
+      scheduleRefresh(true);
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    windowObject.addEventListener("focus", handleFocus);
+    windowObject.addEventListener("pageshow", handlePageShow);
+    windowObject.addEventListener("storage", handleStorage);
+
+    return () => {
+      windowObject.clearTimeout(refreshTimer);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      windowObject.removeEventListener("focus", handleFocus);
+      windowObject.removeEventListener("pageshow", handlePageShow);
+      windowObject.removeEventListener("storage", handleStorage);
+    };
+  }
+
   function observeTableChanges() {
     if (!windowObject.MutationObserver) return;
     const observer = new MutationObserver((mutations) => {
@@ -219,5 +340,6 @@
     escapeHTML,
     enhanceResponsiveTables,
     setupCommonUiEnhancements,
+    setupTabSync,
   };
 })(window);

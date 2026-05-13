@@ -1,4 +1,4 @@
-const { API_BASE_URL, getStoredUser, escapeHTML, requireRole, setupLogoutHandlers } = window.EduMateShared;
+const { API_BASE_URL, getStoredUser, escapeHTML, requireRole, setupLogoutHandlers, setupTabSync } = window.EduMateShared;
 
 const state = {
   instructorId: null,
@@ -44,16 +44,10 @@ function showConflict(message = "") {
 
 function showBanner(message, type = "info", persistent = false) {
   const banner = $("#workspaceBanner");
-  const healthBadge = $("#workspaceHealthBadge");
   if (!banner) return;
 
   banner.textContent = message;
   banner.className = `workspace-banner is-visible is-${type}`;
-
-  if (healthBadge) {
-    healthBadge.textContent =
-      type === "error" ? "Connection issue" : type === "success" ? "Workspace ready" : "Workspace update";
-  }
 
   if (state.feedbackTimer) {
     clearTimeout(state.feedbackTimer);
@@ -68,14 +62,35 @@ function showBanner(message, type = "info", persistent = false) {
   }
 }
 
-function renderEmptyCard(title, note) {
-  return `<div class="empty-card"><strong>${escapeHTML(title)}</strong><span>${escapeHTML(note)}</span></div>`;
+function setInlineStatus(selector, message = "", type = "info") {
+  const node = $(selector);
+  if (!node) return;
+
+  if (!message) {
+    node.className = "workspace-banner";
+    node.textContent = "";
+    return;
+  }
+
+  node.textContent = message;
+  node.className = `workspace-banner is-visible is-${type}`;
 }
 
-function formatExamMoment(exam) {
-  const date = String(exam?.date || "").trim();
-  const time = String(exam?.time || "").trim();
-  return [date, time].filter(Boolean).join(" ");
+function setWorkspaceHealth(status) {
+  const healthBadge = $("#workspaceHealthBadge");
+  if (!healthBadge) return;
+  const label =
+    status === "ready"
+      ? "Workspace ready"
+      : status === "issue"
+        ? "Connection issue"
+        : "Syncing workspace";
+  healthBadge.textContent = label;
+  healthBadge.dataset.status = status;
+}
+
+function renderEmptyCard(title, note) {
+  return `<div class="empty-card"><strong>${escapeHTML(title)}</strong><span>${escapeHTML(note)}</span></div>`;
 }
 
 function getNextExam(exams) {
@@ -95,21 +110,24 @@ function getNextExam(exams) {
 function buildAttentionItems() {
   const exams = state.workspace.exams || [];
   const coursePerformance = state.workspace.coursePerformance || [];
-  const upcoming = exams.filter((exam) => exam.status === "Upcoming");
+  const active = exams.filter((exam) => {
+    const status = String(exam.status || "").trim().toLowerCase();
+    return status !== "completed" && status !== "missed";
+  });
   const drafts = exams.filter((exam) => exam.state === "Draft");
 
   return [
     {
-      title: `${upcoming.length} upcoming exam${upcoming.length === 1 ? "" : "s"}`,
-      note: upcoming.length ? "Check access windows and publishing state before the next batch sits." : "No upcoming exams are waiting on you right now.",
+      title: `${active.length} active exam${active.length === 1 ? "" : "s"}`,
+      note: active.length ? "Keep the published exams, rules, and question sets aligned for your batches." : "No active exams are waiting on you right now.",
     },
     {
       title: `${coursePerformance.length} course-level metric${coursePerformance.length === 1 ? "" : "s"} ready`,
-      note: coursePerformance.length ? "Real-time scores and pass rates are available for your active subjects." : "Course analytics will appear after students complete exams.",
+      note: coursePerformance.length ? "Live database scores and pass rates are available for your active subjects." : "Student performance will appear here after assigned students complete exams.",
     },
     {
       title: `${drafts.length} draft exam${drafts.length === 1 ? "" : "s"}`,
-      note: drafts.length ? "Preview and publish when the schedule is confirmed." : "No draft exams are waiting to be published.",
+      note: drafts.length ? "Review the draft questions and publish when the mock test is ready." : "No draft exams are waiting to be published.",
     },
   ];
 }
@@ -129,12 +147,20 @@ async function fetchJson(url, options) {
 async function loadWorkspace({ silent = false } = {}) {
   if (!silent) {
     showBanner("Refreshing instructor workspace data.", "info", true);
+    setWorkspaceHealth("syncing");
   }
-  const payload = await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/workspace`);
-  state.workspace = payload.data || state.workspace;
-  renderAll();
-  if (!silent) {
-    showBanner("Instructor workspace is up to date.", "success");
+  try {
+    const payload = await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/workspace`);
+    state.workspace = payload.data || state.workspace;
+    renderAll();
+    setWorkspaceHealth("ready");
+    if (!silent) {
+      showBanner("Instructor workspace is up to date.", "success");
+    }
+    return payload;
+  } catch (error) {
+    setWorkspaceHealth("issue");
+    throw error;
   }
 }
 
@@ -150,21 +176,16 @@ function renderWorkspaceOverview() {
   const exams = state.workspace.exams || [];
   const nextExam = getNextExam(exams);
   const drafts = exams.filter((exam) => exam.state === "Draft").length;
-  const nextExamLabel = nextExam
-    ? nextExam.accessMode === "open_anytime"
-      ? "Open anytime"
-      : formatExamMoment(nextExam)
-    : "";
 
   $("#workspaceHeadline").textContent = nextExam
-    ? `Next exam: ${nextExam.title}`
-    : "No upcoming exams on the board";
+    ? `Active exam: ${nextExam.title}`
+    : "No active exams on the board";
   $("#workspaceSummary").textContent = nextExam
-    ? `${nextExam.batch} ${nextExam.accessMode === "open_anytime" ? "is available anytime." : `is scheduled for ${formatExamMoment(nextExam)}.`} Keep the access mode, rules, and publish state aligned before students arrive.`
-    : "Your batches are clear right now. This is a good moment to upload materials, clear grading, or set the next mock test.";
+    ? `${nextExam.batch} can access this mock test right away. Keep the rules, question set, and publish state aligned while students are taking it.`
+    : "Your batches are clear right now. This is a good moment to upload materials, review student performance, or publish the next mock test.";
   $("#nextExamPill").textContent = nextExam
-    ? `${nextExam.batch} · ${nextExamLabel}`
-    : "No scheduled upcoming exam";
+    ? `${nextExam.batch} - Open now`
+    : "No active exam";
   $("#attentionPill").textContent = drafts
     ? `${drafts} draft exam${drafts === 1 ? "" : "s"} waiting to publish`
     : "No drafts pending";
@@ -193,7 +214,6 @@ function renderCourseContent() {
             <span>${escapeHTML(item.course)} - ${escapeHTML(item.batch)} - ${escapeHTML(item.type)}</span>
             <span>${escapeHTML(item.summary)}</span>
             ${item.link ? `<span>Link: <a href="${escapeHTML(item.link)}" target="_blank">${escapeHTML(item.link)}</a></span>` : ""}
-            <span>${item.deadline ? `Deadline: ${escapeHTML(item.deadline)}` : "No deadline"}</span>
           </div>
           <span class="chip">${escapeHTML(item.type)}</span>
         </div>
@@ -204,7 +224,14 @@ function renderCourseContent() {
 }
 
 function renderQuestionBank() {
-  const items = state.workspace.questionBank || [];
+  const listNode = $("#questionBankList");
+  if (!listNode) return;
+
+  const items = (state.workspace.questionBank || []).filter(
+    (item) =>
+      String(item?.type || "").trim().toUpperCase() === "MCQ" &&
+      String(item?.approvalStatus || "").trim().toLowerCase() === "pending"
+  );
   const validIds = new Set(
     items
       .map((item) => Number(item.id))
@@ -214,7 +241,7 @@ function renderQuestionBank() {
     if (!validIds.has(id)) state.selectedExamQuestionIds.delete(id);
   });
 
-  $("#questionBankList").innerHTML = items.length
+  listNode.innerHTML = items.length
     ? items
         .map(
           (item, index) => `
@@ -245,7 +272,7 @@ function renderQuestionBank() {
       `
         )
         .join("")
-    : renderEmptyCard("Question bank is empty", "Add reusable MCQ, short answer, or essay items so new exams are faster to assemble.");
+    : renderEmptyCard("Question bank is empty", "Add reusable MCQ items so new exams are faster to assemble.");
 
   updateSelectedQuestionMeta();
 }
@@ -253,13 +280,12 @@ function renderQuestionBank() {
 function updateSelectedQuestionMeta() {
   const countNode = $("#selectedQuestionCount");
   if (!countNode) return;
-  const bankCount = state.selectedExamQuestionIds.size;
   const draftCount = state.examDraftQuestions.length;
-  const total = bankCount + draftCount;
+  const total = draftCount;
   countNode.textContent = String(total);
   const metaNode = $("#draftQuestionMeta");
   if (metaNode) {
-    metaNode.textContent = `(${draftCount} draft, ${bankCount} from bank)`;
+    metaNode.textContent = `(${draftCount} draft)`;
   }
   const finalSubmitBtn = $("#finalExamSubmitBtn");
   if (finalSubmitBtn) {
@@ -324,74 +350,31 @@ function clearDraftQuestions() {
 
 function renderExams() {
   const exams = state.workspace.exams || [];
-  $("#examList").innerHTML = exams.length
-    ? exams
+  const activeExams = exams.filter((exam) => {
+    const status = String(exam?.status || "").trim().toLowerCase();
+    return status !== "completed" && status !== "missed";
+  });
+
+  $("#examList").innerHTML = activeExams.length
+    ? activeExams
         .map(
           (exam) => `
         <div class="list-item">
           <div>
             <h4>${escapeHTML(exam.title)}</h4>
-            <span>${escapeHTML(exam.batch)} - ${escapeHTML(exam.examType)} - ${escapeHTML(exam.accessMode === "open_anytime" ? "Available anytime" : `${exam.date} ${exam.time}`)}</span>
-            <span>${escapeHTML(String(exam.duration))} min · ${escapeHTML(exam.accessMode === "open_anytime" ? "Open anytime" : "Scheduled")} · ${escapeHTML(exam.shuffleMode)}</span>
+            <span>${escapeHTML(exam.batch)} - ${escapeHTML(exam.examType)} - ${escapeHTML(exam.accessMode === "open_anytime" ? "Open now" : "Published")}</span>
+            <span>${escapeHTML(String(exam.duration))} min · ${escapeHTML(exam.accessMode === "open_anytime" ? "Immediate access" : "Published")} · ${escapeHTML(exam.shuffleMode)}</span>
             <span>${escapeHTML(exam.rules || "No extra rules added.")}</span>
           </div>
           <div class="list-item-actions">
             <span class="chip ${exam.state === "Published" ? "" : exam.state === "Draft" ? "amber" : "blue"}">${escapeHTML(exam.state)}</span>
-            <span class="chip ${exam.status === "Upcoming" ? "blue" : exam.status === "Ongoing" ? "" : "red"}">${escapeHTML(exam.status)}</span>
+            <span class="chip ${exam.status === "Upcoming" ? "blue" : exam.status === "Ongoing" || exam.status === "always_open" ? "" : "red"}">${escapeHTML(exam.status === "always_open" ? "Open" : exam.status)}</span>
           </div>
         </div>
       `
         )
         .join("")
-    : renderEmptyCard("No exams created yet", "Create a mock test to start filling the assessment board.");
-}
-
-function renderStudents() {
-  const students = state.workspace.students || [];
-  $("#studentTableBody").innerHTML = students.length
-    ? students
-        .map(
-          (student) => `
-        <tr>
-          <td>${escapeHTML(student.name)}</td>
-          <td>${escapeHTML(student.batch)}</td>
-          <td>${escapeHTML(student.progress)}</td>
-          <td><span class="${getStatusChipClass(Number(student.score || 0))}">${escapeHTML(String(student.score || 0))}%</span></td>
-          <td>${escapeHTML(student.note)}</td>
-        </tr>
-      `
-        )
-        .join("")
-    : `<tr><td colspan="5">${renderEmptyCard("No assigned students yet", "Student profiles and progress rows will appear here when the batch roster is available.")}</td></tr>`;
-}
-
-function renderAnalytics() {
-  const scoreDistribution = state.workspace.scoreDistribution || [];
-  const coursePerformance = state.workspace.coursePerformance || [];
-
-  $("#distributionList").innerHTML = scoreDistribution.length
-    ? scoreDistribution
-        .map((item) => `<div class="list-item"><div><h4>${escapeHTML(item.band)}</h4><span>Students by avg mock score</span></div><span class="chip">${escapeHTML(String(item.count || 0))}</span></div>`)
-        .join("")
-    : renderEmptyCard("No mock distribution yet", "Assign students and have them complete mock tests to see score bands.");
-
-  $("#coursePerformanceList").innerHTML = coursePerformance.length
-    ? coursePerformance
-        .map(
-          (item) =>
-            `<div class="list-item"><div><h4>${escapeHTML(item.course)}</h4><span>Avg ${escapeHTML(String(item.averageScore || 0))}% across ${escapeHTML(String(item.assessments || 0))} mock attempt${Number(item.assessments) === 1 ? "" : "s"}</span><span>Top ${escapeHTML(String(item.topScore || 0))}% · Low ${escapeHTML(String(item.bottomScore || 0))}%</span></div><span class="chip ${getStatusChipClass(Number(item.averageScore || 0))}">${escapeHTML(String(item.passRate || 0))}% pass</span></div>`
-        )
-        .join("")
-    : renderEmptyCard("No mock performance by subject yet", "Mock results grouped by subject appear after students finish mocks.");
-
-  $("#passRateList").innerHTML = coursePerformance.length
-    ? coursePerformance
-        .map(
-          (item) =>
-            `<div class="list-item"><div><h4>${escapeHTML(item.course)}</h4><span>${escapeHTML(String(item.assessments || 0))} mock attempt${Number(item.assessments) === 1 ? "" : "s"} · ${escapeHTML(String(item.passRate || 0))}% pass rate (≥50%)</span></div></div>`
-        )
-        .join("")
-    : renderEmptyCard("No mock pass rates yet", "Pass rates are computed from mock attempts scored at 50% or above.");
+    : renderEmptyCard("No active exams", "Completed exams are archived and hidden from this board.");
 }
 
 function renderMockTestResults() {
@@ -458,8 +441,6 @@ function renderAll() {
   renderQuestionBank();
   renderExamDraftQuestions();
   renderExams();
-  renderStudents();
-  renderAnalytics();
   renderMockTestResults();
   renderCommunications();
 }
@@ -483,10 +464,13 @@ async function submitForm(button, task) {
 
 async function handleCourseSubmit(event) {
   event.preventDefault();
-  const formData = new FormData(event.currentTarget);
-  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const submitButton = form.querySelector('button[type="submit"]');
+  setInlineStatus("#courseFormStatus");
   await submitForm(submitButton, async () => {
-    await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/course-items`, {
+    setInlineStatus("#courseFormStatus", "Sending content to the server...", "info");
+    const payload = await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/course-items`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -496,101 +480,68 @@ async function handleCourseSubmit(event) {
         batchName: String(formData.get("courseBatch") || "").trim(),
         title: String(formData.get("contentTitle") || "").trim(),
         summary: String(formData.get("contentSummary") || "").trim(),
-        deadline: String(formData.get("contentDeadline") || "").trim(),
         link: String(formData.get("contentLink") || "").trim(),
       }),
     });
-    event.currentTarget.reset();
+    form.reset();
     $("#linkField").style.display = "block";
     $("#contentLink").required = true;
     $("#courseAudienceType")?.dispatchEvent(new Event("change"));
     await loadWorkspace();
-    showBanner("Course content uploaded and sent to admin for approval.", "success");
+    const successMessage = payload?.message || "Course content uploaded and sent to admin for approval.";
+    setInlineStatus("#courseFormStatus", `${successMessage} You can review it below in your resource list.`, "success");
+    showBanner(successMessage, "success");
   });
 }
 
 async function handleExamSubmit(event) {
   event.preventDefault();
   showConflict("");
-  const formData = new FormData(event.currentTarget);
-  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
-  const selectedQuestionIds = Array.from(state.selectedExamQuestionIds);
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const submitButton = form.querySelector('button[type="submit"]');
   const draftQuestions = [...state.examDraftQuestions];
-  if (!selectedQuestionIds.length && !draftQuestions.length) {
-    showBanner("Add at least one question (draft or question bank) before submitting this mock test.", "error");
+  setInlineStatus("#examFormStatus");
+  if (!draftQuestions.length) {
+    showBanner("Add at least one draft question before submitting this mock test.", "error");
+    setInlineStatus("#examFormStatus", "Add at least one draft question before submitting the exam.", "error");
     return;
   }
 
-  const accessMode = String(formData.get("accessMode") || "scheduled").trim();
-  const date = String(formData.get("examDate") || "").trim();
-  const time = String(formData.get("examTime") || "").trim();
-  const endTime = String(formData.get("examEndTime") || "").trim();
+  const accessMode = String(formData.get("accessMode") || "open_anytime").trim();
   const subject = String(formData.get("examSubject") || "").trim();
   const perMcqMark = Number(formData.get("perMcqMark") || 0);
-  const durationFromForm = Number(formData.get("examDuration") || 0);
-  let durationToSend = durationFromForm;
-
-  if (accessMode === "scheduled" && (!date || !time)) {
-    showBanner("Scheduled exams require a date and time.", "error");
-    return;
-  }
+  const durationToSend = Number(formData.get("examDuration") || 0);
   if (!Number.isFinite(durationToSend) || durationToSend <= 0) {
     showBanner("Duration must be greater than 0.", "error");
+    setInlineStatus("#examFormStatus", "Duration must be greater than 0.", "error");
     return;
-  }
-  if (accessMode === "scheduled" && endTime) {
-    const startDate = parseLocalDateTime(date, time);
-    const manualEndDate = parseLocalDateTime(date, endTime);
-    if (!startDate || !manualEndDate) {
-      showBanner("End time is invalid.", "error");
-      return;
-    }
-    if (manualEndDate <= startDate) manualEndDate.setDate(manualEndDate.getDate() + 1);
-    const computedMinutes = Math.round((manualEndDate.getTime() - startDate.getTime()) / 60000);
-    if (!Number.isFinite(computedMinutes) || computedMinutes <= 0) {
-      showBanner("End time must be after start time.", "error");
-      return;
-    }
-    durationToSend = computedMinutes;
   }
   if (!subject) {
     showBanner("Subject is required.", "error");
+    setInlineStatus("#examFormStatus", "Subject is required before the exam can be submitted.", "error");
     return;
   }
   if (!Number.isFinite(perMcqMark) || perMcqMark <= 0) {
     showBanner("Per MCQ mark must be greater than 0.", "error");
+    setInlineStatus("#examFormStatus", "Per MCQ mark must be greater than 0.", "error");
     return;
   }
 
   try {
     await submitForm(submitButton, async () => {
-      const createdQuestionIds = [];
+      setInlineStatus(
+        "#examFormStatus",
+        `Submitting the exam with ${draftQuestions.length} question${draftQuestions.length === 1 ? "" : "s"}...`,
+        "info"
+      );
+      showBanner(
+        `Submitting mock test with ${draftQuestions.length} draft question${draftQuestions.length === 1 ? "" : "s"}...`,
+        "info",
+        true
+      );
 
-      for (const draftQuestion of draftQuestions) {
-        const questionPayload = await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/question-bank`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            subject: draftQuestion.subject,
-            type: draftQuestion.type,
-            audienceType: draftQuestion.audienceType,
-            batchName: draftQuestion.batchName,
-            text: draftQuestion.text,
-            options: draftQuestion.options,
-            mcqOptions: draftQuestion.mcqOptions,
-            answerKey: draftQuestion.answerKey,
-            skipSubmission: true,
-          }),
-        });
-
-        const createdQuestionId = Number(questionPayload?.data?.questionId || 0);
-        if (createdQuestionId > 0) {
-          createdQuestionIds.push(createdQuestionId);
-        }
-      }
-
-      const finalQuestionIds = [...selectedQuestionIds, ...createdQuestionIds];
-      await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/exams`, {
+      const payload = await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/exams`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -599,9 +550,6 @@ async function handleExamSubmit(event) {
           audienceType: String(formData.get("examAudienceType") || "batch").trim(),
           batchName: String(formData.get("examBatch") || "").trim(),
           accessMode,
-          date: accessMode === "scheduled" ? date : "",
-          time: accessMode === "scheduled" ? time : "",
-          endTime: accessMode === "scheduled" ? endTime : "",
           duration: durationToSend,
           negativeMarking: String(formData.get("negativeMarking") || "").trim(),
           perMcqMark,
@@ -609,32 +557,47 @@ async function handleExamSubmit(event) {
           examType: String(formData.get("examType") || "").trim(),
           state: String(formData.get("publishState") || "").trim(),
           rules: String(formData.get("examRules") || "").trim(),
-          questionIds: finalQuestionIds,
+          draftQuestions: draftQuestions.map((question) => ({
+            subject: String(question.subject || "").trim(),
+            type: "MCQ",
+            audienceType: String(question.audienceType || "batch").trim(),
+            batchName: String(question.batchName || "").trim(),
+            text: String(question.text || "").trim(),
+            options: String(question.options || "").trim(),
+            mcqOptions: Array.isArray(question.mcqOptions)
+              ? question.mcqOptions.map((item) => String(item || "").trim()).filter(Boolean)
+              : [],
+            answerKey: String(question.answerKey || "").trim().toUpperCase(),
+          })),
         }),
       });
-      event.currentTarget.reset();
-      state.selectedExamQuestionIds.clear();
+      form.reset();
       state.examDraftQuestions = [];
       const questionForm = $("#questionBankForm");
       questionForm?.reset();
-      const endInput = $("#examEndTime");
-      if (endInput) endInput.dataset.manual = "false";
-      syncExamEndTimePreview(true);
-      $("#questionType")?.dispatchEvent(new Event("change"));
-      await loadWorkspace();
-      showBanner("Mock test and questions sent to admin for approval.", "success");
+      syncQuestionComposerMode();
+      const successMessage = payload?.message || "Mock test submitted and published.";
+      setInlineStatus("#examFormStatus", `${successMessage} The exam is now listed on the active exam board.`, "success");
+      showBanner(successMessage, "success");
+      loadWorkspace({ silent: true }).catch(() => {});
     });
   } catch (error) {
     throw error;
   }
 }
 
+function labelForField(field) {
+  if (!field || !field.id) return "all required exam fields";
+  const label = document.querySelector(`label[for="${field.id}"]`);
+  return label?.textContent?.trim() || field.name || field.id || "required field";
+}
+
 async function handleQuestionSubmit(event) {
   event.preventDefault();
-  const formData = new FormData(event.currentTarget);
-  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
-  const type = String(formData.get("questionType") || "").trim();
-  const normalizedType = type.toLowerCase();
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const submitButton = form.querySelector('button[type="submit"]');
+  const type = "MCQ";
 
   const audienceType = "batch";
   const batchName = String($("#examBatch")?.value || "").trim();
@@ -652,35 +615,25 @@ async function handleQuestionSubmit(event) {
   let answerKeyPayload = "";
   let mcqOptionsPayload = [];
 
-  if (normalizedType === "mcq") {
-    const optionKeys = ["questionOptionA", "questionOptionB", "questionOptionC", "questionOptionD"];
-    const rawOptions = optionKeys
-      .map((key) => String(formData.get(key) || "").trim())
-      .filter(Boolean);
+  const optionKeys = ["questionOptionA", "questionOptionB", "questionOptionC", "questionOptionD"];
+  const rawOptions = optionKeys
+    .map((key) => String(formData.get(key) || "").trim())
+    .filter(Boolean);
 
-    if (rawOptions.length < 2) {
-      showBanner("Please provide at least two MCQ options.", "error");
-      return;
-    }
-
-    const answerOption = String(formData.get("questionAnswerOption") || "").trim().toUpperCase();
-    if (!["A", "B", "C", "D"].includes(answerOption)) {
-      showBanner("Please select a correct option for this MCQ.", "error");
-      return;
-    }
-
-    optionsPayload = rawOptions.join(" | ");
-    answerKeyPayload = answerOption;
-    mcqOptionsPayload = rawOptions;
-  } else {
-    const rubricText = String(formData.get("nonMcqAnswer") || "").trim();
-    if (!rubricText) {
-      showBanner("Please add an expected answer or rubric for non-MCQ questions.", "error");
-      return;
-    }
-    optionsPayload = rubricText;
-    answerKeyPayload = rubricText;
+  if (rawOptions.length < 2) {
+    showBanner("Please provide at least two MCQ options.", "error");
+    return;
   }
+
+  const answerOption = String(formData.get("questionAnswerOption") || "").trim().toUpperCase();
+  if (!["A", "B", "C", "D"].includes(answerOption)) {
+    showBanner("Please select a correct option for this MCQ.", "error");
+    return;
+  }
+
+  optionsPayload = rawOptions.join(" | ");
+  answerKeyPayload = answerOption;
+  mcqOptionsPayload = rawOptions;
 
   await submitForm(submitButton, async () => {
     state.draftQuestionCounter += 1;
@@ -697,39 +650,18 @@ async function handleQuestionSubmit(event) {
       previewOptions: optionsPayload,
     });
 
-    event.currentTarget.reset();
-    $("#questionType")?.dispatchEvent(new Event("change"));
+    form.reset();
+    syncQuestionComposerMode();
     renderExamDraftQuestions();
     showBanner("Question added to this mock test draft.", "success");
   });
 }
 
-async function handleStudentActionSubmit(event) {
-  event.preventDefault();
-  const formData = new FormData(event.currentTarget);
-  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
-  await submitForm(submitButton, async () => {
-    await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/student-actions`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        studentName: String(formData.get("studentName") || "").trim(),
-        batch: String(formData.get("studentBatch") || "").trim(),
-        action: String(formData.get("studentAction") || "").trim(),
-        progress: String(formData.get("studentProgress") || "").trim(),
-        note: String(formData.get("studentMessage") || "").trim(),
-      }),
-    });
-    event.currentTarget.reset();
-    await loadWorkspace();
-    showBanner("Student action recorded for this batch.", "success");
-  });
-}
-
 async function handleCommunicationSubmit(event) {
   event.preventDefault();
-  const formData = new FormData(event.currentTarget);
-  const submitButton = event.currentTarget.querySelector('button[type="submit"]');
+  const form = event.currentTarget;
+  const formData = new FormData(form);
+  const submitButton = form.querySelector('button[type="submit"]');
   const messageType = String(formData.get("messageType") || "").trim();
   const isAnnouncement = messageType === "Announcement";
 
@@ -758,7 +690,7 @@ async function handleCommunicationSubmit(event) {
         }),
       });
     }
-    event.currentTarget.reset();
+    form.reset();
     await loadWorkspace();
     if (isAnnouncement) {
       showBanner("Announcement posted and sent for admin approval.", "success");
@@ -780,114 +712,52 @@ function syncBatchGroupVisibility(audienceSelectId, batchGroupId, batchInputId) 
 }
 
 function syncQuestionComposerMode() {
-  const questionType = String($("#questionType")?.value || "MCQ").trim().toLowerCase();
-  const isMcq = questionType === "mcq";
+  const questionTypeSelect = $("#questionType");
+  if (questionTypeSelect && questionTypeSelect.value !== "MCQ") {
+    questionTypeSelect.value = "MCQ";
+  }
 
-  $("#mcqEditorGroup")?.classList.toggle("is-hidden", !isMcq);
-  $("#nonMcqAnswerGroup")?.classList.toggle("is-hidden", isMcq);
+  $("#mcqEditorGroup")?.classList.remove("is-hidden");
 
   ["#questionOptionA", "#questionOptionB", "#questionOptionC", "#questionOptionD"].forEach((selector) => {
     const input = $(selector);
-    if (input) input.required = isMcq;
+    if (input) input.required = true;
   });
 
   const answerSelect = $("#questionAnswerOption");
-  if (answerSelect) answerSelect.required = isMcq;
-
-  const nonMcqAnswer = $("#nonMcqAnswer");
-  if (nonMcqAnswer) nonMcqAnswer.required = !isMcq;
-}
-
-function parseLocalDateTime(dateValue, timeValue) {
-  const date = String(dateValue || "").trim();
-  const time = String(timeValue || "").trim();
-  if (!date || !time) return null;
-  const normalizedTime = /^\d{2}:\d{2}$/.test(time) ? `${time}:00` : time;
-  const parsed = new Date(`${date}T${normalizedTime}`);
-  return Number.isNaN(parsed.getTime()) ? null : parsed;
-}
-
-function formatTimeInputValue(date) {
-  return `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
-}
-
-function syncExamEndTimePreview(force = false) {
-  const dateInput = $("#examDate");
-  const startTimeInput = $("#examTime");
-  const durationInput = $("#examDuration");
-  const endTimeInput = $("#examEndTime");
-  if (!dateInput || !startTimeInput || !durationInput || !endTimeInput) return;
-
-  const date = String(dateInput.value || "").trim();
-  const time = String(startTimeInput.value || "").trim();
-  const duration = Number(durationInput.value || 0);
-
-  if (!date || !time || !Number.isFinite(duration) || duration <= 0) {
-    if (force) endTimeInput.value = "";
-    return;
-  }
-
-  const start = parseLocalDateTime(date, time);
-  if (!start) {
-    if (force) endTimeInput.value = "";
-    return;
-  }
-
-  const end = new Date(start.getTime() + duration * 60000);
-  if (force || endTimeInput.dataset.manual !== "true" || !String(endTimeInput.value || "").trim()) {
-    endTimeInput.value = formatTimeInputValue(end);
-    endTimeInput.dataset.manual = "false";
-  }
-}
-
-function syncDurationFromEndTime() {
-  const date = String($("#examDate")?.value || "").trim();
-  const startTime = String($("#examTime")?.value || "").trim();
-  const endTime = String($("#examEndTime")?.value || "").trim();
-  const durationInput = $("#examDuration");
-  if (!durationInput || !date || !startTime || !endTime) return;
-
-  const start = parseLocalDateTime(date, startTime);
-  const end = parseLocalDateTime(date, endTime);
-  if (!start || !end) return;
-  if (end <= start) end.setDate(end.getDate() + 1);
-
-  const diffMinutes = Math.round((end.getTime() - start.getTime()) / 60000);
-  if (Number.isFinite(diffMinutes) && diffMinutes > 0) {
-    durationInput.value = String(diffMinutes);
-  }
+  if (answerSelect) answerSelect.required = true;
 }
 
 function bindEvents() {
   $("#courseAudienceType")?.addEventListener("change", () => {
     syncBatchGroupVisibility("#courseAudienceType", "#courseBatchGroup", "#courseBatch");
   });
-  $("#examDate")?.addEventListener("change", () => syncExamEndTimePreview(true));
-  $("#examTime")?.addEventListener("change", () => syncExamEndTimePreview(true));
-  $("#examDuration")?.addEventListener("input", () => syncExamEndTimePreview(false));
-  $("#examEndTime")?.addEventListener("input", () => {
-    const endInput = $("#examEndTime");
-    if (endInput) endInput.dataset.manual = "true";
-    syncDurationFromEndTime();
-  });
-  $("#questionType")?.addEventListener("change", () => {
-    syncQuestionComposerMode();
-  });
-
   $("#courseForm")?.addEventListener("submit", (event) => {
-    handleCourseSubmit(event).catch((error) => showBanner(error.message, "error"));
+    handleCourseSubmit(event).catch((error) => {
+      setInlineStatus("#courseFormStatus", error.message || "Could not upload content.", "error");
+      showBanner(error.message, "error");
+    });
   });
-  $("#examForm")?.addEventListener("submit", (event) => {
-    handleExamSubmit(event).catch((error) => showBanner(error.message, "error"));
+  const examForm = $("#examForm");
+  examForm?.addEventListener(
+    "invalid",
+    (event) => {
+      const field = event.target;
+      showBanner(`Please fill a valid value for: ${labelForField(field)}.`, "error");
+    },
+    true
+  );
+
+  examForm?.addEventListener("submit", (event) => {
+    handleExamSubmit(event).catch((error) => {
+      setInlineStatus("#examFormStatus", error.message || "Could not submit the exam.", "error");
+      showBanner(error.message, "error");
+    });
   });
   $("#courseAudienceType")?.dispatchEvent(new Event("change"));
-  syncExamEndTimePreview(true);
-  $("#questionType")?.dispatchEvent(new Event("change"));
+  syncQuestionComposerMode();
   $("#questionBankForm")?.addEventListener("submit", (event) => {
     handleQuestionSubmit(event).catch((error) => showBanner(error.message, "error"));
-  });
-  $("#studentActionForm")?.addEventListener("submit", (event) => {
-    handleStudentActionSubmit(event).catch((error) => showBanner(error.message, "error"));
   });
   $("#communicationForm")?.addEventListener("submit", (event) => {
     handleCommunicationSubmit(event).catch((error) => showBanner(error.message, "error"));
@@ -926,9 +796,6 @@ function bindEvents() {
   if (initialMessageType) {
     initialMessageType.dispatchEvent(new Event("change"));
   }
-  $("#clearSelectedQuestionsBtn")?.addEventListener("click", () => {
-    clearExamQuestionSelection();
-  });
   $("#clearDraftQuestionsBtn")?.addEventListener("click", () => {
     clearDraftQuestions();
   });
@@ -989,13 +856,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   bindEvents();
   bindSectionNav();
 
+  const startWorkspacePolling = () => {
+    window.setInterval(() => loadWorkspace({ silent: true }).catch(() => {}), 30000);
+  };
+
+  setupTabSync(() => loadWorkspace({ silent: true }), { minIntervalMs: 1000 });
+
   try {
     await loadWorkspace();
-    window.setInterval(() => loadWorkspace({ silent: true }).catch(() => {}), 30000);
+    startWorkspacePolling();
   } catch (error) {
     showBanner(`Instructor workspace could not load: ${error.message}`, "error", true);
+    startWorkspacePolling();
   }
 });
 
 window.toggleExamQuestionSelection = toggleExamQuestionSelection;
 window.removeDraftQuestion = removeDraftQuestion;
+
+

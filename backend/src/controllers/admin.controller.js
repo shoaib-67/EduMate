@@ -18,11 +18,13 @@ const {
   runExamAutomation,
   findExamConflict,
 } = require("../services/examAutomation.service");
+const { syncPendingInstructorExamSubmissions } = require("../services/instructor.service");
 
 const adminController = {
   overview: async (_req, res) => {
     try {
       const pool = getPool();
+      await syncPendingInstructorExamSubmissions(pool);
 
       const [studentRows] = await pool.query("SELECT COUNT(*) as count FROM students");
       const [instructorRows] = await pool.query("SELECT COUNT(*) as count FROM instructors");
@@ -301,6 +303,7 @@ const adminController = {
   listContent: async (_req, res) => {
     try {
       const pool = getPool();
+      await syncPendingInstructorExamSubmissions(pool);
       const [content] = await pool.query(
         `
         SELECT
@@ -308,6 +311,7 @@ const adminController = {
           cs.title,
           cs.type,
           cs.description,
+          cs.source_ref as sourceRef,
           cs.course_title as courseTitle,
           cs.batch_name as batchName,
           cs.deadline,
@@ -331,7 +335,7 @@ const adminController = {
       const pool = getPool();
       const [reports] = await pool.query(
         `SELECT report_id as id, title, description, category, reporter_name as reporterName,
-                reporter_email as reporterEmail, status, priority, value, admin_note as adminNote,
+                reporter_email as reporterEmail, reporter_role as reporterRole, status, priority, value, admin_note as adminNote,
                 created_at as createdAt, updated_at as updatedAt
          FROM reports ORDER BY created_at DESC`
       );
@@ -349,6 +353,7 @@ const adminController = {
       const cleanPriority = String(req.body?.priority || "medium").trim().toLowerCase();
       const cleanReporterName = String(req.body?.reporterName || "").trim();
       const cleanReporterEmail = String(req.body?.reporterEmail || "").trim().toLowerCase();
+      const cleanReporterRole = String(req.body?.reporterRole || "").trim().toLowerCase();
 
       if (!cleanTitle || !cleanDescription) {
         return res.status(422).json({ success: false, message: "Report title and description are required." });
@@ -358,11 +363,15 @@ const adminController = {
         return res.status(422).json({ success: false, message: "Report category must be complaint, bug, or content." });
       }
 
+      if (cleanReporterRole && !["student", "instructor"].includes(cleanReporterRole)) {
+        return res.status(422).json({ success: false, message: "Reporter role must be student or instructor." });
+      }
+
       const pool = getPool();
       const [result] = await pool.query(
         `
-        INSERT INTO reports (title, description, category, reporter_name, reporter_email, status, priority, value)
-        VALUES (?, ?, ?, ?, ?, 'open', ?, ?)
+        INSERT INTO reports (title, description, category, reporter_name, reporter_email, reporter_role, status, priority, value)
+        VALUES (?, ?, ?, ?, ?, ?, 'open', ?, ?)
         `,
         [
           cleanTitle,
@@ -370,6 +379,7 @@ const adminController = {
           cleanCategory,
           cleanReporterName || null,
           cleanReporterEmail || null,
+          cleanReporterRole || null,
           cleanPriority,
           cleanCategory,
         ]
@@ -409,16 +419,19 @@ const adminController = {
   },
 
   approveContent: async (req, res) => {
+    let connection;
     try {
       const { id } = req.params;
       const pool = getPool();
-      const [contentRows] = await pool.query(
+      connection = await pool.getConnection();
+      await connection.beginTransaction();
+
+      const [contentRows] = await connection.query(
         "SELECT title, type, source_ref FROM content_submissions WHERE submission_id = ? LIMIT 1",
         [id]
       );
-
-      const [result] = await pool.query("UPDATE content_submissions SET status = 'approved' WHERE submission_id = ?", [id]);
-      if (result.affectedRows === 0) {
+      if (!contentRows.length) {
+        await connection.rollback();
         return res.status(404).json({ success: false, message: "Content submission not found." });
       }
 
@@ -428,7 +441,7 @@ const adminController = {
       const adminId = parseRequiredId(req.body?.adminId) || null;
 
       if (questionRefMatch) {
-        await pool.query(
+        await connection.query(
           `
           UPDATE instructor_question_bank
           SET approval_status = 'approved',
@@ -440,7 +453,7 @@ const adminController = {
         );
       } else if (instructorExamRefMatch) {
         const instructorExamId = Number(instructorExamRefMatch[1]);
-        const [[instructorExam]] = await pool.query(
+        const [[instructorExam]] = await connection.query(
           `
           SELECT instructor_exam_id, title, batch_name, exam_date, start_time, duration_minutes,
                  join_window_minutes, rules, question_ids_json, published_exam_id, audience_type
@@ -463,7 +476,7 @@ const adminController = {
             const endTime = formatSqlDateTime(
               new Date(startTimeValue.getTime() + Number(instructorExam.duration_minutes || 0) * 60000)
             );
-            const [examInsertResult] = await pool.query(
+            const [examInsertResult] = await connection.query(
               `
               INSERT INTO exam_schedules
                 (subject, exam_date, start_time, end_time, duration_minutes, batch_name, instructions, audience_type, join_window_minutes, created_by_admin_id)
@@ -485,7 +498,7 @@ const adminController = {
             publishedExamId = Number(examInsertResult.insertId || 0);
           }
 
-          await pool.query(
+          await connection.query(
             `
             UPDATE instructor_exam_schedules
             SET approval_status = 'approved',
@@ -507,7 +520,7 @@ const adminController = {
 
           if (publishedExamId && questionIds.length) {
             for (let index = 0; index < questionIds.length; index += 1) {
-              await pool.query(
+              await connection.query(
                 `
                 INSERT IGNORE INTO exam_question_mappings (exam_id, question_id, order_index)
                 VALUES (?, ?, ?)
@@ -517,7 +530,7 @@ const adminController = {
             }
 
             const placeholders = questionIds.map(() => "?").join(", ");
-            await pool.query(
+            await connection.query(
               `
               UPDATE instructor_question_bank
               SET approval_status = 'approved',
@@ -531,7 +544,13 @@ const adminController = {
         }
       }
 
-      await logAdminActivity(pool, {
+      const [result] = await connection.query("UPDATE content_submissions SET status = 'approved' WHERE submission_id = ?", [id]);
+      if (result.affectedRows === 0) {
+        await connection.rollback();
+        return res.status(404).json({ success: false, message: "Content submission not found." });
+      }
+
+      await logAdminActivity(connection, {
         action: "approved_content",
         targetType: "content",
         targetId: Number(id),
@@ -539,9 +558,19 @@ const adminController = {
         details: { type: contentRows[0]?.type || null },
       });
 
+      await connection.commit();
       return res.status(200).json({ success: true, message: "Content approved successfully." });
     } catch (error) {
+      if (connection) {
+        try {
+          await connection.rollback();
+        } catch {
+          // Ignore rollback failures and return the original error below.
+        }
+      }
       return res.status(500).json({ success: false, message: "Could not approve content.", error: error.message });
+    } finally {
+      if (connection) connection.release();
     }
   },
 

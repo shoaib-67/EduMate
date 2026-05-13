@@ -1,108 +1,224 @@
 const { API_BASE_URL, getStudentId, requireRole, setupLogoutHandlers } = window.EduMateShared;
 
-let allCourses = [];
+const state = {
+  items: [],
+  activeFilter: "all",
+  searchTerm: "",
+};
 
-const courseSearchInput = document.querySelector(".search-box input");
+const categoryMeta = {
+  "question-bank": { label: "Question Bank", chipClass: "chip blue" },
+  "class-video": { label: "Class Video", chipClass: "chip" },
+  "concept-book": { label: "Concept Book", chipClass: "chip amber" },
+};
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
+const escapeHtml = (value) =>
+  String(value || "")
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#39;");
+const filterButtons = Array.from(document.querySelectorAll(".filters .filter-btn"));
+const searchInput = document.querySelector(".search-box input");
 
-function updateCourseStats(stats) {
+function classifyCategory(item) {
+  const type = normalize(item.type);
+  const title = normalize(item.title);
+  const description = normalize(item.description);
+  const combined = `${type} ${title} ${description}`;
+
+  if (combined.includes("question bank")) return "question-bank";
+  if (combined.includes("video")) return "class-video";
+  if (combined.includes("concept") || combined.includes("book") || combined.includes("pdf")) return "concept-book";
+  return "";
+}
+
+function mapItem(rawItem, source) {
+  const rawId = rawItem.id ?? rawItem.submission_id ?? null;
+  const item = {
+    id: `${source}-${rawId ?? rawItem.title ?? Math.random()}`,
+    rawId,
+    title: String(rawItem.title || "Untitled").trim(),
+    courseTitle: String(rawItem.courseTitle || rawItem.course_title || "").trim(),
+    description: String(rawItem.description || "").trim(),
+    type: String(rawItem.type || "").trim(),
+    batchName: String(rawItem.batchName || rawItem.batch_name || "").trim(),
+    link: String(rawItem.link || "").trim(),
+    createdAt: rawItem.createdAt || rawItem.created_at || null,
+    source,
+  };
+
+  const category = source === "question-bank" ? "question-bank" : classifyCategory(item);
+  if (!category) return null;
+
+  return { ...item, category };
+}
+
+function updateStats(items) {
   const statCards = document.querySelectorAll(".stat-row .stat-card");
   if (statCards.length < 3) return;
 
+  const questionBankCount = items.filter((item) => item.category === "question-bank").length;
+  const classVideoCount = items.filter((item) => item.category === "class-video").length;
+  const conceptBookCount = items.filter((item) => item.category === "concept-book").length;
+
   statCards[0].innerHTML = `
-    <p class="s-label">Active Courses</p>
-    <p class="s-val">${stats.activeCourses}</p>
-    <p class="s-sub">${stats.activeCourses > 0 ? 'Available' : 'No courses yet'}</p>
+    <p class="s-label">Question Bank</p>
+    <p class="s-val">${questionBankCount}</p>
+    <p class="s-sub">${questionBankCount > 0 ? "Approved items" : "No items yet"}</p>
   `;
 
   statCards[1].innerHTML = `
-    <p class="s-label">Lessons Completed</p>
-    <p class="s-val">${stats.lessonsCompleted}</p>
-    <p class="s-sub">${stats.lessonsCompleted > 0 ? 'Completed' : 'Start learning'}</p>
+    <p class="s-label">Class Video</p>
+    <p class="s-val">${classVideoCount}</p>
+    <p class="s-sub">${classVideoCount > 0 ? "Available videos" : "No videos yet"}</p>
   `;
 
   statCards[2].innerHTML = `
-    <p class="s-label">Average Progress</p>
-    <p class="s-val text-primary">${stats.avgProgress}%</p>
-    <p class="s-sub">${stats.avgProgress > 50 ? 'Good progress' : 'Keep going'}</p>
+    <p class="s-label">Concept Book</p>
+    <p class="s-val text-primary">${conceptBookCount}</p>
+    <p class="s-sub">${conceptBookCount > 0 ? "PDF/Book resources" : "No resources yet"}</p>
   `;
 }
 
-function renderCourses(courses) {
+function filteredItems() {
+  return state.items.filter((item) => {
+    const filterMatch = state.activeFilter === "all" || item.category === state.activeFilter;
+    const searchBase = normalize(`${item.title} ${item.courseTitle} ${item.description} ${item.batchName} ${item.type}`);
+    const searchMatch = !state.searchTerm || searchBase.includes(state.searchTerm);
+    return filterMatch && searchMatch;
+  });
+}
+
+function renderCards() {
   const grid = document.querySelector(".grid");
   if (!grid) return;
 
-  if (!courses || courses.length === 0) {
-    grid.innerHTML = '<div class="course-card"><h3>No courses available</h3><p>Courses for your program will appear here once uploaded by instructors.</p></div>';
+  const items = filteredItems();
+  if (!items.length) {
+    grid.innerHTML = `
+      <div class="course-card">
+        <h3>No matching content</h3>
+        <p>Try another filter or search term.</p>
+      </div>
+    `;
     return;
   }
 
-  grid.innerHTML = courses.map(course => `
-    <div class="course-card">
-      <div class="u-flex u-align-center u-space-between u-gap-8">
-        <h3>${course.course_title}</h3>
-        <span class="chip">${course.content_type}</span>
-      </div>
-      <p>${course.summary || 'No description available'}</p>
-      <div class="course-meta u-flex u-space-between">
-        <span>Batch: ${course.batch_name}</span>
-        <span>${course.deadline ? `Due: ${new Date(course.deadline).toLocaleDateString()}` : 'No deadline'}</span>
-      </div>
-      ${course.link ? `<div class="progress"><div class="progress-fill progress-75"></div></div>` : ''}
-      <div class="u-flex u-gap-8 u-flex-wrap">
-        ${course.link ? `<span class="chip blue">Available</span>` : `<span class="chip amber">Pending</span>`}
-      </div>
-      ${course.link ? `<a class="btn btn-primary" href="${course.link}" target="_blank">Access Content</a>` : `<a class="btn" href="#">Coming Soon</a>`}
-    </div>
-  `).join('');
+  grid.innerHTML = items
+    .map((item) => {
+      const categoryInfo = categoryMeta[item.category];
+      const dateLabel = item.createdAt ? new Date(item.createdAt).toLocaleDateString() : "";
+      const batchLabel = item.batchName || "All Batches";
+
+      return `
+        <article class="course-card">
+          <div class="u-flex u-align-center u-space-between u-gap-8">
+            <h3>${escapeHtml(item.title)}</h3>
+            <span class="${categoryInfo.chipClass}">${escapeHtml(categoryInfo.label)}</span>
+          </div>
+          <p>${escapeHtml(item.description || "No description provided.")}</p>
+          <div class="course-meta u-flex u-space-between">
+            <span>${escapeHtml(item.courseTitle || "General")}</span>
+            <span>${escapeHtml(batchLabel)}</span>
+          </div>
+          <div class="course-meta u-flex u-space-between">
+            <span>${escapeHtml(item.type || categoryInfo.label)}</span>
+            <span>${escapeHtml(dateLabel || "Updated recently")}</span>
+          </div>
+          ${item.link
+            ? `<a class="btn btn-primary" href="${escapeHtml(item.link)}" target="_blank" rel="noreferrer">Open</a>`
+            : `<button class="btn" type="button" disabled>No Link</button>`}
+        </article>
+      `;
+    })
+    .join("");
 }
 
-async function loadCourses() {
+function setActiveFilter(filterKey) {
+  state.activeFilter = filterKey;
+  filterButtons.forEach((button) => {
+    const key = normalize(button.dataset.filter);
+    button.classList.toggle("active", key === filterKey);
+  });
+  renderCards();
+}
+
+function bindControls() {
+  filterButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = normalize(button.dataset.filter || "all") || "all";
+      setActiveFilter(key);
+    });
+  });
+
+  if (searchInput) {
+    searchInput.addEventListener("input", () => {
+      state.searchTerm = normalize(searchInput.value);
+      renderCards();
+    });
+  }
+}
+
+async function loadMergedContent() {
+  const studentId = getStudentId();
+  if (!studentId) return [];
+
+  const [coursesResult, questionBankResult] = await Promise.allSettled([
+    fetch(`${API_BASE_URL}/student/${studentId}/courses`).then((res) => res.json()),
+    fetch(`${API_BASE_URL}/student/${studentId}/question-bank`).then((res) => res.json()),
+  ]);
+
+  const courseItems =
+    coursesResult.status === "fulfilled" && coursesResult.value?.success && Array.isArray(coursesResult.value.data)
+      ? coursesResult.value.data
+      : [];
+  const bankItems =
+    questionBankResult.status === "fulfilled" &&
+    questionBankResult.value?.success &&
+    Array.isArray(questionBankResult.value.data)
+      ? questionBankResult.value.data
+      : [];
+
+  const merged = [
+    ...courseItems.map((item) => mapItem(item, "courses")),
+    ...bankItems.map((item) => mapItem(item, "question-bank")),
+  ].filter(Boolean);
+
+  const seen = new Set();
+  return merged.filter((item) => {
+    const key =
+      item.rawId != null && item.rawId !== ""
+        ? `submission:${item.rawId}`
+        : `${normalize(item.title)}|${normalize(item.link)}|${normalize(item.courseTitle)}|${normalize(item.batchName)}|${item.category}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+}
+
+async function initPage() {
+  if (!requireRole("student")) return;
+  setupLogoutHandlers();
+  bindControls();
+
   try {
-    const studentId = getStudentId();
-    if (!studentId) return;
-
-    const response = await fetch(`${API_BASE_URL}/student/${studentId}/courses`);
-    const result = await response.json();
-
-    if (!result.success || !result.data) return;
-
-    const { courses, stats } = result.data;
-    allCourses = courses || [];
-
-    updateCourseStats(stats);
-    renderCourses(allCourses);
-  } catch (error) {
-    console.error("Error loading courses:", error);
+    state.items = await loadMergedContent();
+    updateStats(state.items);
+    renderCards();
+  } catch (_error) {
     const grid = document.querySelector(".grid");
     if (grid) {
-      grid.innerHTML = '<div class="course-card"><h3>Error loading courses</h3><p>Please try again later.</p></div>';
+      grid.innerHTML = `
+        <div class="course-card">
+          <h3>Could not load content</h3>
+          <p>Please refresh after backend is running.</p>
+        </div>
+      `;
     }
   }
 }
 
-function applySearch() {
-  const searchTerm = normalize(courseSearchInput?.value || "");
-
-  const filteredCourses = allCourses.filter(course => {
-    return (
-      !searchTerm ||
-      normalize(course.title).includes(searchTerm) ||
-      normalize(course.summary).includes(searchTerm) ||
-      normalize(course.course_title).includes(searchTerm)
-    );
-  });
-
-  renderCourses(filteredCourses);
-}
-
-if (courseSearchInput) {
-  courseSearchInput.addEventListener("input", applySearch);
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-  if (!requireRole("student")) return;
-  setupLogoutHandlers();
-  loadCourses();
-});
+document.addEventListener("DOMContentLoaded", initPage);

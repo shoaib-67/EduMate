@@ -1,5 +1,5 @@
 (function initEduMateBugReport() {
-  const { API_BASE_URL, getStoredUser } = window.EduMateShared || {};
+  const { API_BASE_URL, requireRole } = window.EduMateShared || {};
 
   function setBugReportStatus(statusEl, message, type = "info") {
     if (!statusEl) return;
@@ -26,10 +26,12 @@
 
     const section = form.closest("section") || document.body;
     const statusEl = section.querySelector("[data-bug-report-status]");
+    const currentPath = String(window.location.pathname || "").toLowerCase();
+    const preferredRoles = currentPath.includes("instructor") ? ["instructor", "student"] : ["student", "instructor"];
 
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const user = getStoredUser?.();
+      const user = requireRole?.(preferredRoles, { allowAnonymous: true }) || null;
       const role = String(user?.role || "").toLowerCase();
       if (!user || !["student", "instructor"].includes(role)) {
         setBugReportStatus(statusEl, "You must be signed in as a student or instructor to send a report.", "error");
@@ -66,6 +68,7 @@
             priority: ["low", "medium", "high"].includes(priority) ? priority : "medium",
             reporterName: String(user.fullName || user.name || "").trim(),
             reporterEmail: String(user.email || "").trim().toLowerCase(),
+            reporterRole: role,
           }),
         });
         const payload = await response.json().catch(() => ({}));

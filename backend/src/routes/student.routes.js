@@ -11,8 +11,6 @@ studentRouter.patch("/:studentId/password", studentController.updatePassword);
 studentRouter.get("/:studentId/exams", studentController.listExams);
 studentRouter.get("/:studentId/mock-questions", studentController.mockQuestions);
 studentRouter.get("/:studentId/question-bank", studentController.questionBankLinks);
-studentRouter.get("/:studentId/notifications", studentController.notifications);
-studentRouter.patch("/:studentId/notifications/:notificationId/read", studentController.markNotificationRead);
 
 studentRouter.get("/:studentId/dashboard", studentController.dashboard);
 studentRouter.get("/:studentId/performance", studentController.performanceSummary);

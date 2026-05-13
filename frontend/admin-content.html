@@ -28,14 +28,14 @@
           <p class="nav-label">Admin Panel</p>
           <a class="nav-item" href="admin.html">Overview</a>
           <a class="nav-item" href="admin-users.html">Users</a>
-          <a class="nav-item active" href="admin-content.html">Exam & Content</a>
+          <a class="nav-item active" href="admin-content.html">Content</a>
           <a class="nav-item" href="admin-reports.html">Reports</a>
         </div>
       </aside>
 
       <div class="main">
         <div class="topbar">
-          <span class="topbar-title">Exam & Content Review</span>
+          <span class="topbar-title">Content Review</span>
           <div class="topbar-right">
             <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
           </div>
@@ -43,16 +43,11 @@
 
         <div class="content admin-content">
           <div class="page-header">
-            <h1>Exam and content moderation</h1>
-            <p>Review pending mock tests, announcements, question submissions, and study materials before they go live.</p>
+            <h1>Content moderation</h1>
+            <p>Review pending announcements, question submissions, and study materials before they go live.</p>
           </div>
 
           <div class="stats-grid review-stats-grid">
-            <article class="stat-card">
-              <p class="s-label">Pending Exams</p>
-              <p class="s-val" id="pendingExamCount">0</p>
-              <p class="s-sub">Mock tests waiting for approval</p>
-            </article>
             <article class="stat-card">
               <p class="s-label">Study Materials</p>
               <p class="s-val" id="pendingContentCount">0</p>
@@ -74,7 +69,7 @@
             <div class="panel-header">
               <div class="panel-title-group">
                 <h2>Review submissions</h2>
-                <p id="contentStatusNote">Approve or deny newly submitted exams and learning material.</p>
+                <p id="contentStatusNote">Approve or deny newly submitted learning material.</p>
               </div>
               <div class="panel-actions">
                 <button class="btn btn-small" id="refreshContent">Refresh</button>

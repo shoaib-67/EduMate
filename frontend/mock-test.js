@@ -221,39 +221,36 @@ function formatExamWindow(test) {
 
 function buildTestsFromExamRoutine(exams = []) {
   const mapped = exams
-    .filter((exam) => {
-      const status = String(exam?.status || "").toLowerCase();
-      return status !== "completed" && status !== "missed";
-    })
     .map((exam) => {
-    const subjects = normalizeSubjects(exam.subject);
-    const duration = Number(exam.durationMinutes || 30);
-    const questionCount = Math.max(6, Math.round(duration / 5));
-    const status = mapExamStatusToTestStatus(exam);
-    const examTitle = String(exam.subject || "Exam").trim();
-    const cardTitle = /mock|test/i.test(examTitle) ? examTitle : `${examTitle} Mock`;
-    return {
-      id: Number(exam.id),
-      title: cardTitle,
-      status,
-      featured: status === "available",
-      duration,
-      questions: questionCount,
-      subjects,
-      attempts: 0,
-      maxAttempts: 3,
-      description: exam.instructions || "Scheduled from exam routine.",
-      tags: [String(exam.batchName || "General"), String(exam.status || "").toUpperCase()].filter(Boolean),
-      free: true,
-      schedDate: exam.startTime ? new Date(exam.startTime).toLocaleDateString() : "Scheduled",
-      sourceExamId: Number(exam.id),
-      startTime: exam.startTime || null,
-      endTime: exam.endTime || null,
-      joinWindowMinutes: Number(exam.joinWindowMinutes || 15),
-      backendStatus: String(exam.status || "").toLowerCase(),
-      joinAvailableFromApi: Boolean(exam.joinAvailable),
-    };
-  });
+      const subjects = normalizeSubjects(exam.subject);
+      const duration = Number(exam.durationMinutes || 30);
+      const backendQuestionCount = Number(exam.questionCount || 0);
+      const questionCount = Math.max(0, backendQuestionCount);
+      const status = mapExamStatusToTestStatus(exam);
+      const examTitle = String(exam.title || exam.subject || "Exam").trim();
+      const cardTitle = /mock|test/i.test(examTitle) ? examTitle : `${examTitle} Mock`;
+      return {
+        id: Number(exam.id),
+        title: cardTitle,
+        status,
+        featured: status === "available",
+        duration,
+        questions: questionCount,
+        subjects,
+        attempts: Math.max(0, Number(exam.attemptCount || 0)),
+        maxAttempts: 3,
+        description: exam.instructions || "Scheduled from exam routine.",
+        tags: [String(exam.batchName || "General"), String(exam.status || "").toUpperCase()].filter(Boolean),
+        free: true,
+        schedDate: exam.startTime ? new Date(exam.startTime).toLocaleDateString() : "Scheduled",
+        sourceExamId: Number(exam.id),
+        startTime: exam.startTime || null,
+        endTime: exam.endTime || null,
+        joinWindowMinutes: Number(exam.joinWindowMinutes || 15),
+        backendStatus: String(exam.status || "").toLowerCase(),
+        joinAvailableFromApi: Boolean(exam.joinAvailable),
+      };
+    });
 
   if (mapped.length) return mapped;
   return [];
@@ -411,6 +408,10 @@ function showView(viewId) {
 function openTestConfirm(id) {
   currentTest = testsData.find((test) => test.id === id);
   if (!currentTest) return;
+  if (!isUnlimited(currentTest.maxAttempts) && Number(currentTest.attempts || 0) >= Number(currentTest.maxAttempts || 0)) {
+    window.alert("You have already used all attempts for this mock test.");
+    return;
+  }
 
   $("#confirmTitle").textContent = currentTest.title;
   $("#confirmSubtitle").textContent = `${currentTest.questions} questions · ${currentTest.duration} minutes`;
@@ -432,6 +433,11 @@ function closeModal() {
 
 async function startExam() {
   if (!currentTest) return;
+  if (!isUnlimited(currentTest.maxAttempts) && Number(currentTest.attempts || 0) >= Number(currentTest.maxAttempts || 0)) {
+    window.alert("You have already used all attempts for this mock test.");
+    closeModal();
+    return;
+  }
 
   const fullscreenReady = await enterExamFullscreen();
   if (!fullscreenReady) {
@@ -669,10 +675,12 @@ async function savePerformanceRecord({ correct, scorePercent }) {
 
   const primarySubject = normalizeSubjects(currentTest.subjects)[0] || "General";
   try {
-    await fetch(`${API_BASE_URL}/student/${studentId}/performance`, {
+    const examId = Number(currentTest?.sourceExamId || currentTest?.id || 0);
+    const response = await fetch(`${API_BASE_URL}/student/${studentId}/performance`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        examId: Number.isInteger(examId) && examId > 0 ? examId : null,
         subject: primarySubject,
         testType: "mock",
         score: scorePercent,
@@ -683,6 +691,19 @@ async function savePerformanceRecord({ correct, scorePercent }) {
         totalParticipants: null,
       }),
     });
+
+    if (!response.ok) return;
+
+    if (Number.isInteger(examId) && examId > 0) {
+      const targetTest = testsData.find((test) => Number(test.id) === examId || Number(test.sourceExamId) === examId);
+      if (targetTest) {
+        targetTest.attempts = Math.min(Number(targetTest.maxAttempts || 3), Math.max(0, Number(targetTest.attempts || 0)) + 1);
+      }
+      if (currentTest && (!targetTest || currentTest !== targetTest)) {
+        currentTest.attempts = Math.min(Number(currentTest.maxAttempts || 3), Math.max(0, Number(currentTest.attempts || 0)) + 1);
+      }
+      renderTests(activeFilter, activeSearch);
+    }
   } catch {
     // Keep exam experience smooth when API is temporarily unavailable.
   }

@@ -70,7 +70,7 @@ export function renderReports() {
           <p>${escapeHTML(report.description)}</p>
           <div class="report-meta">
             <span>${escapeHTML(report.category)} · ${escapeHTML(report.priority)}</span>
-            <span>${escapeHTML(report.reporterName || "Anonymous")}</span>
+            <span>${escapeHTML(report.reporterName || "Anonymous")}${report.reporterRole ? ` (${escapeHTML(report.reporterRole)})` : ""}</span>
           </div>
           <div class="report-actions">
             <button class="btn btn-small" data-action="resolve">${REPORT_ACTIONS.resolve.actionLabel}</button>

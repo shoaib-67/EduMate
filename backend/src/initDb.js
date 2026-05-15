@@ -941,19 +941,31 @@ async function seedDemoInstructorWorkspace() {
         `
         UPDATE instructor_exam_schedules
         SET exam_date = ?, start_time = ?, duration_minutes = ?, join_window_minutes = ?, negative_marking = ?,
-            shuffle_mode = ?, exam_type = ?, publish_state = ?, rules = ?
+            shuffle_mode = ?, exam_type = ?, publish_state = ?, approval_status = ?, rules = ?
         WHERE instructor_exam_id = ?
         `,
-        [item[2], item[3], item[4], item[5], item[6], item[7], item[8], item[9], item[10], existing[0].instructor_exam_id]
+        [
+          item[2],
+          item[3],
+          item[4],
+          item[5],
+          item[6],
+          item[7],
+          item[8],
+          item[9],
+          item[9] === "Published" ? "approved" : "pending",
+          item[10],
+          existing[0].instructor_exam_id,
+        ]
       );
     } else {
       await pool.query(
         `
         INSERT INTO instructor_exam_schedules
-          (instructor_id, title, batch_name, exam_date, start_time, duration_minutes, join_window_minutes, negative_marking, shuffle_mode, exam_type, publish_state, rules)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (instructor_id, title, batch_name, exam_date, start_time, duration_minutes, join_window_minutes, negative_marking, shuffle_mode, exam_type, publish_state, approval_status, rules)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
-        [instructorId, ...item]
+        [instructorId, ...item.slice(0, 10), item[9] === "Published" ? "approved" : "pending", item[10]]
       );
     }
   }

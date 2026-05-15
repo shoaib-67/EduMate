@@ -1,6 +1,20 @@
 const { formatAudienceLabel, normalizeAudienceType } = require("../lib/audience");
 const { normalizeInstructorExamRecord, formatSqlDateTime } = require("../lib/examUtils");
 
+function buildInstructorPerformanceExamMatchClause(examAlias = "ies") {
+  return `
+    ${examAlias}.instructor_id = isa.instructor_id
+    AND (
+      LOWER(COALESCE(${examAlias}.approval_status, '')) = 'approved'
+      OR LOWER(COALESCE(${examAlias}.publish_state, '')) = 'published'
+    )
+    AND (
+      ${examAlias}.published_exam_id = sp.exam_id
+      OR (sp.exam_id IS NULL AND LOWER(TRIM(${examAlias}.title)) = LOWER(TRIM(sp.test_name)))
+    )
+  `;
+}
+
 async function findInstructorExamConflict(pool, { instructorId, batchName, audienceType, startTime, durationMinutes }) {
   const endTime = new Date(new Date(startTime).getTime() + Number(durationMinutes || 0) * 60000);
   const cleanAudienceType = normalizeAudienceType(audienceType);
@@ -241,6 +255,8 @@ async function syncPendingInstructorExamSubmissions(pool) {
 }
 
 async function buildInstructorWorkspace(pool, instructorId) {
+  const examPerformanceMatch = buildInstructorPerformanceExamMatchClause();
+
   const [courseItems] = await pool.query(
     `
     SELECT item_id, course_title, batch_name, audience_type, content_type, title, summary, deadline, source_ref AS link
@@ -308,12 +324,7 @@ async function buildInstructorWorkspace(pool, instructorId) {
       AND EXISTS (
         SELECT 1
         FROM instructor_exam_schedules ies
-        WHERE ies.instructor_id = isa.instructor_id
-          AND LOWER(COALESCE(ies.approval_status, 'approved')) = 'approved'
-          AND (
-            ies.published_exam_id = sp.exam_id
-            OR (sp.exam_id IS NULL AND LOWER(TRIM(ies.title)) = LOWER(TRIM(sp.test_name)))
-          )
+        WHERE ${examPerformanceMatch}
       )
     WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     GROUP BY s.student_id, s.name, isa.assigned_batch, isn.progress_label, isn.note
@@ -348,12 +359,7 @@ async function buildInstructorWorkspace(pool, instructorId) {
       AND EXISTS (
         SELECT 1
         FROM instructor_exam_schedules ies
-        WHERE ies.instructor_id = isa.instructor_id
-          AND LOWER(COALESCE(ies.approval_status, 'approved')) = 'approved'
-          AND (
-            ies.published_exam_id = sp.exam_id
-            OR (sp.exam_id IS NULL AND LOWER(TRIM(ies.title)) = LOWER(TRIM(sp.test_name)))
-          )
+        WHERE ${examPerformanceMatch}
       )
     WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     GROUP BY sp.subject
@@ -383,12 +389,7 @@ async function buildInstructorWorkspace(pool, instructorId) {
       AND EXISTS (
         SELECT 1
         FROM instructor_exam_schedules ies
-        WHERE ies.instructor_id = isa.instructor_id
-          AND LOWER(COALESCE(ies.approval_status, 'approved')) = 'approved'
-          AND (
-            ies.published_exam_id = sp.exam_id
-            OR (sp.exam_id IS NULL AND LOWER(TRIM(ies.title)) = LOWER(TRIM(sp.test_name)))
-          )
+        WHERE ${examPerformanceMatch}
       )
     WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     ORDER BY sp.created_at DESC

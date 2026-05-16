@@ -298,6 +298,109 @@
     };
   }
 
+  function setupAccountStatusGuard(expectedRole, options = {}) {
+    const role = normalizeRoleValue(expectedRole);
+    if (!role) return () => {};
+
+    const redirectTo = String(
+      options.redirectTo ||
+        (role === "admin" ? "admin-login.html" : "index.html")
+    ).trim();
+    const intervalMs = Number(options.intervalMs || 15000);
+    let running = false;
+    let timerId = null;
+
+    async function fetchAccountState(user) {
+      if (!user?.id) return { valid: false, reason: "missing_user" };
+
+      if (role === "student") {
+        const response = await fetch(`${API_BASE_URL}/student/${user.id}/profile`);
+        if (!response.ok) return { valid: false, reason: "not_found" };
+        const payload = await response.json().catch(() => ({}));
+        if (!payload?.success || !payload?.data) return { valid: false, reason: "invalid_payload" };
+        const status = String(payload.data.accountStatus || "").trim().toLowerCase();
+        if (status === "frozen") return { valid: false, reason: "frozen" };
+        return { valid: true };
+      }
+
+      if (role === "instructor") {
+        const response = await fetch(`${API_BASE_URL}/instructor/${user.id}/profile`);
+        if (!response.ok) return { valid: false, reason: "not_found" };
+        const payload = await response.json().catch(() => ({}));
+        if (!payload?.success || !payload?.data) return { valid: false, reason: "invalid_payload" };
+        const status = String(payload.data.accountStatus || "").trim().toLowerCase();
+        if (status === "frozen") return { valid: false, reason: "frozen" };
+        return { valid: true };
+      }
+
+      if (role === "admin") {
+        const response = await fetch(`${API_BASE_URL}/admin/users`);
+        if (!response.ok) return { valid: false, reason: "not_found" };
+        const payload = await response.json().catch(() => ({}));
+        if (!payload?.success || !Array.isArray(payload?.data)) return { valid: false, reason: "invalid_payload" };
+        const matched = payload.data.find(
+          (item) =>
+            Number(item?.id || 0) === Number(user.id) &&
+            normalizeRoleValue(item?.role) === "admin"
+        );
+        if (!matched) return { valid: false, reason: "deleted" };
+        const status = String(matched.accountStatus || matched.status || "").trim().toLowerCase();
+        if (status === "frozen") return { valid: false, reason: "frozen" };
+        return { valid: true };
+      }
+
+      return { valid: true };
+    }
+
+    function forceLogout(reason = "session_invalid") {
+      try {
+        clearStoredUser(role);
+      } finally {
+        const target = `${redirectTo}?reason=${encodeURIComponent(reason)}`;
+        if (window.location.href !== target) {
+          window.location.href = target;
+        }
+      }
+    }
+
+    async function runCheck() {
+      if (running) return;
+      running = true;
+      try {
+        const user = getStoredUserByRole(role);
+        if (!user) return;
+        const state = await fetchAccountState(user);
+        if (!state.valid) {
+          forceLogout(state.reason || "session_invalid");
+        }
+      } catch {
+        // Ignore transient network failures.
+      } finally {
+        running = false;
+      }
+    }
+
+    runCheck();
+    timerId = windowObject.setInterval(runCheck, Math.max(5000, intervalMs));
+
+    const handleVisibility = () => {
+      if (!document.hidden) runCheck();
+    };
+    const handleFocus = () => runCheck();
+
+    document.addEventListener("visibilitychange", handleVisibility);
+    windowObject.addEventListener("focus", handleFocus);
+
+    return () => {
+      if (timerId) {
+        windowObject.clearInterval(timerId);
+        timerId = null;
+      }
+      document.removeEventListener("visibilitychange", handleVisibility);
+      windowObject.removeEventListener("focus", handleFocus);
+    };
+  }
+
   function observeTableChanges() {
     if (!windowObject.MutationObserver) return;
     const observer = new MutationObserver((mutations) => {
@@ -341,5 +444,6 @@
     enhanceResponsiveTables,
     setupCommonUiEnhancements,
     setupTabSync,
+    setupAccountStatusGuard,
   };
 })(window);

@@ -1,4 +1,4 @@
-const { API_BASE_URL, getStoredUser, getStudentId, escapeHTML, requireRole, setupLogoutHandlers, setupTabSync } = window.EduMateShared;
+const { API_BASE_URL, getStoredUser, getStudentId, escapeHTML, requireRole, setupLogoutHandlers, setupTabSync, setupAccountStatusGuard } = window.EduMateShared;
 
 function toDisplayPercent(value) {
   const num = Number(value);
@@ -265,6 +265,7 @@ async function loadAnnouncements() {
 
 document.addEventListener("DOMContentLoaded", () => {
   if (!requireRole("student")) return;
+  setupAccountStatusGuard("student", { redirectTo: "index.html", intervalMs: 10000 });
   setupLogoutHandlers();
 
   const refreshStudentDashboard = () => {

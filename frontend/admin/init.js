@@ -1,4 +1,4 @@
-import { getStoredUser, requireRole, setupLogoutHandlers } from "./shared.js";
+import { getStoredUser, requireRole, setupLogoutHandlers, setupAccountStatusGuard } from "./shared.js";
 import { state } from "./state.js";
 import { showToast } from "./ui/toast.js";
 import {
@@ -59,6 +59,7 @@ function setupFilters() {
 
 export async function initAdminDashboard() {
   if (!requireAdminAccess()) return;
+  setupAccountStatusGuard("admin", { redirectTo: "admin-login.html", intervalMs: 10000 });
   setupLogoutHandlers();
 
   createUserModal();

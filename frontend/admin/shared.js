@@ -3,6 +3,7 @@ export const {
   getStoredUser,
   requireRole,
   setupLogoutHandlers,
+  setupAccountStatusGuard,
   escapeHTML,
 } = window.EduMateShared;
 

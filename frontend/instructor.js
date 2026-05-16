@@ -1,4 +1,4 @@
-const { API_BASE_URL, getStoredUser, escapeHTML, requireRole, setupLogoutHandlers, setupTabSync } = window.EduMateShared;
+const { API_BASE_URL, getStoredUser, escapeHTML, requireRole, setupLogoutHandlers, setupTabSync, setupAccountStatusGuard } = window.EduMateShared;
 
 const state = {
   instructorId: null,
@@ -1103,6 +1103,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const user = requireRole("instructor");
   if (!user) return;
 
+  setupAccountStatusGuard("instructor", { redirectTo: "index.html", intervalMs: 10000 });
   setupLogoutHandlers();
   state.instructorId = Number(user?.id || 1);
   bindEvents();

@@ -5,6 +5,7 @@ const {
   setupLogoutHandlers: setupSharedLogoutHandlers,
   escapeHTML,
   setupTabSync,
+  setupAccountStatusGuard,
 } = window.EduMateShared;
 
 const isAdminUser = (user) => String(user?.role || "").toLowerCase() === "admin";
@@ -1181,6 +1182,7 @@ const setupFilters = () => {
 // Load all data on page load
 async function initAdminDashboard() {
   if (!requireAdminAccess()) return;
+  setupAccountStatusGuard("admin", { redirectTo: "admin-login.html", intervalMs: 10000 });
 
   const refreshAdminDashboard = async () => {
     await Promise.allSettled([loadUsers(), loadContent(), loadReports(), loadActivityLogs(), updateStats()]);

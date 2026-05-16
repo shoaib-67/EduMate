@@ -665,3 +665,56 @@
 .nav-item.active:hover {
   background: var(--primary-dark);
 }
+
+.published-exam-card {
+  border: 1px solid #d6e4f1;
+  border-radius: 14px;
+  padding: 1rem 1.1rem;
+  background:
+    radial-gradient(120% 120% at 100% 0%, rgba(217, 236, 251, 0.55) 0%, rgba(255, 255, 255, 0) 58%),
+    #ffffff;
+  box-shadow: 0 8px 22px rgba(16, 58, 92, 0.08);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.published-exam-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.65rem;
+}
+
+.published-exam-head h4 {
+  font-size: 16px;
+  color: #133b61;
+}
+
+.published-exam-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.published-exam-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.32rem 0.62rem;
+  border-radius: 999px;
+  border: 1px solid #c9deef;
+  background: #f3f9ff;
+  color: #245782;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.published-exam-line {
+  margin: 0;
+  color: #4f6781;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.published-exam-line strong {
+  color: #1d466d;
+}

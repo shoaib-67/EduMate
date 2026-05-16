@@ -100,6 +100,17 @@
                 <div class="attention-list" id="attentionList"></div>
               </div>
             </section>
+
+            <section class="panel">
+              <div class="panel-header">
+                <div class="panel-title-group">
+                  <h2>Published exams</h2>
+                  <p>Live list of exams published from your workspace with schedule and rules.</p>
+                </div>
+                <span class="panel-kicker">Overview</span>
+              </div>
+              <div class="list compact-list" id="publishedExamOverviewList"></div>
+            </section>
           </div>
 
           <div class="panel-grid panel-grid-spaced instructor-grid">
@@ -125,7 +136,6 @@
                     <option value="Question Bank">Question Bank Link</option>
                     <option value="PDF">PDF</option>
                     <option value="Video">Video</option>
-                    <option value="Slides">Slides</option>
                     <option value="Paid Class">Paid Class</option>
                   </select>
                 </div>
@@ -157,7 +167,7 @@
                   <textarea id="contentSummary" name="contentSummary" rows="3" placeholder="Short description, assignment brief, or announcement message" required></textarea>
                 </div>
                 <div class="form-footer form-group-full">
-                  <p>Use this for notes, slides, assignments, and announcements tied to one batch.</p>
+                  <p>Use this for notes, videos, assignments, and announcements tied to one batch.</p>
                   <button class="btn btn-primary" type="submit">Upload content</button>
                 </div>
                 <div class="workspace-banner" id="courseFormStatus" role="status" aria-live="polite"></div>
@@ -324,23 +334,14 @@
               <div class="panel-header">
                 <div class="panel-title-group">
                   <h2>Communication hub</h2>
-                  <p>Post announcements, discussion threads, direct notices, and exam feedback.</p>
+                  <p>Post announcements for admin approval before they appear to students.</p>
                 </div>
                 <span class="panel-kicker">Messages</span>
               </div>
 
               <form id="communicationForm" class="form-grid">
-                <div class="form-group">
-                  <label for="messageType">Message Type</label>
-                  <select id="messageType" name="messageType" required>
-                    <option value="Announcement">Announcement (for admin approval)</option>
-                    <option value="Discussion Thread">Discussion Thread</option>
-                    <option value="Direct Message">Direct Message</option>
-                    <option value="Exam Feedback">Exam Feedback</option>
-                  </select>
-                </div>
-                <div class="form-group" id="announcementBatchGroup" style="display: none;">
-                  <label for="announcementBatch">Batch (for announcements)</label>
+                <div class="form-group" id="announcementBatchGroup">
+                  <label for="announcementBatch">Batch</label>
                   <select id="announcementBatch" name="announcementBatch">
                     <option value="">All Batches</option>
                     <option value="Engineering">Engineering</option>
@@ -348,22 +349,19 @@
                     <option value="Medical">Medical</option>
                   </select>
                 </div>
-                <div class="form-group" id="messageAudienceGroup" style="display: none;">
-                  <label for="messageAudience">Audience</label>
-                  <input id="messageAudience" name="messageAudience" type="text" placeholder="Engineering A / specific student" />
-                </div>
                 <div class="form-group form-group-full">
                   <label for="messageTitle">Title</label>
                   <input id="messageTitle" name="messageTitle" type="text" placeholder="Organic chemistry class moved to 7 PM" required />
                 </div>
                 <div class="form-group form-group-full">
                   <label for="messageBody">Body</label>
-                  <textarea id="messageBody" name="messageBody" rows="3" placeholder="Write the announcement, thread opener, or feedback..." required></textarea>
+                  <textarea id="messageBody" name="messageBody" rows="3" placeholder="Write your announcement..." required></textarea>
                 </div>
                 <div class="form-footer form-group-full">
                   <p id="formHelpText">Announcements go to admin for approval before appearing to students.</p>
-                  <button class="btn btn-primary" type="submit">Send / post</button>
+                  <button class="btn btn-primary" type="submit">Post announcement</button>
                 </div>
+                <div class="workspace-banner" id="communicationFormStatus" role="status" aria-live="polite"></div>
               </form>
 
               <div class="list compact-list" id="communicationList"></div>

@@ -1,6 +1,48 @@
 (function initEduMateBugReport() {
   const { API_BASE_URL, requireRole } = window.EduMateShared || {};
 
+  function mapReportStatus(status) {
+    const clean = String(status || "").trim().toLowerCase();
+    if (clean === "completed") return "Resolved";
+    if (clean === "denied") return "Denied by admin";
+    return "Pending";
+  }
+
+  function renderOwnReports(section, reports = []) {
+    if (!section) return;
+    let wrap = section.querySelector("[data-bug-report-history]");
+    if (!wrap) {
+      wrap = document.createElement("div");
+      wrap.setAttribute("data-bug-report-history", "true");
+      wrap.className = "list compact-list";
+      section.appendChild(wrap);
+    }
+
+    if (!reports.length) {
+      wrap.innerHTML =
+        '<div class="empty-card"><strong>No bug reports yet</strong><span>Your submitted reports will appear here.</span></div>';
+      return;
+    }
+
+    wrap.innerHTML = reports
+      .map((report) => {
+        const statusText = mapReportStatus(report.status);
+        const created = report.createdAt ? new Date(report.createdAt).toLocaleString() : "";
+        const chipClass = statusText === "Resolved" ? "chip" : statusText === "Pending" ? "chip amber" : "chip red";
+        return `
+          <div class="list-item">
+            <div>
+              <h4>${String(report.title || "Untitled")}</h4>
+              <span>${String(report.description || "")}</span>
+              <span>${created}</span>
+            </div>
+            <span class="${chipClass}">${statusText}</span>
+          </div>
+        `;
+      })
+      .join("");
+  }
+
   function setBugReportStatus(statusEl, message, type = "info") {
     if (!statusEl) return;
     const text = message || "";
@@ -29,6 +71,27 @@
     const currentPath = String(window.location.pathname || "").toLowerCase();
     const preferredRoles = currentPath.includes("instructor") ? ["instructor", "student"] : ["student", "instructor"];
 
+    const loadOwnReports = async (user, role) => {
+      try {
+        const response = await fetch(
+          `${API_BASE_URL}/reports?reporterEmail=${encodeURIComponent(
+            String(user.email || "").trim().toLowerCase()
+          )}&reporterRole=${encodeURIComponent(role)}`
+        );
+        const payload = await response.json().catch(() => ({}));
+        if (!response.ok || !payload.success) return;
+        renderOwnReports(section, Array.isArray(payload.data) ? payload.data : []);
+      } catch {
+        // Keep report form usable if history fails.
+      }
+    };
+
+    const bootUser = requireRole?.(preferredRoles, { allowAnonymous: true }) || null;
+    const bootRole = String(bootUser?.role || "").toLowerCase();
+    if (bootUser && ["student", "instructor"].includes(bootRole)) {
+      loadOwnReports(bootUser, bootRole);
+    }
+
     form.addEventListener("submit", async (event) => {
       event.preventDefault();
       const user = requireRole?.(preferredRoles, { allowAnonymous: true }) || null;
@@ -53,7 +116,7 @@
       if (submitBtn) {
         submitBtn.disabled = true;
         submitBtn.dataset.prevLabel = submitBtn.textContent;
-        submitBtn.textContent = "Sending…";
+        submitBtn.textContent = "Sending...";
       }
       setBugReportStatus(statusEl, "", "info");
 
@@ -78,9 +141,10 @@
         form.reset();
         setBugReportStatus(
           statusEl,
-          "Thanks — your report was sent to the admin team. They can review it under Reports.",
+          "Thanks - your report was sent to the admin team. Status shows below as Pending or Resolved.",
           "success"
         );
+        await loadOwnReports(user, role);
       } catch (err) {
         setBugReportStatus(statusEl, err.message || "Something went wrong.", "error");
       } finally {

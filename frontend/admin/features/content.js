@@ -120,7 +120,7 @@ function setSummaryCounts(items) {
   const bindings = [
     ["pendingContentCount", counts.content],
     ["pendingAnnouncementCount", counts.announcement],
-    ["pendingQuestionCount", counts.question],
+    ["pendingQuestionCount", 0],
   ];
 
   bindings.forEach(([id, value]) => {
@@ -220,7 +220,10 @@ export function renderContent() {
   const type = state.filters.content.type;
 
   const pendingOnly = state.pendingContent.filter(
-    (item) => normalizeText(item.status) === "pending" && getCategory(item) !== "exam"
+    (item) =>
+      normalizeText(item.status) === "pending" &&
+      getCategory(item) !== "exam" &&
+      getCategory(item) !== "question"
   );
   const dedupedPending = dedupePendingSubmissions(pendingOnly);
   const types = Array.from(new Set(dedupedPending.map((item) => String(item.type || "Unknown")))).sort((left, right) =>
@@ -250,12 +253,10 @@ export function renderContent() {
     `;
   } else {
     const announcements = filtered.filter((item) => getCategory(item) === "announcement");
-    const questions = filtered.filter((item) => getCategory(item) === "question");
     const resources = filtered.filter((item) => getCategory(item) === "content");
 
     contentList.innerHTML = [
       renderSection("Pending announcements", "Student-facing notices queued by instructors.", announcements),
-      renderSection("Pending question items", "Question bank entries and standalone assessment questions.", questions),
       renderSection("Pending study materials", "Notes, links, and learning resources.", resources),
     ].join("");
   }

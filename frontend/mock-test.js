@@ -27,6 +27,7 @@ let disqualified = false;
 let tabProctoringArmed = false;
 let armTabProctoringTimeout = null;
 let mockRefreshInterval = null;
+let hasRecordedAttempt = false;
 
 const stopTimer = () => {
   clearInterval(timerInterval);
@@ -86,6 +87,7 @@ function showDisqualifiedResult(reason) {
   $("#resultFeedback").textContent = `You were disqualified: ${reason}`;
   $("#reviewList").innerHTML = '<div class="review-item"><p class="review-question">Result locked due to proctoring violation.</p></div>';
   showView("resultView");
+  savePerformanceRecord({ correct: 0, scorePercent: 0, disqualified: true }).catch(() => null);
 }
 
 function handleVisibilityViolation() {
@@ -446,6 +448,7 @@ async function startExam() {
   }
 
   disqualified = false;
+  hasRecordedAttempt = false;
   tabProctoringArmed = false;
 
   const backendQuestions = await fetchApprovedQuestions(
@@ -668,7 +671,8 @@ function submitExam() {
   savePerformanceRecord({ correct, scorePercent: pct }).catch(() => null);
 }
 
-async function savePerformanceRecord({ correct, scorePercent }) {
+async function savePerformanceRecord({ correct, scorePercent, disqualified = false }) {
+  if (hasRecordedAttempt) return;
   if (!API_BASE_URL || typeof getStudentId !== "function" || !currentTest || !questions.length) return;
   const studentId = getStudentId();
   if (!studentId) return;
@@ -686,13 +690,24 @@ async function savePerformanceRecord({ correct, scorePercent }) {
         score: scorePercent,
         totalQuestions: questions.length,
         correctAnswers: correct,
-        testName: currentTest.title,
+        testName: disqualified ? `${currentTest.title} (Disqualified)` : currentTest.title,
         rank: null,
         totalParticipants: null,
       }),
     });
 
-    if (!response.ok) return;
+    if (!response.ok) {
+      let message = "Could not save this attempt to performance history.";
+      try {
+        const payload = await response.json();
+        if (payload?.message) message = payload.message;
+      } catch {
+        // Keep default message if response is not JSON.
+      }
+      window.alert(message);
+      return;
+    }
+    hasRecordedAttempt = true;
 
     if (Number.isInteger(examId) && examId > 0) {
       const targetTest = testsData.find((test) => Number(test.id) === examId || Number(test.sourceExamId) === examId);

@@ -42,6 +42,17 @@ function getTimeAgo(createdAt) {
   return date.toLocaleDateString();
 }
 
+function formatPostedDateTime(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Recently posted";
+  return parsed.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 async function showDiscussionDetail(discussionId) {
   const detail = document.getElementById("discussionDetail");
   if (!detail) return;
@@ -141,6 +152,7 @@ function renderAnnouncements(announcements) {
 
   announcementsList.innerHTML = "";
   announcements.forEach((announcement) => {
+    const postedAt = announcement.created_at || announcement.createdAt || "";
     const thread = document.createElement("div");
     thread.className = "thread";
     thread.innerHTML = `
@@ -149,7 +161,7 @@ function renderAnnouncements(announcements) {
         <span class="chip blue">📢 Announcement</span>
       </div>
       <p>${escapeHTML(announcement.content || "")}</p>
-      <span>by ${escapeHTML(announcement.instructor_name || "Instructor")} - ${escapeHTML(getTimeAgo(announcement.created_at))}</span>
+      <span>by ${escapeHTML(announcement.instructor_name || "Instructor")} - ${escapeHTML(formatPostedDateTime(postedAt))}</span>
     `;
     announcementsList.appendChild(thread);
   });

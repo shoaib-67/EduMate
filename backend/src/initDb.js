@@ -688,6 +688,89 @@ async function ensureSchema() {
   await ensureInstructorGradingQueueTable(pool);
   await ensureInstructorExportJobsTable(pool);
   await ensureInstructorTopicPerformanceTable(pool);
+  await ensureBaselineAccounts(pool);
+}
+
+async function ensureBaselineAccounts(pool) {
+  const baselineAccounts = [
+    {
+      tableName: "students",
+      name: "test",
+      email: "test@edumate.com",
+      phoneNumber: null,
+      password: "test12345",
+      batchName: "Engineering A",
+      courseTrack: "Engineering",
+    },
+    {
+      tableName: "instructors",
+      name: "raihan",
+      email: "raihan@edumate.com",
+      phoneNumber: null,
+      password: "raihan123",
+    },
+  ];
+
+  for (const account of baselineAccounts) {
+    const passwordHash = await bcrypt.hash(account.password, 10);
+
+    if (account.tableName === "students") {
+      await pool.query(
+        `
+        INSERT INTO \`students\` (name, email, phone_number, password_hash, batch_name, course_track)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          name = VALUES(name),
+          password_hash = VALUES(password_hash),
+          batch_name = VALUES(batch_name),
+          course_track = VALUES(course_track)
+        `,
+        [
+          account.name,
+          account.email,
+          account.phoneNumber,
+          passwordHash,
+          account.batchName,
+          account.courseTrack,
+        ]
+      );
+    } else {
+      await pool.query(
+        `
+        INSERT INTO \`${account.tableName}\` (name, email, phone_number, password_hash)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          name = VALUES(name),
+          password_hash = VALUES(password_hash)
+        `,
+        [account.name, account.email, account.phoneNumber, passwordHash]
+      );
+    }
+  }
+
+  const [studentRows] = await pool.query(
+    `SELECT student_id FROM students WHERE email = ? LIMIT 1`,
+    ["test@edumate.com"]
+  );
+  const [instructorRows] = await pool.query(
+    `SELECT instructor_id FROM instructors WHERE email = ? LIMIT 1`,
+    ["raihan@edumate.com"]
+  );
+
+  const studentId = Number(studentRows[0]?.student_id || 0);
+  const instructorId = Number(instructorRows[0]?.instructor_id || 0);
+  if (studentId > 0 && instructorId > 0) {
+    await pool.query(
+      `
+      INSERT INTO instructor_student_assignments (instructor_id, student_id, assigned_batch, is_active)
+      VALUES (?, ?, ?, TRUE)
+      ON DUPLICATE KEY UPDATE
+        assigned_batch = VALUES(assigned_batch),
+        is_active = TRUE
+      `,
+      [instructorId, studentId, "Engineering A"]
+    );
+  }
 }
 
 async function seedDemoAccounts() {

@@ -240,6 +240,66 @@ function renderWorkspaceOverview() {
       `
     )
     .join("");
+
+  renderPublishedExamOverview(exams);
+}
+
+function renderPublishedExamOverview(exams = []) {
+  const node = $("#publishedExamOverviewList");
+  if (!node) return;
+
+  const published = exams
+    .filter((exam) => String(exam.state || "").trim().toLowerCase() === "published")
+    .sort((left, right) => {
+      const leftTime = Date.parse(`${left.date || ""}T${left.time || "00:00"}`);
+      const rightTime = Date.parse(`${right.date || ""}T${right.time || "00:00"}`);
+      if (!Number.isFinite(leftTime) && !Number.isFinite(rightTime)) return 0;
+      if (!Number.isFinite(leftTime)) return 1;
+      if (!Number.isFinite(rightTime)) return -1;
+      return rightTime - leftTime;
+    });
+
+  if (!published.length) {
+    node.innerHTML = renderEmptyCard(
+      "No published exams yet",
+      "Publish an exam from the exam section and it will appear here with full details."
+    );
+    return;
+  }
+
+  const formatExamDateTime = (exam) => {
+    const parsed = new Date(`${exam.date || ""}T${exam.time || "00:00"}`);
+    if (Number.isNaN(parsed.getTime())) return "Schedule not available";
+    return parsed.toLocaleString([], {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+    });
+  };
+
+  node.innerHTML = published
+    .map(
+      (exam) => `
+      <article class="published-exam-card">
+        <div class="published-exam-head">
+          <h4>${escapeHTML(exam.title || "Untitled exam")}</h4>
+          <span class="chip">${escapeHTML(exam.state || "Published")}</span>
+        </div>
+        <div class="published-exam-meta">
+          <span class="published-exam-chip">${escapeHTML(exam.batch || "General")}</span>
+          <span class="published-exam-chip">${escapeHTML(exam.examType || "Exam")}</span>
+          <span class="published-exam-chip">${escapeHTML(exam.duration || 0)} min</span>
+          <span class="published-exam-chip">${escapeHTML(exam.accessMode === "open_anytime" ? "Open now" : "Scheduled")}</span>
+        </div>
+        <p class="published-exam-line"><strong>Scheduled:</strong> ${escapeHTML(formatExamDateTime(exam))}</p>
+        <p class="published-exam-line"><strong>Status:</strong> ${escapeHTML(exam.status === "always_open" ? "Open" : exam.status || "N/A")} | <strong>Approval:</strong> ${escapeHTML(exam.approvalStatus || "pending")}</p>
+        <p class="published-exam-line"><strong>Rules:</strong> ${escapeHTML(exam.rules || "No extra rules added.")}</p>
+      </article>
+    `
+    )
+    .join("");
 }
 
 function renderCourseContent() {
@@ -884,41 +944,27 @@ async function handleCommunicationSubmit(event) {
   const form = event.currentTarget;
   const formData = new FormData(form);
   const submitButton = form.querySelector('button[type="submit"]');
-  const messageType = String(formData.get("messageType") || "").trim();
-  const isAnnouncement = messageType === "Announcement";
+  setInlineStatus("#communicationFormStatus");
 
   await submitForm(submitButton, async () => {
-    if (isAnnouncement) {
-      // Route announcements to the approval workflow
-      await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/announcements`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          title: String(formData.get("messageTitle") || "").trim(),
-          content: String(formData.get("messageBody") || "").trim(),
-          batchName: String(formData.get("announcementBatch") || "").trim() || null,
-        }),
-      });
-    } else {
-      // Route other message types to the regular messages endpoint
-      await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/messages`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          type: messageType,
-          audience: String(formData.get("messageAudience") || "").trim(),
-          title: String(formData.get("messageTitle") || "").trim(),
-          body: String(formData.get("messageBody") || "").trim(),
-        }),
-      });
-    }
+    setInlineStatus("#communicationFormStatus", "Sending announcement to admin review...", "info");
+    await fetchJson(`${API_BASE_URL}/instructor/${state.instructorId}/announcements`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        title: String(formData.get("messageTitle") || "").trim(),
+        content: String(formData.get("messageBody") || "").trim(),
+        batchName: String(formData.get("announcementBatch") || "").trim() || null,
+      }),
+    });
     form.reset();
     await loadWorkspace();
-    if (isAnnouncement) {
-      showBanner("Announcement posted and sent for admin approval.", "success");
-    } else {
-      showBanner("Message posted to the communication hub.", "success");
-    }
+    setInlineStatus(
+      "#communicationFormStatus",
+      "Announcement posted and sent for admin approval. It will appear after approval.",
+      "success"
+    );
+    showBanner("Announcement posted and sent for admin approval.", "success");
   });
 }
 
@@ -982,42 +1028,11 @@ function bindEvents() {
     handleQuestionSubmit(event).catch((error) => showBanner(error.message, "error"));
   });
   $("#communicationForm")?.addEventListener("submit", (event) => {
-    handleCommunicationSubmit(event).catch((error) => showBanner(error.message, "error"));
+    handleCommunicationSubmit(event).catch((error) => {
+      setInlineStatus("#communicationFormStatus", error.message || "Could not post announcement.", "error");
+      showBanner(error.message, "error");
+    });
   });
-  
-  // Initialize message type change event listener
-  $("#messageType")?.addEventListener("change", (event) => {
-    const isAnnouncement = event.target.value === "Announcement";
-    const batchGroup = $("#announcementBatchGroup");
-    const audienceGroup = $("#messageAudienceGroup");
-    const helpText = $("#formHelpText");
-    const messageAudienceInput = $("#messageAudience");
-    
-    if (batchGroup) {
-      batchGroup.style.display = isAnnouncement ? "block" : "none";
-    }
-    if (audienceGroup) {
-      audienceGroup.style.display = isAnnouncement ? "none" : "block";
-    }
-    
-    if (helpText) {
-      if (isAnnouncement) {
-        helpText.textContent = "Announcements go to admin for approval before appearing to students.";
-      } else {
-        helpText.textContent = "Other messages are posted immediately in the communication hub.";
-      }
-    }
-    
-    if (messageAudienceInput) {
-      messageAudienceInput.required = !isAnnouncement;
-    }
-  });
-  
-  // Trigger initial state for message form
-  const initialMessageType = $("#messageType");
-  if (initialMessageType) {
-    initialMessageType.dispatchEvent(new Event("change"));
-  }
   $("#discussionHubSearch")?.addEventListener("input", (event) => {
     state.discussionHub.query = String(event.target?.value || "");
     renderDiscussionHubList();

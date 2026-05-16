@@ -154,7 +154,7 @@ const studentController = {
         LEFT JOIN student_performance sp
           ON sp.exam_id = e.exam_id
           AND sp.student_id = ?
-          AND LOWER(COALESCE(sp.test_type, '')) = 'mock'
+          AND LOWER(COALESCE(sp.test_type, '')) LIKE 'mock%'
         GROUP BY e.exam_id
         ORDER BY e.start_time ASC
         `,
@@ -219,7 +219,7 @@ const studentController = {
           FROM student_performance
           WHERE student_id = ?
             AND exam_id = ?
-            AND LOWER(COALESCE(test_type, '')) = 'mock'
+            AND LOWER(COALESCE(test_type, '')) LIKE 'mock%'
           `,
           [studentId, examId]
         );
@@ -387,8 +387,6 @@ const studentController = {
   },
 
   dashboard: async (req, res) => {
-    // Keep the existing SQL/shape by delegating to legacy logic via inline copy in later pass.
-    // For now, re-use the exact query blocks from the original server file.
     try {
       const { studentId } = req.params;
       const pool = getPool();
@@ -404,7 +402,10 @@ const studentController = {
         studentId,
       ]);
       const [mockTests] = await pool.query(
-        `SELECT COUNT(*) as count FROM student_performance WHERE student_id = ? AND test_type = 'mock'`,
+        `SELECT COUNT(*) as count
+         FROM student_performance
+         WHERE student_id = ?
+           AND LOWER(COALESCE(test_type, '')) LIKE 'mock%'`,
         [studentId]
       );
       const [accuracyResult] = await pool.query(
@@ -417,16 +418,43 @@ const studentController = {
          FROM student_performance WHERE student_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`,
         [studentId]
       );
+      const [lastTestRows] = await pool.query(
+        `
+        SELECT subject, test_name, created_at
+        FROM student_performance
+        WHERE student_id = ?
+        ORDER BY created_at DESC, performance_id DESC
+        LIMIT 1
+        `,
+        [studentId]
+      );
+
+      const lastTestRow = lastTestRows[0] || null;
+      const roundedAverage = avgResult[0]?.average_score ? Math.round(avgResult[0].average_score) : 0;
+      const bestScore = bestResult[0]?.best_score || 0;
+      const totalAttempts = allPerformance.length;
+      const completedMocks = mockTests[0]?.count || 0;
+      const accuracy = accuracyResult[0]?.accuracy || 0;
+      const studyDaysCount = studyDays[0]?.study_days || 0;
 
       return res.status(200).json({
         success: true,
         data: {
-          totalAttempts: allPerformance.length,
-          averageScore: avgResult[0]?.average_score ? Math.round(avgResult[0].average_score) : 0,
-          bestScore: bestResult[0]?.best_score || 0,
-          completedMocks: mockTests[0]?.count || 0,
-          accuracy: accuracyResult[0]?.accuracy || 0,
-          studyDays: studyDays[0]?.study_days || 0,
+          totalAttempts,
+          totalTests: totalAttempts,
+          averageScore: roundedAverage,
+          bestScore,
+          completedMocks,
+          mockTestsCompleted: completedMocks,
+          accuracy,
+          studyDays: studyDaysCount,
+          lastTest: lastTestRow
+            ? {
+                subject: String(lastTestRow.subject || "General"),
+                name: String(lastTestRow.test_name || "Recent test"),
+                createdAt: lastTestRow.created_at || null,
+              }
+            : null,
         },
       });
     } catch (error) {
@@ -486,7 +514,6 @@ const studentController = {
         FROM student_performance
         WHERE student_id = ?
         ORDER BY created_at DESC
-        LIMIT 10
         `,
         [studentId]
       );
@@ -706,12 +733,13 @@ const studentController = {
       const score = Number(req.body?.score || 0);
       const totalQuestions = Number(req.body?.totalQuestions || 0);
       const correctAnswers = Number(req.body?.correctAnswers || 0);
-      const testName = String(req.body?.testName || "").trim();
+      const testNameInput = String(req.body?.testName || "").trim();
+      const testName = testNameInput || `${subject || "General"} Mock`;
       const rank = Number(req.body?.rank || 0);
       const totalParticipants = Number(req.body?.totalParticipants || 0);
 
-      if (!subject || !testType || !testName) {
-        return sendError(res, { status: 422, message: "Subject, test type, and test name are required." });
+      if (!subject || !testType) {
+        return sendError(res, { status: 422, message: "Subject and test type are required." });
       }
 
       const pool = getPool();

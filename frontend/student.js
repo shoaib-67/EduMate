@@ -37,10 +37,13 @@ async function loadDashboardStats() {
     const statCards = document.querySelectorAll(".stat-row .stat-card");
     if (statCards.length < 4) return;
 
+    const completedMocks = Number(data.mockTestsCompleted ?? data.completedMocks ?? 0);
+    const totalAttempts = Number(data.totalTests ?? data.totalAttempts ?? 0);
+
     statCards[0].innerHTML = `
       <p class="s-label">Mock Tests</p>
-      <p class="s-val">${Number(data.mockTestsCompleted || 0)} Completed</p>
-      <p class="s-sub">${Number(data.totalTests || 0)} total attempts</p>
+      <p class="s-val">${completedMocks} Completed</p>
+      <p class="s-sub">${totalAttempts} total attempts</p>
     `;
 
     statCards[1].innerHTML = `
@@ -221,12 +224,16 @@ function renderAnnouncements(announcements = []) {
   announcements.slice(0, 5).forEach((announcement) => {
     const item = document.createElement("div");
     item.className = "upcoming-exam";
-    const createdDate = new Date(announcement.created_at).toLocaleString([], {
-      month: "short",
-      day: "numeric",
-      hour: "numeric",
-      minute: "2-digit"
-    });
+    const createdRaw = announcement.created_at || announcement.createdAt || "";
+    const createdParsed = new Date(createdRaw);
+    const createdDate = Number.isNaN(createdParsed.getTime())
+      ? "Recently posted"
+      : createdParsed.toLocaleString([], {
+          month: "short",
+          day: "numeric",
+          hour: "numeric",
+          minute: "2-digit",
+        });
     item.innerHTML = `
       <div class="exam-info">
         <h4>${escapeHTML(announcement.title)}</h4>

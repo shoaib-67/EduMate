@@ -538,6 +538,34 @@ const adminController = {
     }
   },
 
+  listOwnReports: async (req, res) => {
+    try {
+      const cleanReporterEmail = String(req.query?.reporterEmail || "").trim().toLowerCase();
+      const cleanReporterRole = String(req.query?.reporterRole || "").trim().toLowerCase();
+
+      if (!cleanReporterEmail || !["student", "instructor"].includes(cleanReporterRole)) {
+        return res.status(422).json({ success: false, message: "Reporter email and role are required." });
+      }
+
+      const pool = getPool();
+      const [reports] = await pool.query(
+        `
+        SELECT report_id as id, title, description, status, admin_note as adminNote, created_at as createdAt, updated_at as updatedAt
+        FROM reports
+        WHERE LOWER(COALESCE(reporter_email, '')) = ?
+          AND LOWER(COALESCE(reporter_role, '')) = ?
+          AND LOWER(COALESCE(category, '')) = 'bug'
+        ORDER BY created_at DESC
+        `,
+        [cleanReporterEmail, cleanReporterRole]
+      );
+
+      return res.status(200).json({ success: true, data: reports });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: "Could not fetch your reports.", error: error.message });
+    }
+  },
+
   activityLogs: async (_req, res) => {
     try {
       const pool = getPool();

@@ -335,12 +335,34 @@ async function buildInstructorWorkspace(pool, instructorId) {
 
   const [communications] = await pool.query(
     `
-    SELECT message_id, message_type, audience, title, body
-    FROM instructor_messages
-    WHERE instructor_id = ?
+    SELECT id, message_type, audience, title, body, created_at
+    FROM (
+      SELECT
+        im.message_id AS id,
+        im.message_type AS message_type,
+        im.audience AS audience,
+        im.title AS title,
+        im.body AS body,
+        im.created_at AS created_at
+      FROM instructor_messages im
+      WHERE im.instructor_id = ?
+
+      UNION ALL
+
+      SELECT
+        cs.submission_id AS id,
+        'Announcement' AS message_type,
+        COALESCE(cs.batch_name, 'All Batches') AS audience,
+        cs.title AS title,
+        cs.description AS body,
+        cs.created_at AS created_at
+      FROM content_submissions cs
+      WHERE cs.instructor_id = ?
+        AND LOWER(TRIM(COALESCE(cs.type, ''))) = 'announcement'
+    ) communication_feed
     ORDER BY created_at DESC
     `,
-    [instructorId]
+    [instructorId, instructorId]
   );
 
   const [coursePerformance] = await pool.query(
@@ -393,7 +415,6 @@ async function buildInstructorWorkspace(pool, instructorId) {
       )
     WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     ORDER BY sp.created_at DESC
-    LIMIT 200
     `,
     [instructorId]
   );
@@ -461,11 +482,12 @@ async function buildInstructorWorkspace(pool, instructorId) {
       note: student.note,
     })),
     communications: communications.map((item) => ({
-      id: item.message_id,
+      id: item.id,
       type: item.message_type,
       audience: item.audience,
       title: item.title,
       body: item.body,
+      createdAt: item.created_at,
     })),
     coursePerformance,
     scoreDistribution,

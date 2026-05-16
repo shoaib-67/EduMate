@@ -19,6 +19,17 @@ function clampPercent(value) {
   return Math.max(0, Math.min(100, num));
 }
 
+function formatAttemptTime(value) {
+  const parsed = new Date(value);
+  if (Number.isNaN(parsed.getTime())) return "Time unavailable";
+  return parsed.toLocaleString([], {
+    month: "short",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 async function loadPerformanceStats() {
   try {
     const studentId = getStudentId();
@@ -77,9 +88,10 @@ async function loadRecentTests() {
     testList.innerHTML = "";
 
     if (result.success && result.data && result.data.length > 0) {
-      result.data.slice(0, 3).forEach((test) => {
+      result.data.forEach((test) => {
         const chip = getPerformanceChip(test.score);
         const rankInfo = test.rank ? ` - Rank ${test.rank} of ${test.total_participants}` : "";
+        const attemptTime = formatAttemptTime(test.created_at);
 
         const listItem = document.createElement("div");
         listItem.className = "list-item";
@@ -88,7 +100,10 @@ async function loadRecentTests() {
             <h4>${test.test_name || `${test.subject} Test`}</h4>
             <span>Score ${toDisplayPercent(test.score)}%${rankInfo}</span>
           </div>
-          <span class="chip ${chip.class}">${chip.text}</span>
+          <div class="chip-stack">
+            <span class="chip ${chip.class}">${chip.text}</span>
+            <span class="chip-time">${attemptTime}</span>
+          </div>
         `;
         testList.appendChild(listItem);
       });

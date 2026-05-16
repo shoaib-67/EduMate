@@ -622,6 +622,7 @@
 
 .focus-section,
 .feature-section,
+.package-section,
 .faq-section,
 .address-section {
   padding: 58px 0;
@@ -748,6 +749,97 @@
   transform: translateY(-4px);
   box-shadow: var(--shadow-soft);
   border-color: #bcd6ea;
+}
+
+.package-section {
+  background: linear-gradient(180deg, rgba(236, 247, 255, 0.55) 0%, rgba(247, 251, 255, 0.85) 100%);
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.package-grid {
+  display: grid;
+  gap: 14px;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.package-card {
+  background: #ffffff;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 20px;
+  display: grid;
+  align-content: start;
+  gap: 10px;
+  box-shadow: var(--shadow-soft);
+  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+}
+
+.package-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-pop);
+  border-color: #bcd6ea;
+}
+
+.package-card-popular {
+  border-color: #8fc1df;
+  box-shadow: 0 16px 30px rgba(7, 93, 136, 0.16);
+  position: relative;
+}
+
+.package-card-popular::before {
+  content: "জনপ্রিয়";
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(12, 122, 167, 0.12);
+  color: var(--brand-strong);
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.package-label {
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--brand);
+}
+
+.package-card h4 {
+  font-size: 22px;
+  line-height: 1.3;
+  color: #143a5e;
+}
+
+.package-price {
+  color: var(--brand-strong);
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.package-price span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-500);
+  margin-left: 6px;
+}
+
+.package-features {
+  margin: 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  color: var(--ink-700);
+  font-size: 14px;
+  line-height: 1.6;
+}
+
+.package-btn {
+  margin-top: 6px;
+  text-align: center;
 }
 
 .faq-list {
@@ -904,7 +996,8 @@ input:focus-visible {
   }
 
   .focus-grid,
-  .feature-grid {
+  .feature-grid,
+  .package-grid {
     grid-template-columns: repeat(2, 1fr);
   }
 
@@ -951,7 +1044,8 @@ input:focus-visible {
 
   .hero-stats,
   .focus-grid,
-  .feature-grid {
+  .feature-grid,
+  .package-grid {
     grid-template-columns: 1fr;
   }
 
@@ -979,6 +1073,7 @@ input:focus-visible {
 
   .focus-section,
   .feature-section,
+  .package-section,
   .faq-section,
   .address-section {
     padding: 56px 0;

@@ -17,6 +17,7 @@ studentRouter.get("/:studentId/performance", studentController.performanceSummar
 studentRouter.get("/:studentId/performance/subjects", studentController.performanceBySubject);
 studentRouter.get("/:studentId/performance/recent-tests", studentController.recentTests);
 studentRouter.get("/:studentId/courses", studentController.courses);
+studentRouter.post("/:studentId/paid-class-purchase", studentController.purchasePaidClass);
 studentRouter.post("/:studentId/performance", studentController.recordPerformance);
 studentRouter.post("/:studentId/proctoring-events", studentController.recordProctoringEvent);
 studentRouter.get("/:studentId/announcements", studentController.announcements);

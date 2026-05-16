@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const { getPool } = require("../db");
 const { sendSuccess, sendError } = require("../lib/http");
 const { parseRequiredId, parsePositiveInteger, parseQuestionIds } = require("../lib/parsers");
-const { normalizeAudienceType } = require("../lib/audience");
+const { normalizeAudienceType, resolveStudentProgramGroup, isAudienceVisibleToStudent } = require("../lib/audience");
 const { toDateTimeValue, formatSqlDateTime, parseSqlDateTime, normalizeExamRecord } = require("../lib/examUtils");
 const {
   USER_ROLE_CONFIG,
@@ -115,6 +115,153 @@ const adminController = {
         message: "Could not fetch users.",
         error: error.message,
       });
+    }
+  },
+
+  listStudentPaidContentAccess: async (req, res) => {
+    try {
+      const studentId = parseRequiredId(req.params.studentId);
+      if (!studentId) {
+        return res.status(422).json({ success: false, message: "Valid student ID is required." });
+      }
+
+      const pool = getPool();
+      const [studentRows] = await pool.query(
+        `SELECT student_id, batch_name, course_track FROM students WHERE student_id = ? LIMIT 1`,
+        [studentId]
+      );
+      if (!studentRows.length) {
+        return res.status(404).json({ success: false, message: "Student not found." });
+      }
+      const student = studentRows[0];
+      const studentProgramGroup = resolveStudentProgramGroup(student);
+
+      const [rows] = await pool.query(
+        `
+        SELECT
+          cs.submission_id AS submissionId,
+          cs.title,
+          cs.course_title AS courseTitle,
+          cs.batch_name AS batchName,
+          cs.type,
+          cs.created_at AS createdAt,
+          COALESCE(spp.is_active, FALSE) AS granted
+        FROM content_submissions cs
+        LEFT JOIN student_paid_content_permissions spp
+          ON spp.submission_id = cs.submission_id
+          AND spp.student_id = ?
+        WHERE cs.status = 'approved'
+          AND LOWER(TRIM(COALESCE(cs.type, ''))) = 'paid class'
+        ORDER BY cs.created_at DESC
+        `,
+        [studentId]
+      );
+
+      const visibleRows = rows.filter((item) =>
+        isAudienceVisibleToStudent({
+          audienceType: "batch",
+          batchName: item.batchName || item.courseTitle || "",
+          studentBatchName: student.batch_name,
+          studentProgramGroup,
+        })
+      );
+
+      return res.status(200).json({
+        success: true,
+        data: visibleRows,
+        meta: {
+          studentBatch: student.batch_name || "",
+          studentProgram: student.course_track || "",
+          studentProgramGroup: studentProgramGroup || "",
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: "Could not fetch paid class access.", error: error.message });
+    }
+  },
+
+  updateStudentPaidContentAccess: async (req, res) => {
+    try {
+      const studentId = parseRequiredId(req.params.studentId);
+      const submissionId = parseRequiredId(req.params.submissionId);
+      const granted = Boolean(req.body?.granted);
+      const adminId = parseRequiredId(req.body?.adminId) || null;
+
+      if (!studentId || !submissionId) {
+        return res.status(422).json({ success: false, message: "Valid student ID and submission ID are required." });
+      }
+
+      const pool = getPool();
+      const [studentRows] = await pool.query(
+        `SELECT student_id, name, batch_name, course_track FROM students WHERE student_id = ? LIMIT 1`,
+        [studentId]
+      );
+      if (!studentRows.length) {
+        return res.status(404).json({ success: false, message: "Student not found." });
+      }
+      const student = studentRows[0];
+      const studentProgramGroup = resolveStudentProgramGroup(student);
+
+      const [contentRows] = await pool.query(
+        `
+        SELECT submission_id, title, type, batch_name, course_title
+        FROM content_submissions
+        WHERE submission_id = ?
+          AND status = 'approved'
+          AND LOWER(TRIM(COALESCE(type, ''))) = 'paid class'
+        LIMIT 1
+        `,
+        [submissionId]
+      );
+      if (!contentRows.length) {
+        return res.status(404).json({ success: false, message: "Paid class content not found." });
+      }
+      const content = contentRows[0];
+
+      const visibleToStudent = isAudienceVisibleToStudent({
+        audienceType: "batch",
+        batchName: content.batch_name || content.course_title || "",
+        studentBatchName: student.batch_name,
+        studentProgramGroup,
+      });
+      if (!visibleToStudent) {
+        return res.status(403).json({
+          success: false,
+          message: "This paid class is outside the student's program/batch and cannot be granted.",
+        });
+      }
+
+      await pool.query(
+        `
+        INSERT INTO student_paid_content_permissions
+          (student_id, submission_id, granted_by_admin_id, is_active)
+        VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE
+          granted_by_admin_id = VALUES(granted_by_admin_id),
+          is_active = VALUES(is_active)
+        `,
+        [studentId, submissionId, adminId, granted]
+      );
+
+      await logAdminActivity(pool, {
+        action: granted ? "granted_paid_content_access" : "revoked_paid_content_access",
+        targetType: "student",
+        targetId: Number(studentId),
+        targetLabel: student?.name || `Student #${studentId}`,
+        details: {
+          submissionId: Number(submissionId),
+          contentTitle: content?.title || null,
+          studentProgram: student?.course_track || null,
+          studentBatch: student?.batch_name || null,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: granted ? "Paid class access granted." : "Paid class access revoked.",
+      });
+    } catch (error) {
+      return res.status(500).json({ success: false, message: "Could not update paid class access.", error: error.message });
     }
   },
 

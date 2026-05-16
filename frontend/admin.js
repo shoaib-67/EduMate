@@ -457,6 +457,11 @@ const renderUsers = () => {
             ${
               canManage
                 ? `<button class="btn btn-small btn-quiet user-status-btn" data-user-id="${user.id}" data-user-role="${user.role}" data-next-status="${frozen ? "active" : "frozen"}">${frozen ? "Unfreeze" : "Freeze"}</button>
+                   ${
+                     roleToApiParam(user.role) === "student"
+                       ? `<button class="btn btn-small btn-quiet user-paid-access-btn" data-user-id="${user.id}" data-user-role="${user.role}">Grant Paid Access</button>`
+                       : ""
+                   }
                    <button class="btn btn-small btn-quiet btn-text-danger user-delete-btn" data-user-id="${user.id}" data-user-role="${user.role}">Delete</button>`
                 : ""
             }
@@ -542,6 +547,79 @@ const renderUsers = () => {
       } catch (error) {
         showToast("Failed to delete account: " + error.message, "error");
         renderUsers();
+      }
+    });
+  });
+
+  userTableBody?.querySelectorAll(".user-paid-access-btn").forEach((btn) => {
+    btn.addEventListener("click", async () => {
+      const id = btn.getAttribute("data-user-id");
+      const role = btn.getAttribute("data-user-role");
+      if (roleToApiParam(role) !== "student") return;
+
+      const originalLabel = btn.textContent;
+      btn.disabled = true;
+      btn.textContent = "Loading...";
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/admin/students/${id}/paid-content-access`);
+        const payload = await response.json();
+        const studentProgram = String(payload?.meta?.studentProgram || "").trim();
+        const studentBatch = String(payload?.meta?.studentBatch || "").trim();
+
+        if (!response.ok || !payload.success) {
+          showToast(payload.message || "Could not load paid class list.", "error");
+          return;
+        }
+
+        const paidItems = Array.isArray(payload.data) ? payload.data : [];
+        if (!paidItems.length) {
+          showToast("No paid class found for this student's program/batch.", "info");
+          return;
+        }
+
+        const optionsText = paidItems
+          .map(
+            (item, index) =>
+              `${index + 1}. ${item.title || "Untitled"}${item.courseTitle ? ` (${item.courseTitle})` : ""} - ${
+                item.granted ? "Granted" : "Not granted"
+              }`
+          )
+          .join("\n");
+
+        const selectedText = window.prompt(
+          `Select a paid class number for this student.\nProgram: ${studentProgram || "N/A"} | Batch: ${studentBatch || "N/A"}\n\n${optionsText}\n\nEnter number:`
+        );
+        if (selectedText == null) return;
+
+        const selectedIndex = Number(selectedText) - 1;
+        if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= paidItems.length) {
+          showToast("Invalid selection.", "error");
+          return;
+        }
+
+        const selectedItem = paidItems[selectedIndex];
+        const nextGranted = !Boolean(selectedItem.granted);
+
+        const updateResponse = await fetch(`${API_BASE_URL}/admin/students/${id}/paid-content-access/${selectedItem.submissionId}`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ granted: nextGranted }),
+        });
+        const updatePayload = await updateResponse.json();
+
+        if (!updateResponse.ok || !updatePayload.success) {
+          showToast(updatePayload.message || "Could not update paid class access.", "error");
+          return;
+        }
+
+        showToast(updatePayload.message || "Paid class access updated.", "success");
+        await loadActivityLogs();
+      } catch (error) {
+        showToast("Failed to update paid class access: " + error.message, "error");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = originalLabel;
       }
     });
   });

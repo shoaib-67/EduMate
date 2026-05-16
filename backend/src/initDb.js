@@ -358,6 +358,65 @@ async function ensureInstructorCourseItemsTable(pool) {
   );
 }
 
+async function ensureStudentPaidContentPermissionsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`student_paid_content_permissions\` (
+      \`permission_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`student_id\` INT UNSIGNED NOT NULL,
+      \`submission_id\` INT UNSIGNED NOT NULL,
+      \`granted_by_admin_id\` INT UNSIGNED NULL,
+      \`is_active\` BOOLEAN NOT NULL DEFAULT TRUE,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_student_paid_submission\` (\`student_id\`, \`submission_id\`),
+      INDEX \`idx_paid_perm_student\` (\`student_id\`, \`is_active\`),
+      INDEX \`idx_paid_perm_submission\` (\`submission_id\`, \`is_active\`),
+      FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`submission_id\`) REFERENCES \`content_submissions\`(\`submission_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`granted_by_admin_id\`) REFERENCES \`admins\`(\`admin_id\`) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensureStudentPaidMembershipsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`student_paid_memberships\` (
+      \`membership_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`student_id\` INT UNSIGNED NOT NULL,
+      \`package_code\` VARCHAR(40) NOT NULL,
+      \`package_name\` VARCHAR(120) NOT NULL,
+      \`is_active\` BOOLEAN NOT NULL DEFAULT TRUE,
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      \`updated_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_student_paid_membership\` (\`student_id\`),
+      INDEX \`idx_paid_membership_active\` (\`student_id\`, \`is_active\`),
+      FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
+async function ensurePaidClassPaymentsTable(pool) {
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS \`paid_class_payments\` (
+      \`payment_id\` INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+      \`student_id\` INT UNSIGNED NOT NULL,
+      \`submission_id\` INT UNSIGNED NOT NULL,
+      \`package_code\` VARCHAR(40) NOT NULL,
+      \`package_name\` VARCHAR(120) NOT NULL,
+      \`amount_bdt\` DECIMAL(10,2) NOT NULL DEFAULT 0,
+      \`payment_method\` VARCHAR(40) NOT NULL DEFAULT 'bkash',
+      \`transaction_id\` VARCHAR(120) NOT NULL,
+      \`status\` VARCHAR(30) NOT NULL DEFAULT 'verified',
+      \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      UNIQUE KEY \`uniq_paid_class_txn\` (\`transaction_id\`),
+      INDEX \`idx_paid_class_student\` (\`student_id\`, \`created_at\`),
+      INDEX \`idx_paid_class_submission\` (\`submission_id\`, \`created_at\`),
+      FOREIGN KEY (\`student_id\`) REFERENCES \`students\`(\`student_id\`) ON DELETE CASCADE,
+      FOREIGN KEY (\`submission_id\`) REFERENCES \`content_submissions\`(\`submission_id\`) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
+  `);
+}
+
 async function ensureInstructorQuestionBankTable(pool) {
   await pool.query(`
     CREATE TABLE IF NOT EXISTS \`instructor_question_bank\` (
@@ -616,6 +675,9 @@ async function ensureSchema() {
   await ensureExamAssignmentsTable(pool);
   await ensureProctoringEventsTable(pool);
   await ensureInstructorCourseItemsTable(pool);
+  await ensureStudentPaidContentPermissionsTable(pool);
+  await ensureStudentPaidMembershipsTable(pool);
+  await ensurePaidClassPaymentsTable(pool);
   await ensureInstructorQuestionBankTable(pool);
   await ensureInstructorExamSchedulesTable(pool);
   await ensureExamQuestionMappingsTable(pool);

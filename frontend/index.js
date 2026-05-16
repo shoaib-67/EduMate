@@ -235,6 +235,11 @@ $$("a[href^='#']").forEach((anchor) => {
     const target = targetId ? document.querySelector(targetId) : null;
     if (!targetId) return;
 
+    const cleanId = String(targetId || "").replace(/^#/, "");
+    if (typeof setActiveNavLink === "function" && sectionIds.includes(cleanId)) {
+      setActiveNavLink(cleanId);
+    }
+
     if (targetId === "#home") {
       window.scrollTo({ top: 0, behavior: "smooth" });
       return;
@@ -330,7 +335,7 @@ const revealObserver = createObserver(
 
 revealElements.forEach((item) => revealObserver.observe(item));
 
-const sectionIds = ["home", "features", "contact"];
+const sectionIds = ["home", "features", "packages", "contact"];
 const allNavLinks = $$(".nav-links a");
 const setActiveNavLink = (id) => {
   allNavLinks.forEach((link) => {
@@ -338,29 +343,34 @@ const setActiveNavLink = (id) => {
   });
 };
 
-const sectionObserver = createObserver(
-  (entry) => {
-    if (!entry.isIntersecting) return;
-    if (window.scrollY <= 24) {
-      setActiveNavLink("home");
-      return;
-    }
-    const id = entry.target.getAttribute("id");
-    setActiveNavLink(id);
-  },
-  { threshold: 0.45 }
-);
+const sectionNodes = sectionIds
+  .map((id) => ({ id, node: document.getElementById(id) }))
+  .filter((item) => Boolean(item.node));
 
-sectionIds.forEach((id) => {
-  const section = document.getElementById(id);
-  if (section) sectionObserver.observe(section);
-});
-
-window.addEventListener("scroll", () => {
+const syncActiveNavByScroll = () => {
   if (window.scrollY <= 24) {
     setActiveNavLink("home");
+    return;
   }
-});
+
+  const nav = document.querySelector(".top-nav");
+  const navOffset = nav ? nav.offsetHeight : 0;
+  const marker = window.scrollY + navOffset + 20;
+
+  let currentId = "home";
+  for (const item of sectionNodes) {
+    if (!item.node) continue;
+    if (item.node.offsetTop <= marker) {
+      currentId = item.id;
+    }
+  }
+
+  setActiveNavLink(currentId);
+};
+
+window.addEventListener("scroll", syncActiveNavByScroll);
+window.addEventListener("resize", syncActiveNavByScroll);
+syncActiveNavByScroll();
 
 $$(".faq-item").forEach((item, index) => {
   const button = item.querySelector(".faq-question");

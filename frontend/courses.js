@@ -10,6 +10,7 @@ const categoryMeta = {
   "question-bank": { label: "Question Bank", chipClass: "chip blue" },
   "class-video": { label: "Class Video", chipClass: "chip" },
   "concept-book": { label: "Concept Book", chipClass: "chip amber" },
+  "paid-class": { label: "Paid Class", chipClass: "chip red" },
 };
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
@@ -30,6 +31,7 @@ function classifyCategory(item) {
   const combined = `${type} ${title} ${description}`;
 
   if (combined.includes("question bank")) return "question-bank";
+  if (combined.includes("paid class")) return "paid-class";
   if (combined.includes("video")) return "class-video";
   if (combined.includes("concept") || combined.includes("book") || combined.includes("pdf")) return "concept-book";
   return "";
@@ -47,6 +49,7 @@ function mapItem(rawItem, source) {
     batchName: String(rawItem.batchName || rawItem.batch_name || "").trim(),
     link: String(rawItem.link || "").trim(),
     createdAt: rawItem.createdAt || rawItem.created_at || null,
+    hasPaidPermission: Number(rawItem.hasPaidPermission || rawItem.has_paid_permission || 0) === 1,
     source,
   };
 
@@ -63,6 +66,7 @@ function updateStats(items) {
   const questionBankCount = items.filter((item) => item.category === "question-bank").length;
   const classVideoCount = items.filter((item) => item.category === "class-video").length;
   const conceptBookCount = items.filter((item) => item.category === "concept-book").length;
+  const paidClassCount = items.filter((item) => item.category === "paid-class").length;
 
   statCards[0].innerHTML = `
     <p class="s-label">Question Bank</p>
@@ -81,6 +85,14 @@ function updateStats(items) {
     <p class="s-val text-primary">${conceptBookCount}</p>
     <p class="s-sub">${conceptBookCount > 0 ? "PDF/Book resources" : "No resources yet"}</p>
   `;
+
+  if (statCards[3]) {
+    statCards[3].innerHTML = `
+      <p class="s-label">Paid Class</p>
+      <p class="s-val">${paidClassCount}</p>
+      <p class="s-sub">${paidClassCount > 0 ? "Granted by admin" : "No paid access yet"}</p>
+    `;
+  }
 }
 
 function filteredItems() {
@@ -128,13 +140,35 @@ function renderCards() {
             <span>${escapeHtml(item.type || categoryInfo.label)}</span>
             <span>${escapeHtml(dateLabel || "Updated recently")}</span>
           </div>
-          ${item.link
-            ? `<a class="btn btn-primary" href="${escapeHtml(item.link)}" target="_blank" rel="noreferrer">Open</a>`
-            : `<button class="btn" type="button" disabled>No Link</button>`}
+          ${
+            item.category === "paid-class" && !item.hasPaidPermission
+              ? `<button class="btn" type="button" data-locked-paid="true" data-submission-id="${escapeHtml(item.rawId ?? "")}" data-title="${escapeHtml(item.title)}">Open</button>`
+              : item.link
+                ? `<a class="btn btn-primary" href="${escapeHtml(item.link)}" target="_blank" rel="noreferrer">Open</a>`
+                : `<button class="btn" type="button" disabled>No Link</button>`
+          }
         </article>
       `;
     })
     .join("");
+
+  grid.querySelectorAll('button[data-locked-paid="true"]').forEach((button) => {
+    button.addEventListener("click", () => {
+      const submissionId = Number(button.getAttribute("data-submission-id") || 0);
+      const title = String(button.getAttribute("data-title") || "Paid Class");
+      if (!submissionId) {
+        window.alert("Paid class ID missing. Please contact support.");
+        return;
+      }
+
+      const query = new URLSearchParams({
+        submissionId: String(submissionId),
+        title,
+        return: "courses.html",
+      });
+      window.location.href = `packages.html?${query.toString()}`;
+    });
+  });
 }
 
 function setActiveFilter(filterKey) {
@@ -203,6 +237,19 @@ async function initPage() {
   if (!requireRole("student")) return;
   setupLogoutHandlers();
   bindControls();
+
+  try {
+    const rawNotice = localStorage.getItem("edumatePaidPurchaseNotice");
+    if (rawNotice) {
+      localStorage.removeItem("edumatePaidPurchaseNotice");
+      const notice = JSON.parse(rawNotice);
+      if (notice?.message) {
+        window.alert(String(notice.message));
+      }
+    }
+  } catch {
+    // ignore localStorage/JSON errors
+  }
 
   try {
     state.items = await loadMergedContent();

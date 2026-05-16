@@ -120,7 +120,15 @@
       </div>
     </div>
 
-    <script src="shared.js"></script>
-    <script type="module" src="admin/index.js"></script>
+    <script src="shared.js?v=20260516-3"></script>
+    <script type="module" src="admin/index.js?v=20260516-3"></script>
+    <script>
+      window.setTimeout(() => {
+        if (window.__edumateAdminBooted) return;
+        const fallback = document.createElement("script");
+        fallback.src = "admin.js?v=20260516-3";
+        document.body.appendChild(fallback);
+      }, 700);
+    </script>
   </body>
 </html>

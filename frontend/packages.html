@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Choose Package - EduMate</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="icon" type="image/svg+xml" href="favicon.svg" />
+    <link rel="stylesheet" href="shared.css" />
+    <link rel="stylesheet" href="packages.css" />
+  </head>
+  <body>
+    <div class="layout">
+      <aside class="sidebar">
+        <div class="logo">
+          <div class="logo-icon">
+            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
+          </div>
+          <span class="logo-text">Edu<span>Mate</span></span>
+        </div>
+        <div class="nav-section">
+          <p class="nav-label">Student</p>
+          <a class="nav-item" href="student.html">Dashboard</a>
+          <a class="nav-item active" href="courses.html">Course Content</a>
+          <a class="nav-item" href="discussion.html">Announcement & Discussion</a>
+          <a class="nav-item" href="student-profile.html">Profile</a>
+        </div>
+      </aside>
+
+      <div class="main">
+        <div class="topbar">
+          <span class="topbar-title">Paid Class Package</span>
+          <div class="topbar-right">
+            <a class="avatar logout-btn" href="index.html" aria-label="Logout">Logout</a>
+          </div>
+        </div>
+
+        <div class="content">
+          <div class="page-header">
+            <h1>Choose package & pay</h1>
+            <p>Select a package, submit demo payment details, and unlock this paid class instantly.</p>
+          </div>
+
+          <div class="purchase-layout">
+            <section class="panel">
+              <h2>Selected Paid Class</h2>
+              <p class="paid-target-title" id="paidTargetTitle">Loading paid class...</p>
+              <p class="muted" id="paidTargetMeta">Submission ID: -</p>
+            </section>
+
+            <section class="panel">
+              <h2>Package</h2>
+              <div class="package-grid">
+                <label class="package-option">
+                  <input type="radio" name="packageCode" value="free" />
+                  <span class="package-name">Free Plan</span>
+                  <strong class="package-price">৳0</strong>
+                  <small>Demo onboarding access</small>
+                </label>
+                <label class="package-option is-popular">
+                  <input type="radio" name="packageCode" value="1month" checked />
+                  <span class="package-name">1 Month Plan</span>
+                  <strong class="package-price">৳499</strong>
+                  <small>Most popular starter plan</small>
+                </label>
+                <label class="package-option">
+                  <input type="radio" name="packageCode" value="3month" />
+                  <span class="package-name">3 Month Plan</span>
+                  <strong class="package-price">৳1299</strong>
+                  <small>Best value for deep prep</small>
+                </label>
+              </div>
+            </section>
+
+            <section class="panel">
+              <h2>Payment (Demo)</h2>
+              <form id="paidPurchaseForm" class="form-grid">
+                <div class="form-group">
+                  <label for="paymentMethod">Payment Method</label>
+                  <select id="paymentMethod" name="paymentMethod" required>
+                    <option value="bkash">bKash</option>
+                    <option value="nagad">Nagad</option>
+                    <option value="rocket">Rocket</option>
+                  </select>
+                  <p class="demo-payment-number" id="demoPaymentNumber">Demo bKash number: 01711-111111</p>
+                </div>
+                <div class="form-group">
+                  <label for="transactionId">Demo Transaction ID</label>
+                  <input
+                    id="transactionId"
+                    name="transactionId"
+                    type="text"
+                    minlength="6"
+                    maxlength="120"
+                    placeholder="e.g. BKX12345678"
+                    required
+                  />
+                </div>
+                <div class="form-footer form-group-full">
+                  <p>After submit, you will be redirected to Course Content with paid-class access.</p>
+                  <button class="btn btn-primary" type="submit" id="purchaseSubmitBtn">Submit Payment</button>
+                </div>
+              </form>
+              <div class="workspace-banner" id="purchaseStatus" role="status" aria-live="polite"></div>
+              <a class="btn btn-secondary back-btn" href="courses.html">Back to Course Content</a>
+            </section>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <script src="shared.js"></script>
+    <script src="packages.js?v=20260516-2"></script>
+  </body>
+</html>

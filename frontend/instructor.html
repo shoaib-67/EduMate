@@ -126,6 +126,7 @@
                     <option value="PDF">PDF</option>
                     <option value="Video">Video</option>
                     <option value="Slides">Slides</option>
+                    <option value="Paid Class">Paid Class</option>
                   </select>
                 </div>
                 <div class="form-group">
@@ -366,6 +367,40 @@
               </form>
 
               <div class="list compact-list" id="communicationList"></div>
+
+              <div class="discussion-hub">
+                <div class="panel-header">
+                  <div class="panel-title-group">
+                    <h3>Student Discussions</h3>
+                    <p>See student posts and reply from the instructor panel.</p>
+                  </div>
+                  <button class="btn btn-secondary btn-sm" id="refreshDiscussionHubBtn" type="button">Refresh</button>
+                </div>
+                <div class="discussion-filters">
+                  <input type="search" id="discussionHubSearch" placeholder="Search student discussion..." />
+                  <select id="discussionHubSubjectFilter">
+                    <option value="all">All subjects</option>
+                    <option value="general">General</option>
+                    <option value="physics">Physics</option>
+                    <option value="chemistry">Chemistry</option>
+                    <option value="math">Math</option>
+                    <option value="biology">Biology</option>
+                  </select>
+                </div>
+                <div class="discussion-hub-grid">
+                  <div class="list compact-list discussion-thread-list" id="discussionHubList">
+                    <div class="empty-card">
+                      <strong>Loading student discussions</strong>
+                      <span>Latest student questions will appear here.</span>
+                    </div>
+                  </div>
+                  <div class="thread-detail" id="discussionHubDetail">
+                    <h4>Select a discussion</h4>
+                    <p>The selected post and replies will appear here.</p>
+                  </div>
+                </div>
+                <div class="workspace-banner" id="discussionHubStatus" role="status" aria-live="polite"></div>
+              </div>
             </section>
           </div>
 

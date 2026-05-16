@@ -17,6 +17,12 @@ const state = {
     scoreDistribution: [],
     mockTestResults: [],
   },
+  discussionHub: {
+    items: [],
+    activeDiscussionId: null,
+    query: "",
+    subject: "all",
+  },
 };
 
 function $(selector) {
@@ -91,6 +97,40 @@ function setWorkspaceHealth(status) {
 
 function renderEmptyCard(title, note) {
   return `<div class="empty-card"><strong>${escapeHTML(title)}</strong><span>${escapeHTML(note)}</span></div>`;
+}
+
+function showDiscussionHubStatus(message = "", type = "info") {
+  const status = $("#discussionHubStatus");
+  if (!status) return;
+  if (!message) {
+    status.className = "workspace-banner";
+    status.textContent = "";
+    return;
+  }
+  status.textContent = message;
+  status.className = `workspace-banner is-visible is-${type}`;
+}
+
+function getTimeAgo(createdAt) {
+  const timestamp = new Date(createdAt).getTime();
+  if (!Number.isFinite(timestamp)) return "unknown time";
+
+  const diff = Date.now() - timestamp;
+  const minute = 60 * 1000;
+  const hour = 60 * minute;
+  const day = 24 * hour;
+  if (diff < minute) return "just now";
+  if (diff < hour) return `${Math.floor(diff / minute)}m ago`;
+  if (diff < day) return `${Math.floor(diff / hour)}h ago`;
+  if (diff < 7 * day) return `${Math.floor(diff / day)}d ago`;
+  return new Date(timestamp).toLocaleDateString();
+}
+
+function getDiscussionTagClass(tag) {
+  const cleanTag = String(tag || "").toLowerCase();
+  if (cleanTag === "trending") return "blue";
+  if (cleanTag === "hot") return "amber";
+  return "";
 }
 
 function getNextExam(exams) {
@@ -432,6 +472,188 @@ function renderCommunications() {
         )
         .join("")
     : renderEmptyCard("No messages posted yet", "Announcements, discussion starters, and direct notices will appear here after you send them.");
+}
+
+function renderDiscussionHubList() {
+  const listNode = $("#discussionHubList");
+  if (!listNode) return;
+
+  const items = state.discussionHub.items || [];
+  const query = String(state.discussionHub.query || "").trim().toLowerCase();
+  const subject = String(state.discussionHub.subject || "all").trim().toLowerCase();
+
+  const filtered = items.filter((item) => {
+    const matchQuery =
+      !query ||
+      String(item.title || "").toLowerCase().includes(query) ||
+      String(item.content || "").toLowerCase().includes(query) ||
+      String(item.author_name || "").toLowerCase().includes(query);
+    const matchSubject = subject === "all" || String(item.subject || "").toLowerCase() === subject;
+    return matchQuery && matchSubject;
+  });
+
+  if (!filtered.length) {
+    listNode.innerHTML = renderEmptyCard(
+      "No student discussions found",
+      "Try another search text or subject filter."
+    );
+    return;
+  }
+
+  listNode.innerHTML = filtered
+    .map((item) => {
+      const activeClass = Number(item.discussion_id) === Number(state.discussionHub.activeDiscussionId) ? " is-active" : "";
+      return `
+        <div class="thread clickable${activeClass}" data-discussion-id="${Number(item.discussion_id)}">
+          <div class="u-flex u-space-between u-gap-8">
+            <h4>${escapeHTML(item.title || "Untitled discussion")}</h4>
+            <span class="chip ${getDiscussionTagClass(item.tag)}">${escapeHTML(item.tag || item.subject || "new")}</span>
+          </div>
+          <span>${escapeHTML(String(item.reply_count || 0))} replies - by ${escapeHTML(item.author_name || "Student")} - ${escapeHTML(getTimeAgo(item.created_at))}</span>
+        </div>
+      `;
+    })
+    .join("");
+
+  listNode.querySelectorAll("[data-discussion-id]").forEach((node) => {
+    node.addEventListener("click", () => {
+      const discussionId = Number(node.getAttribute("data-discussion-id"));
+      if (!Number.isInteger(discussionId) || discussionId <= 0) return;
+      loadDiscussionDetail(discussionId).catch(() => {});
+    });
+  });
+}
+
+function renderDiscussionHubDetail(discussion) {
+  const detailNode = $("#discussionHubDetail");
+  if (!detailNode) return;
+
+  if (!discussion) {
+    detailNode.innerHTML = `
+      <h4>Select a discussion</h4>
+      <p>The selected post and replies will appear here.</p>
+    `;
+    return;
+  }
+
+  const replies = Array.isArray(discussion.replies) ? discussion.replies : [];
+  const replyHtml = replies.length
+    ? replies
+        .map(
+          (reply) => `
+        <div class="thread">
+          <p>${escapeHTML(reply.content || "")}</p>
+          <span>${escapeHTML(reply.author_name || "Unknown")} (${escapeHTML(reply.author_role || "student")}) - ${escapeHTML(getTimeAgo(reply.created_at))}</span>
+        </div>
+      `
+        )
+        .join("")
+    : renderEmptyCard("No replies yet", "This student question has no replies yet.");
+
+  detailNode.innerHTML = `
+    <h4>${escapeHTML(discussion.title || "Untitled discussion")}</h4>
+    <p>${escapeHTML(discussion.content || "No content available.")}</p>
+    <p>${escapeHTML(String(replies.length))} replies - started by ${escapeHTML(discussion.author_name || "Student")}</p>
+    <div class="list">${replyHtml}</div>
+    <div class="discussion-reply-box">
+      <textarea id="discussionHubReplyInput" placeholder="Write your instructor reply..."></textarea>
+      <button class="btn btn-primary" id="discussionHubReplyBtn" type="button">Post reply</button>
+    </div>
+  `;
+
+  detailNode.querySelector("#discussionHubReplyBtn")?.addEventListener("click", () => {
+    submitDiscussionReply().catch((error) => {
+      showDiscussionHubStatus(error.message || "Could not post reply.", "error");
+    });
+  });
+}
+
+async function loadDiscussionHub({ preserveSelection = true } = {}) {
+  const listNode = $("#discussionHubList");
+  if (listNode && (!state.discussionHub.items || !state.discussionHub.items.length)) {
+    listNode.innerHTML = renderEmptyCard("Loading discussions", "Fetching latest student discussion posts.");
+  }
+
+  try {
+    const payload = await fetchJson(`${API_BASE_URL}/discussions`);
+    state.discussionHub.items = Array.isArray(payload.data) ? payload.data : [];
+
+    if (!preserveSelection) {
+      state.discussionHub.activeDiscussionId = null;
+    } else if (
+      state.discussionHub.activeDiscussionId &&
+      !state.discussionHub.items.some((item) => Number(item.discussion_id) === Number(state.discussionHub.activeDiscussionId))
+    ) {
+      state.discussionHub.activeDiscussionId = null;
+    }
+
+    renderDiscussionHubList();
+
+    if (state.discussionHub.activeDiscussionId) {
+      await loadDiscussionDetail(state.discussionHub.activeDiscussionId, { silent: true });
+    } else {
+      renderDiscussionHubDetail(null);
+    }
+  } catch (error) {
+    state.discussionHub.items = [];
+    renderDiscussionHubList();
+    renderDiscussionHubDetail(null);
+    throw new Error(error.message || "Could not load student discussions.");
+  }
+}
+
+async function loadDiscussionDetail(discussionId, { silent = false } = {}) {
+  const parsedId = Number(discussionId);
+  if (!Number.isInteger(parsedId) || parsedId <= 0) return;
+
+  try {
+    if (!silent) {
+      showDiscussionHubStatus("Loading discussion thread...", "info");
+    }
+    const payload = await fetchJson(`${API_BASE_URL}/discussions/${parsedId}`);
+    state.discussionHub.activeDiscussionId = parsedId;
+    renderDiscussionHubList();
+    renderDiscussionHubDetail(payload.data || null);
+    if (!silent) {
+      showDiscussionHubStatus("Discussion thread loaded.", "success");
+    }
+  } catch (error) {
+    if (!silent) {
+      showDiscussionHubStatus(error.message || "Could not load discussion thread.", "error");
+    }
+  }
+}
+
+async function submitDiscussionReply() {
+  const discussionId = Number(state.discussionHub.activeDiscussionId);
+  if (!Number.isInteger(discussionId) || discussionId <= 0) {
+    showDiscussionHubStatus("Select a discussion thread first.", "error");
+    return;
+  }
+
+  const input = $("#discussionHubReplyInput");
+  const content = String(input?.value || "").trim();
+  if (!content) {
+    showDiscussionHubStatus("Write a reply before posting.", "error");
+    return;
+  }
+
+  const button = $("#discussionHubReplyBtn");
+  await submitForm(button, async () => {
+    showDiscussionHubStatus("Posting reply...", "info");
+    await fetchJson(`${API_BASE_URL}/discussions/${discussionId}/reply`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: state.instructorId,
+        userRole: "instructor",
+        content,
+      }),
+    });
+    if (input) input.value = "";
+    showDiscussionHubStatus("Reply posted successfully.", "success");
+    await Promise.all([loadDiscussionHub(), loadDiscussionDetail(discussionId, { silent: true })]);
+  });
 }
 
 function renderAll() {
@@ -796,6 +1018,21 @@ function bindEvents() {
   if (initialMessageType) {
     initialMessageType.dispatchEvent(new Event("change"));
   }
+  $("#discussionHubSearch")?.addEventListener("input", (event) => {
+    state.discussionHub.query = String(event.target?.value || "");
+    renderDiscussionHubList();
+  });
+  $("#discussionHubSubjectFilter")?.addEventListener("change", (event) => {
+    state.discussionHub.subject = String(event.target?.value || "all");
+    renderDiscussionHubList();
+  });
+  $("#refreshDiscussionHubBtn")?.addEventListener("click", () => {
+    loadDiscussionHub().then(() => {
+      showDiscussionHubStatus("Student discussions refreshed.", "success");
+    }).catch((error) => {
+      showDiscussionHubStatus(error.message || "Could not refresh discussions.", "error");
+    });
+  });
   $("#clearDraftQuestionsBtn")?.addEventListener("click", () => {
     clearDraftQuestions();
   });
@@ -855,18 +1092,27 @@ document.addEventListener("DOMContentLoaded", async () => {
   state.instructorId = Number(user?.id || 1);
   bindEvents();
   bindSectionNav();
+  renderDiscussionHubDetail(null);
+  loadDiscussionHub().catch((error) => {
+    showDiscussionHubStatus(error.message || "Could not load student discussions.", "error");
+  });
 
   const startWorkspacePolling = () => {
-    window.setInterval(() => loadWorkspace({ silent: true }).catch(() => {}), 30000);
+    window.setInterval(() => {
+      loadWorkspace({ silent: true }).catch(() => {});
+      loadDiscussionHub().catch(() => {});
+    }, 30000);
   };
 
-  setupTabSync(() => loadWorkspace({ silent: true }), { minIntervalMs: 1000 });
+  setupTabSync(() => Promise.allSettled([loadWorkspace({ silent: true }), loadDiscussionHub()]), { minIntervalMs: 1000 });
 
   try {
     await loadWorkspace();
+    await loadDiscussionHub();
     startWorkspacePolling();
   } catch (error) {
     showBanner(`Instructor workspace could not load: ${error.message}`, "error", true);
+    loadDiscussionHub().catch(() => {});
     startWorkspacePolling();
   }
 });

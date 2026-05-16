@@ -172,8 +172,8 @@ async function loadAnnouncements() {
 
 async function handlePostDiscussion() {
   try {
-    const titleInput = document.querySelector(".discussion-input");
-    const contentTextarea = document.querySelector(".input-row textarea");
+    const titleInput = document.getElementById("discussionTitleInput");
+    const contentTextarea = document.getElementById("discussionContentInput");
     if (!titleInput || !contentTextarea) return;
 
     const title = titleInput.value.trim();
@@ -267,7 +267,7 @@ async function loadStudyCircles() {
 
 document.addEventListener("DOMContentLoaded", () => {
   const user = getDiscussionUser();
-  const postButton = document.querySelector(".input-row .btn-primary");
+  const postButton = document.getElementById("postDiscussionBtn");
   if (user) {
     setupLogoutHandlers();
   } else {

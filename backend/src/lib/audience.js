@@ -61,16 +61,30 @@ function formatAudienceLabel(audienceType, batchName) {
 function isAudienceVisibleToStudent({ audienceType, batchName, studentBatchName, studentProgramGroup }) {
   const cleanAudienceType = normalizeAudienceType(audienceType, "batch");
   if (cleanAudienceType === "all") return true;
+  if (cleanAudienceType === "specific") return false;
 
   const normalizedBatch = normalizeBatchName(batchName);
   if (normalizedBatch === ALL_BATCHES_LABEL) return true;
 
-  const targetGroup = deriveProgramGroup(batchName);
-  if (targetGroup && studentProgramGroup) return targetGroup === studentProgramGroup;
-
+  const normalizedBatchLower = String(normalizedBatch || "").trim().toLowerCase();
   const normalizedStudentBatch = normalizeBatchName(studentBatchName);
-  if (!normalizedBatch || !normalizedStudentBatch) return false;
-  return normalizedBatch.toLowerCase() === normalizedStudentBatch.toLowerCase();
+  const normalizedStudentBatchLower = String(normalizedStudentBatch || "").trim().toLowerCase();
+
+  if (normalizedBatchLower && normalizedStudentBatchLower && normalizedBatchLower === normalizedStudentBatchLower) {
+    return true;
+  }
+
+  const isTargetGenericProgramBatch =
+    normalizedBatchLower === "engineering" ||
+    normalizedBatchLower === "varsity" ||
+    normalizedBatchLower === "versity" ||
+    normalizedBatchLower === "medical";
+
+  const targetGroup = deriveProgramGroup(batchName);
+  if (isTargetGenericProgramBatch && targetGroup && studentProgramGroup) return targetGroup === studentProgramGroup;
+
+  if (!normalizedBatchLower || !normalizedStudentBatchLower) return false;
+  return normalizedBatchLower === normalizedStudentBatchLower;
 }
 
 module.exports = {

@@ -164,9 +164,10 @@ const studentController = {
       const now = new Date();
       const visibleRows = rows.filter((row) => {
         const explicitlyAssigned = Number(row.is_assigned_to_student || 0) === 1;
-        if (explicitlyAssigned) return true;
+        const audienceType = normalizeAudienceType(row.audience_type, "batch");
+        if (explicitlyAssigned && audienceType === "specific") return true;
         return isAudienceVisibleToStudent({
-          audienceType: row.audience_type,
+          audienceType,
           batchName: row.batch_name,
           studentBatchName: student.batch_name,
           studentProgramGroup,
@@ -249,14 +250,16 @@ const studentController = {
         if (examRows.length) {
           const exam = examRows[0];
           const explicitlyAssigned = Number(exam.is_assigned_to_student || 0) === 1;
+          const audienceType = normalizeAudienceType(exam.audience_type, "batch");
           const visibleByAudience = isAudienceVisibleToStudent({
-            audienceType: exam.audience_type,
+            audienceType,
             batchName: exam.batch_name,
             studentBatchName: student.batch_name,
             studentProgramGroup,
           });
 
-          if (explicitlyAssigned || visibleByAudience) {
+          const canAccessExam = (explicitlyAssigned && audienceType === "specific") || visibleByAudience;
+          if (canAccessExam) {
             const [mappedRows] = await pool.query(
               `
               SELECT iq.question_id, iq.subject, iq.question_text, iq.options_text, iq.answer_key, eqm.order_index
@@ -516,15 +519,34 @@ const studentController = {
           cs.deadline,
           cs.status,
           cs.source_ref AS link,
-          cs.created_at AS createdAt
+          cs.created_at AS createdAt,
+          LOWER(TRIM(COALESCE(cs.type, ''))) AS normalizedType,
+          CASE
+            WHEN LOWER(TRIM(COALESCE(cs.type, ''))) = 'paid class'
+              AND (
+                MAX(CASE WHEN spp.is_active = TRUE THEN 1 ELSE 0 END) = 1
+                OR MAX(CASE WHEN spm.is_active = TRUE THEN 1 ELSE 0 END) = 1
+              )
+            THEN 1
+            WHEN LOWER(TRIM(COALESCE(cs.type, ''))) <> 'paid class'
+            THEN 1
+            ELSE 0
+          END AS hasPaidPermission
         FROM content_submissions cs
+        LEFT JOIN student_paid_content_permissions spp
+          ON spp.submission_id = cs.submission_id
+          AND spp.student_id = ?
+        LEFT JOIN student_paid_memberships spm
+          ON spm.student_id = ?
         WHERE cs.status = 'approved'
           AND LOWER(COALESCE(cs.type, '')) <> 'exam'
           AND LOWER(COALESCE(cs.type, '')) <> 'announcement'
           AND LOWER(COALESCE(cs.type, '')) <> 'assignment'
+        GROUP BY cs.submission_id
         ORDER BY cs.created_at DESC
         LIMIT 200
-        `
+        `,
+        [studentId, studentId]
       );
 
       const hasAudienceInfo = Boolean(student.batch_name || student.course_track || studentProgramGroup);
@@ -541,6 +563,135 @@ const studentController = {
       return res.status(200).json({ success: true, data: visible });
     } catch (error) {
       return res.status(500).json({ success: false, message: "Could not fetch courses.", error: error.message });
+    }
+  },
+
+  purchasePaidClass: async (req, res) => {
+    try {
+      const studentId = parseRequiredId(req.params.studentId);
+      const submissionId = parseRequiredId(req.body?.submissionId);
+      if (!studentId || !submissionId) {
+        return sendError(res, { status: 422, message: "Valid student ID and paid class ID are required." });
+      }
+
+      const packageRaw = String(req.body?.packageCode || "").trim().toLowerCase();
+      const paymentMethod = String(req.body?.paymentMethod || "bkash").trim().toLowerCase();
+      const transactionId = String(req.body?.transactionId || "").trim();
+
+      if (!transactionId || transactionId.length < 6) {
+        return sendError(res, { status: 422, message: "A valid demo transaction ID is required." });
+      }
+
+      const packageCatalog = {
+        free: { code: "free", name: "Free Plan", amount: 0 },
+        "1month": { code: "1month", name: "1 Month Plan", amount: 499 },
+        "3month": { code: "3month", name: "3 Month Plan", amount: 1299 },
+      };
+      const selectedPackage = packageCatalog[packageRaw];
+      if (!selectedPackage) {
+        return sendError(res, { status: 422, message: "Please choose a valid package." });
+      }
+
+      if (!["bkash", "nagad", "rocket"].includes(paymentMethod)) {
+        return sendError(res, { status: 422, message: "Unsupported payment method." });
+      }
+
+      const pool = getPool();
+      const [studentRows] = await pool.query(
+        `SELECT student_id, batch_name, course_track FROM students WHERE student_id = ? LIMIT 1`,
+        [studentId]
+      );
+      if (!studentRows.length) return sendError(res, { status: 404, message: "Student not found." });
+      const student = studentRows[0];
+      const studentProgramGroup = resolveStudentProgramGroup(student);
+
+      const [submissionRows] = await pool.query(
+        `
+        SELECT submission_id, title, batch_name, course_title, status, LOWER(TRIM(COALESCE(type, ''))) AS normalized_type
+        FROM content_submissions
+        WHERE submission_id = ?
+        LIMIT 1
+        `,
+        [submissionId]
+      );
+      const submission = submissionRows[0];
+      if (!submission) return sendError(res, { status: 404, message: "Paid class content not found." });
+      if (String(submission.status || "").toLowerCase() !== "approved" || submission.normalized_type !== "paid class") {
+        return sendError(res, { status: 403, message: "This content is not an approved paid class." });
+      }
+
+      const visibleToStudent = isAudienceVisibleToStudent({
+        audienceType: "batch",
+        batchName: submission.batch_name || submission.course_title || "",
+        studentBatchName: student.batch_name,
+        studentProgramGroup,
+      });
+      if (!visibleToStudent) {
+        return sendError(res, { status: 403, message: "This paid class is not assigned to your batch/program." });
+      }
+
+      try {
+        await pool.query(
+          `
+          INSERT INTO paid_class_payments
+            (student_id, submission_id, package_code, package_name, amount_bdt, payment_method, transaction_id, status)
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'verified')
+          `,
+          [
+            studentId,
+            submissionId,
+            selectedPackage.code,
+            selectedPackage.name,
+            selectedPackage.amount,
+            paymentMethod,
+            transactionId,
+          ]
+        );
+      } catch (error) {
+        if (error?.code === "ER_DUP_ENTRY") {
+          return sendError(res, { status: 409, message: "This transaction ID was already submitted." });
+        }
+        throw error;
+      }
+
+      await pool.query(
+        `
+        INSERT INTO student_paid_content_permissions
+          (student_id, submission_id, granted_by_admin_id, is_active)
+        VALUES (?, ?, NULL, TRUE)
+        ON DUPLICATE KEY UPDATE
+          is_active = TRUE,
+          granted_by_admin_id = NULL
+        `,
+        [studentId, submissionId]
+      );
+
+      await pool.query(
+        `
+        INSERT INTO student_paid_memberships
+          (student_id, package_code, package_name, is_active)
+        VALUES (?, ?, ?, TRUE)
+        ON DUPLICATE KEY UPDATE
+          package_code = VALUES(package_code),
+          package_name = VALUES(package_name),
+          is_active = TRUE
+        `,
+        [studentId, selectedPackage.code, selectedPackage.name]
+      );
+
+      return sendSuccess(res, {
+        status: 201,
+        message: "Payment submitted and paid class access granted for all paid classes.",
+        data: {
+          submissionId,
+          packageCode: selectedPackage.code,
+          packageName: selectedPackage.name,
+          paymentMethod,
+          transactionId,
+        },
+      });
+    } catch (error) {
+      return sendError(res, { message: "Could not complete paid class purchase.", error: error.message });
     }
   },
 

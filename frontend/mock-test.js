@@ -154,9 +154,8 @@ function normalizeSubjects(subjectInput) {
 }
 
 function mapExamStatusToTestStatus(exam) {
-  const status = String(exam?.status || "").toLowerCase();
-  if (status === "completed" || status === "missed") return "completed";
-  if (status === "upcoming" && !exam?.joinAvailable) return "scheduled";
+  const attempts = Math.max(0, Number(exam?.attemptCount || 0));
+  if (attempts >= 3) return "completed";
   return "available";
 }
 
@@ -184,14 +183,10 @@ function isTestJoinAvailable(test, now = new Date()) {
 }
 
 function deriveLiveTestStatus(test, now = new Date()) {
-  const backendStatus = String(test?.backendStatus || test?.status || "").toLowerCase();
-  if (backendStatus === "completed" || backendStatus === "missed") return "completed";
-
-  const { start, end } = getExamWindow(test);
-  if (!start || !end) return backendStatus === "available" ? "available" : "scheduled";
-  if (now > end) return "completed";
-  if (isTestJoinAvailable(test, now)) return "available";
-  return "scheduled";
+  const maxAttempts = Number(test?.maxAttempts || 3);
+  const attempts = Math.max(0, Number(test?.attempts || 0));
+  if (!isUnlimited(maxAttempts) && attempts >= maxAttempts) return "completed";
+  return "available";
 }
 
 function formatScheduleLabel(test) {
@@ -297,6 +292,7 @@ function renderTests(filter = "all", search = "") {
     const liveStatus = deriveLiveTestStatus(test);
     return { ...test, status: liveStatus, featured: liveStatus === "available" };
   });
+  list = list.filter((test) => !(test.status === "completed" && Number(test.attempts || 0) === 0));
   if (filter !== "all") list = list.filter((test) => test.status === filter);
   if (searchText) {
     list = list.filter(
@@ -335,7 +331,6 @@ function renderTests(filter = "all", search = "") {
       <div>
         <p class="tc-title">${test.title}</p>
         <p class="tc-desc tc-desc-spaced">${test.description}</p>
-        <p class="tc-window">Exam window: ${formatExamWindow(test)}</p>
       </div>
       <div class="tc-tags">
         ${test.subjects.map((subject) => `<span class="tag">${subject}</span>`).join("")}
@@ -365,9 +360,7 @@ function renderTests(filter = "all", search = "") {
         ${
           test.status === "available"
             ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openTestConfirm(${test.id})">Start -&gt;</button>`
-            : test.status === "scheduled"
-              ? `<button class="btn btn-sm btn-scheduled">Starts ${formatScheduleLabel(test)}</button>`
-              : `<div class="score-box"><p class="score-label">Score</p><p class="score-value">${scoreLabel}</p></div>`
+            : `<div class="score-box"><p class="score-label">Score</p><p class="score-value">${scoreLabel}</p></div>`
         }
       </div>
     `;

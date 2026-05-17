@@ -335,15 +335,15 @@
 
       if (role === "admin") {
         const response = await fetch(`${API_BASE_URL}/admin/users`);
-        if (!response.ok) return { valid: false, reason: "not_found" };
+        if (!response.ok) return { valid: true, reason: "transient_error" };
         const payload = await response.json().catch(() => ({}));
-        if (!payload?.success || !Array.isArray(payload?.data)) return { valid: false, reason: "invalid_payload" };
+        if (!payload?.success || !Array.isArray(payload?.data)) return { valid: true, reason: "invalid_payload" };
         const matched = payload.data.find(
           (item) =>
             Number(item?.id || 0) === Number(user.id) &&
             normalizeRoleValue(item?.role) === "admin"
         );
-        if (!matched) return { valid: false, reason: "deleted" };
+        if (!matched) return { valid: true, reason: "unverified" };
         const status = String(matched.accountStatus || matched.status || "").trim().toLowerCase();
         if (status === "frozen") return { valid: false, reason: "frozen" };
         return { valid: true };
@@ -417,14 +417,44 @@
     observer.observe(document.body, { childList: true, subtree: true });
   }
 
+  function setupAutoReloadAfterMutations() {
+    if (windowObject.__edumateAutoReloadPatched) return;
+    windowObject.__edumateAutoReloadPatched = true;
+
+    const originalFetch = windowObject.fetch?.bind(windowObject);
+    if (typeof originalFetch !== "function") return;
+
+    windowObject.fetch = async (...args) => {
+      const response = await originalFetch(...args);
+      try {
+        const request = args[1] || {};
+        const method = String(request.method || "GET").toUpperCase();
+        const isMutation = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+        const skipReload = request?.headers?.["X-EduMate-Skip-Reload"] === "true";
+        if (isMutation && response?.ok && !skipReload) {
+          windowObject.setTimeout(() => {
+            if (!document.hidden) {
+              windowObject.location.reload();
+            }
+          }, 250);
+        }
+      } catch {
+        // Keep normal fetch behavior if reload detection fails.
+      }
+      return response;
+    };
+  }
+
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       setupCommonUiEnhancements();
       observeTableChanges();
+      setupAutoReloadAfterMutations();
     });
   } else {
     setupCommonUiEnhancements();
     observeTableChanges();
+    setupAutoReloadAfterMutations();
   }
 
   windowObject.EduMateShared = {
@@ -445,5 +475,6 @@
     setupCommonUiEnhancements,
     setupTabSync,
     setupAccountStatusGuard,
+    setupAutoReloadAfterMutations,
   };
 })(window);

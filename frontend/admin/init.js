@@ -44,15 +44,11 @@ function setupFilters() {
     renderReports();
   });
   document.getElementById("reportStatusFilter")?.addEventListener("change", (event) => {
-    state.filters.reports.status = event.target.value || "open";
+    state.filters.reports.status = event.target.value || "pending";
     renderReports();
   });
   document.getElementById("reportPriorityFilter")?.addEventListener("change", (event) => {
     state.filters.reports.priority = event.target.value || "all";
-    renderReports();
-  });
-  document.getElementById("reportCategoryFilter")?.addEventListener("change", (event) => {
-    state.filters.reports.category = event.target.value || "all";
     renderReports();
   });
 }

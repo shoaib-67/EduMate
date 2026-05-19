@@ -7,7 +7,6 @@ const OPTION_LABELS = ["A", "B", "C", "D"];
 const MODAL_VIEWS = ["confirmView", "examView", "submitConfirmView", "resultView"];
 const BADGE_MAP = {
   available: ["badge-green", "Available"],
-  scheduled: ["badge-amber", "Scheduled"],
   completed: ["badge-blue", "Completed"],
 };
 
@@ -154,8 +153,9 @@ function normalizeSubjects(subjectInput) {
 }
 
 function mapExamStatusToTestStatus(exam) {
+  const maxAttempts = Number(exam?.maxAttempts || 3);
   const attempts = Math.max(0, Number(exam?.attemptCount || 0));
-  if (attempts >= 3) return "completed";
+  if (attempts > 0 || (!isUnlimited(maxAttempts) && attempts >= maxAttempts)) return "completed";
   return "available";
 }
 
@@ -186,12 +186,20 @@ function deriveLiveTestStatus(test, now = new Date()) {
   const maxAttempts = Number(test?.maxAttempts || 3);
   const attempts = Math.max(0, Number(test?.attempts || 0));
   if (!isUnlimited(maxAttempts) && attempts >= maxAttempts) return "completed";
+  if (attempts > 0) return "completed";
   return "available";
+}
+
+function canAttemptTest(test) {
+  const maxAttempts = Number(test?.maxAttempts || 3);
+  const attempts = Math.max(0, Number(test?.attempts || 0));
+  if (isUnlimited(maxAttempts)) return true;
+  return attempts < maxAttempts;
 }
 
 function formatScheduleLabel(test) {
   const { start } = getExamWindow(test);
-  if (!start) return test.schedDate || "Scheduled";
+  if (!start) return test.schedDate || "Date TBD";
   return start.toLocaleString([], {
     month: "numeric",
     day: "numeric",
@@ -216,6 +224,18 @@ function formatExamWindow(test) {
   return `${startLabel} - ${endLabel}`;
 }
 
+function resolvePerMcqMark(test) {
+  const directMark = Number(test?.perMcqMark || 0);
+  if (Number.isFinite(directMark) && directMark > 0) return directMark;
+
+  const sourceText = String(test?.description || "");
+  const match = sourceText.match(/per\s*mcq\s*mark\s*:\s*([0-9]*\.?[0-9]+)/i);
+  const parsed = Number(match?.[1] || 0);
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+
+  return 1;
+}
+
 function buildTestsFromExamRoutine(exams = []) {
   const mapped = exams
     .map((exam) => {
@@ -236,16 +256,20 @@ function buildTestsFromExamRoutine(exams = []) {
         subjects,
         attempts: Math.max(0, Number(exam.attemptCount || 0)),
         maxAttempts: 3,
-        description: exam.instructions || "Scheduled from exam routine.",
-        tags: [String(exam.batchName || "General"), String(exam.status || "").toUpperCase()].filter(Boolean),
+        description: exam.instructions || "From exam routine.",
+        tags: [String(exam.batchName || "General")].filter(Boolean),
         free: true,
-        schedDate: exam.startTime ? new Date(exam.startTime).toLocaleDateString() : "Scheduled",
+        schedDate: exam.startTime ? new Date(exam.startTime).toLocaleDateString() : "Date TBD",
         sourceExamId: Number(exam.id),
         startTime: exam.startTime || null,
         endTime: exam.endTime || null,
         joinWindowMinutes: Number(exam.joinWindowMinutes || 15),
         backendStatus: String(exam.status || "").toLowerCase(),
         joinAvailableFromApi: Boolean(exam.joinAvailable),
+        perMcqMark: resolvePerMcqMark({
+          perMcqMark: exam.perMcqMark,
+          description: exam.instructions || "",
+        }),
       };
     });
 
@@ -358,7 +382,7 @@ function renderTests(filter = "all", search = "") {
             `
         }
         ${
-          test.status === "available"
+          canAttemptTest(test)
             ? `<button class="btn btn-primary btn-sm" onclick="event.stopPropagation();openTestConfirm(${test.id})">Start -&gt;</button>`
             : `<div class="score-box"><p class="score-label">Score</p><p class="score-value">${scoreLabel}</p></div>`
         }
@@ -611,8 +635,9 @@ function submitExam() {
     else wrong += 1;
   });
 
-  const marks = correct * 4 - wrong;
-  const total = questions.length * 4;
+  const perMcqMark = resolvePerMcqMark(currentTest);
+  const marks = correct * perMcqMark;
+  const total = questions.length * perMcqMark;
   const pct = Math.round((correct / questions.length) * 100);
   const feedback =
     pct >= 80
@@ -626,7 +651,8 @@ function submitExam() {
   $("#r-correct").textContent = correct;
   $("#r-wrong").textContent = wrong;
   $("#r-skipped").textContent = skipped;
-  $("#r-marks").textContent = `${marks}/${total}`;
+  const formatMark = (value) => (Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, ""));
+  $("#r-marks").textContent = `${formatMark(marks)}/${formatMark(total)}`;
   $("#resultFeedback").textContent = feedback;
 
   const reviewList = $("#reviewList");
@@ -675,7 +701,10 @@ async function savePerformanceRecord({ correct, scorePercent, disqualified = fal
     const examId = Number(currentTest?.sourceExamId || currentTest?.id || 0);
     const response = await fetch(`${API_BASE_URL}/student/${studentId}/performance`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        "X-EduMate-Skip-Reload": "true",
+      },
       body: JSON.stringify({
         examId: Number.isInteger(examId) && examId > 0 ? examId : null,
         subject: primarySubject,
@@ -759,7 +788,7 @@ function resolveTestIdFromQuery() {
   if (demoExam) {
     const matchBySubject = testsData.find(
       (test) =>
-        test.status === "available" &&
+        canAttemptTest(test) &&
         test.subjects.some((subject) => subject.toLowerCase() === demoExam)
     );
     if (matchBySubject) return matchBySubject.id;

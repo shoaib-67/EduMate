@@ -589,11 +589,16 @@ function renderDiscussionHubDetail(discussion) {
   if (!detailNode) return;
 
   if (!discussion) {
+    delete detailNode.dataset.discussionId;
     detailNode.innerHTML = `
       <h4>Select a discussion</h4>
       <p>The selected post and replies will appear here.</p>
     `;
     return;
+  }
+  const renderedDiscussionId = Number(discussion.discussion_id || discussion.id || 0);
+  if (Number.isInteger(renderedDiscussionId) && renderedDiscussionId > 0) {
+    detailNode.dataset.discussionId = String(renderedDiscussionId);
   }
 
   const replies = Array.isArray(discussion.replies) ? discussion.replies : [];
@@ -614,7 +619,7 @@ function renderDiscussionHubDetail(discussion) {
     <h4>${escapeHTML(discussion.title || "Untitled discussion")}</h4>
     <p>${escapeHTML(discussion.content || "No content available.")}</p>
     <p>${escapeHTML(String(replies.length))} replies - started by ${escapeHTML(discussion.author_name || "Student")}</p>
-    <div class="list">${replyHtml}</div>
+    <div class="list" id="discussionHubRepliesList">${replyHtml}</div>
     <div class="discussion-reply-box">
       <textarea id="discussionHubReplyInput" placeholder="Write your instructor reply..."></textarea>
       <button class="btn btn-primary" id="discussionHubReplyBtn" type="button">Post reply</button>
@@ -650,7 +655,11 @@ async function loadDiscussionHub({ preserveSelection = true } = {}) {
     renderDiscussionHubList();
 
     if (state.discussionHub.activeDiscussionId) {
-      await loadDiscussionDetail(state.discussionHub.activeDiscussionId, { silent: true });
+      const detailNode = $("#discussionHubDetail");
+      const renderedId = Number(detailNode?.dataset?.discussionId || 0);
+      if (!Number.isInteger(renderedId) || renderedId !== Number(state.discussionHub.activeDiscussionId)) {
+        await loadDiscussionDetail(state.discussionHub.activeDiscussionId, { silent: true });
+      }
     } else {
       renderDiscussionHubDetail(null);
     }
@@ -701,6 +710,7 @@ async function submitDiscussionReply() {
   const button = $("#discussionHubReplyBtn");
   await submitForm(button, async () => {
     showDiscussionHubStatus("Posting reply...", "info");
+    const replyText = content;
     await fetchJson(`${API_BASE_URL}/discussions/${discussionId}/reply`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -711,8 +721,36 @@ async function submitDiscussionReply() {
       }),
     });
     if (input) input.value = "";
+    const targetDiscussion = (state.discussionHub.items || []).find(
+      (item) => Number(item.discussion_id) === discussionId
+    );
+    const currentUser = getStoredUser() || {};
+    if (targetDiscussion) {
+      targetDiscussion.reply_count = Math.max(0, Number(targetDiscussion.reply_count || 0)) + 1;
+      const activeMeta = document.querySelector(
+        `#discussionHubList [data-discussion-id="${discussionId}"] span:last-child`
+      );
+      if (activeMeta) {
+        const previous = String(activeMeta.textContent || "");
+        activeMeta.textContent = previous.replace(
+          /^\d+\s+replies?/i,
+          `${targetDiscussion.reply_count} replies`
+        );
+      }
+    }
+    const repliesList = $("#discussionHubRepliesList");
+    if (repliesList) {
+      const emptyCard = repliesList.querySelector(".empty-card");
+      if (emptyCard) repliesList.innerHTML = "";
+      const replyNode = document.createElement("div");
+      replyNode.className = "thread";
+      replyNode.innerHTML = `
+        <p>${escapeHTML(replyText)}</p>
+        <span>${escapeHTML(currentUser.fullName || currentUser.name || "Instructor")} (instructor) - just now</span>
+      `;
+      repliesList.appendChild(replyNode);
+    }
     showDiscussionHubStatus("Reply posted successfully.", "success");
-    await Promise.all([loadDiscussionHub(), loadDiscussionDetail(discussionId, { silent: true })]);
   });
 }
 
@@ -794,9 +832,9 @@ async function handleExamSubmit(event) {
   const subject = String(formData.get("examSubject") || "").trim();
   const perMcqMark = Number(formData.get("perMcqMark") || 0);
   const durationToSend = Number(formData.get("examDuration") || 0);
-  if (!Number.isFinite(durationToSend) || durationToSend <= 0) {
-    showBanner("Duration must be greater than 0.", "error");
-    setInlineStatus("#examFormStatus", "Duration must be greater than 0.", "error");
+  if (!Number.isFinite(durationToSend) || durationToSend < 5 || durationToSend > 60) {
+    showBanner("Duration must be between 5 and 60 minutes.", "error");
+    setInlineStatus("#examFormStatus", "Duration must be between 5 and 60 minutes.", "error");
     return;
   }
   if (!subject) {

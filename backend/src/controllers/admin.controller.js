@@ -6,7 +6,6 @@ const { parseRequiredId, parsePositiveInteger, parseQuestionIds } = require("../
 const { normalizeAudienceType, resolveStudentProgramGroup, isAudienceVisibleToStudent } = require("../lib/audience");
 const { toDateTimeValue, formatSqlDateTime, parseSqlDateTime, normalizeExamRecord } = require("../lib/examUtils");
 const {
-  USER_ROLE_CONFIG,
   getManageableUserConfig,
   formatAccountStatus,
   sanitizeAdminUserPayload,
@@ -88,20 +87,88 @@ const adminController = {
   listUsers: async (_req, res) => {
     try {
       const pool = getPool();
-
-      const userQueries = Object.values(USER_ROLE_CONFIG).map((config) =>
+      const [studentRows, instructorRows, adminRows] = await Promise.all([
         pool.query(
-          `SELECT ${config.idColumn} as id, name, email, phone_number as phoneNumber,
-                  ? as role, account_status as accountStatus, created_at as createdAt
-           FROM ${config.table}
-           ORDER BY created_at DESC`,
-          [config.displayRole]
-        )
-      );
+          `
+          SELECT
+            s.student_id AS id,
+            s.name,
+            s.email,
+            s.phone_number AS phoneNumber,
+            'Student' AS role,
+            s.account_status AS accountStatus,
+            s.created_at AS createdAt,
+            (
+              SELECT COUNT(*)
+              FROM paid_class_payments p
+              WHERE p.student_id = s.student_id
+                AND LOWER(COALESCE(p.status, '')) = 'pending'
+            ) AS pendingPaymentCount,
+            (
+              SELECT GROUP_CONCAT(p.transaction_id ORDER BY p.created_at DESC SEPARATOR ', ')
+              FROM paid_class_payments p
+              WHERE p.student_id = s.student_id
+                AND LOWER(COALESCE(p.status, '')) = 'pending'
+            ) AS pendingTransactionIds
+            ,
+            (
+              SELECT COUNT(*)
+              FROM paid_class_payments p
+              WHERE p.student_id = s.student_id
+            ) AS recentPaymentCount,
+            (
+              SELECT GROUP_CONCAT(
+                CONCAT(p.transaction_id, ' [', LOWER(COALESCE(p.status, 'unknown')), ']')
+                ORDER BY p.created_at DESC
+                SEPARATOR ', '
+              )
+              FROM paid_class_payments p
+              WHERE p.student_id = s.student_id
+            ) AS recentTransactionIds
+          FROM students s
+          ORDER BY s.created_at DESC
+          `
+        ),
+        pool.query(
+          `
+          SELECT
+            i.instructor_id AS id,
+            i.name,
+            i.email,
+            i.phone_number AS phoneNumber,
+            'Instructor' AS role,
+            i.account_status AS accountStatus,
+            i.created_at AS createdAt,
+            0 AS pendingPaymentCount,
+            '' AS pendingTransactionIds,
+            0 AS recentPaymentCount,
+            '' AS recentTransactionIds
+          FROM instructors i
+          ORDER BY i.created_at DESC
+          `
+        ),
+        pool.query(
+          `
+          SELECT
+            a.admin_id AS id,
+            a.name,
+            a.email,
+            a.phone_number AS phoneNumber,
+            'Admin' AS role,
+            a.account_status AS accountStatus,
+            a.created_at AS createdAt,
+            0 AS pendingPaymentCount,
+            '' AS pendingTransactionIds,
+            0 AS recentPaymentCount,
+            '' AS recentTransactionIds
+          FROM admins a
+          ORDER BY a.created_at DESC
+          `
+        ),
+      ]);
 
-      const userResults = await Promise.all(userQueries);
-      const allUsers = userResults
-        .flatMap(([rows]) => rows)
+      const allUsers = [studentRows[0], instructorRows[0], adminRows[0]]
+        .flatMap((rows) => rows)
         .map((user) => sanitizeAdminUserPayload(user))
         .sort((first, second) => new Date(second.createdAt) - new Date(first.createdAt));
 
@@ -177,6 +244,310 @@ const adminController = {
       });
     } catch (error) {
       return res.status(500).json({ success: false, message: "Could not fetch paid class access.", error: error.message });
+    }
+  },
+
+  listStudentPaidClassPayments: async (req, res) => {
+    try {
+      const studentId = parseRequiredId(req.params.studentId);
+      if (!studentId) {
+        return res.status(422).json({ success: false, message: "Valid student ID is required." });
+      }
+
+      const statusFilter = String(req.query?.status || "").trim().toLowerCase();
+      const pool = getPool();
+
+      const [rows] = await pool.query(
+        `
+        SELECT
+          p.payment_id AS paymentId,
+          p.submission_id AS submissionId,
+          p.package_code AS packageCode,
+          p.package_name AS packageName,
+          p.amount_bdt AS amountBdt,
+          p.payment_method AS paymentMethod,
+          p.transaction_id AS transactionId,
+          p.status,
+          p.created_at AS createdAt,
+          cs.title,
+          cs.batch_name AS batchName,
+          cs.course_title AS courseTitle
+        FROM paid_class_payments p
+        JOIN content_submissions cs ON cs.submission_id = p.submission_id
+        WHERE p.student_id = ?
+          AND LOWER(TRIM(COALESCE(cs.type, ''))) = 'paid class'
+          ${statusFilter ? "AND LOWER(p.status) = ?" : ""}
+        ORDER BY p.created_at DESC
+        `,
+        statusFilter ? [studentId, statusFilter] : [studentId]
+      );
+
+      return res.status(200).json({ success: true, data: rows });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Could not fetch paid class payments.",
+        error: error.message,
+      });
+    }
+  },
+
+  approveStudentPaidClassPayment: async (req, res) => {
+    try {
+      const studentId = parseRequiredId(req.params.studentId);
+      const paymentId = parseRequiredId(req.params.paymentId);
+      const adminId = parseRequiredId(req.body?.adminId) || null;
+
+      if (!studentId || !paymentId) {
+        return res.status(422).json({ success: false, message: "Valid student and payment IDs are required." });
+      }
+
+      const pool = getPool();
+      const [studentRows] = await pool.query(
+        `SELECT student_id, name, batch_name, course_track FROM students WHERE student_id = ? LIMIT 1`,
+        [studentId]
+      );
+      if (!studentRows.length) {
+        return res.status(404).json({ success: false, message: "Student not found." });
+      }
+      const student = studentRows[0];
+      const studentProgramGroup = resolveStudentProgramGroup(student);
+
+      const [paymentRows] = await pool.query(
+        `
+        SELECT
+          p.payment_id AS paymentId,
+          p.student_id AS studentId,
+          p.submission_id AS submissionId,
+          p.package_code AS packageCode,
+          p.package_name AS packageName,
+          p.amount_bdt AS amountBdt,
+          p.payment_method AS paymentMethod,
+          p.transaction_id AS transactionId,
+          p.status,
+          cs.title,
+          cs.status AS contentStatus,
+          cs.batch_name AS batchName,
+          cs.course_title AS courseTitle,
+          LOWER(TRIM(COALESCE(cs.type, ''))) AS contentType
+        FROM paid_class_payments p
+        JOIN content_submissions cs ON cs.submission_id = p.submission_id
+        WHERE p.payment_id = ? AND p.student_id = ?
+        LIMIT 1
+        `,
+        [paymentId, studentId]
+      );
+
+      if (!paymentRows.length) {
+        return res.status(404).json({ success: false, message: "Payment not found." });
+      }
+
+      const payment = paymentRows[0];
+      if (String(payment.status || "").toLowerCase() === "verified") {
+        return res.status(200).json({ success: true, message: "Payment already approved." });
+      }
+      if (String(payment.status || "").toLowerCase() === "rejected") {
+        return res.status(409).json({ success: false, message: "This payment was rejected and cannot be approved." });
+      }
+
+      if (String(payment.contentStatus || "").toLowerCase() !== "approved" || payment.contentType !== "paid class") {
+        return res.status(403).json({ success: false, message: "This payment is not linked to an approved paid class." });
+      }
+
+      const visibleToStudent = isAudienceVisibleToStudent({
+        audienceType: "batch",
+        batchName: payment.batchName || payment.courseTitle || "",
+        studentBatchName: student.batch_name,
+        studentProgramGroup,
+      });
+      if (!visibleToStudent) {
+        return res.status(403).json({
+          success: false,
+          message: "This paid class is outside the student's program/batch and cannot be granted.",
+        });
+      }
+
+      await pool.query(`UPDATE paid_class_payments SET status = 'verified' WHERE payment_id = ?`, [paymentId]);
+
+      await pool.query(
+        `
+        INSERT INTO student_paid_memberships
+          (student_id, package_code, package_name, is_active)
+        VALUES (?, ?, ?, TRUE)
+        ON DUPLICATE KEY UPDATE
+          package_code = VALUES(package_code),
+          package_name = VALUES(package_name),
+          is_active = TRUE
+        `,
+        [studentId, payment.packageCode || "manual", payment.packageName || "Paid Membership"]
+      );
+
+      const [paidClassRows] = await pool.query(
+        `
+        SELECT submission_id, title, batch_name, course_title
+        FROM content_submissions
+        WHERE status = 'approved'
+          AND LOWER(TRIM(COALESCE(type, ''))) = 'paid class'
+        ORDER BY created_at DESC
+        `
+      );
+
+      const visiblePaidClasses = paidClassRows.filter((item) =>
+        isAudienceVisibleToStudent({
+          audienceType: "batch",
+          batchName: item.batch_name || item.course_title || "",
+          studentBatchName: student.batch_name,
+          studentProgramGroup,
+        })
+      );
+
+      for (const item of visiblePaidClasses) {
+        await pool.query(
+          `
+          INSERT INTO student_paid_content_permissions
+            (student_id, submission_id, granted_by_admin_id, is_active)
+          VALUES (?, ?, ?, TRUE)
+          ON DUPLICATE KEY UPDATE
+            is_active = TRUE,
+            granted_by_admin_id = VALUES(granted_by_admin_id)
+          `,
+          [studentId, item.submission_id, adminId]
+        );
+      }
+
+      await logAdminActivity(pool, {
+        action: "approved_paid_class_payment",
+        targetType: "student",
+        targetId: Number(studentId),
+        targetLabel: student?.name || `Student #${studentId}`,
+        details: {
+          paymentId: Number(paymentId),
+          submissionId: Number(payment.submissionId),
+          contentTitle: payment?.title || null,
+          transactionId: payment?.transactionId || null,
+          packageCode: payment?.packageCode || null,
+          packageName: payment?.packageName || null,
+          grantedPaidClassCount: visiblePaidClasses.length,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Payment approved. Access granted for ${visiblePaidClasses.length} paid class(es).`,
+        data: {
+          paymentId: Number(paymentId),
+          submissionId: Number(payment.submissionId),
+          transactionId: payment?.transactionId || "",
+          grantedPaidClassCount: visiblePaidClasses.length,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Could not approve paid class payment.",
+        error: error.message,
+      });
+    }
+  },
+
+  grantStudentPaidMembership: async (req, res) => {
+    try {
+      const studentId = parseRequiredId(req.params.studentId);
+      const packageCode = String(req.body?.packageCode || "manual").trim() || "manual";
+      const packageName = String(req.body?.packageName || "Manual Grant").trim() || "Manual Grant";
+      const adminId = parseRequiredId(req.body?.adminId) || null;
+
+      if (!studentId) {
+        return res.status(422).json({ success: false, message: "Valid student ID is required." });
+      }
+
+      const pool = getPool();
+      const [studentRows] = await pool.query(
+        `SELECT student_id, name, batch_name, course_track FROM students WHERE student_id = ? LIMIT 1`,
+        [studentId]
+      );
+      if (!studentRows.length) {
+        return res.status(404).json({ success: false, message: "Student not found." });
+      }
+      const student = studentRows[0];
+      const studentProgramGroup = resolveStudentProgramGroup(student);
+
+      await pool.query(
+        `
+        INSERT INTO student_paid_memberships
+          (student_id, package_code, package_name, is_active)
+        VALUES (?, ?, ?, TRUE)
+        ON DUPLICATE KEY UPDATE
+          package_code = VALUES(package_code),
+          package_name = VALUES(package_name),
+          is_active = TRUE
+        `,
+        [studentId, packageCode, packageName]
+      );
+
+      const [paidClassRows] = await pool.query(
+        `
+        SELECT submission_id, title, batch_name, course_title
+        FROM content_submissions
+        WHERE status = 'approved'
+          AND LOWER(TRIM(COALESCE(type, ''))) = 'paid class'
+        ORDER BY created_at DESC
+        `
+      );
+
+      const visiblePaidClasses = paidClassRows.filter((item) =>
+        isAudienceVisibleToStudent({
+          audienceType: "batch",
+          batchName: item.batch_name || item.course_title || "",
+          studentBatchName: student.batch_name,
+          studentProgramGroup,
+        })
+      );
+
+      for (const item of visiblePaidClasses) {
+        await pool.query(
+          `
+          INSERT INTO student_paid_content_permissions
+            (student_id, submission_id, granted_by_admin_id, is_active)
+          VALUES (?, ?, ?, TRUE)
+          ON DUPLICATE KEY UPDATE
+            is_active = TRUE,
+            granted_by_admin_id = VALUES(granted_by_admin_id)
+          `,
+          [studentId, item.submission_id, adminId]
+        );
+      }
+
+      await logAdminActivity(pool, {
+        action: "granted_paid_membership",
+        targetType: "student",
+        targetId: Number(studentId),
+        targetLabel: student?.name || `Student #${studentId}`,
+        details: {
+          packageCode,
+          packageName,
+          studentProgram: student?.course_track || null,
+          studentBatch: student?.batch_name || null,
+          grantedPaidClassCount: visiblePaidClasses.length,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        message: `Access granted for ${visiblePaidClasses.length} paid class(es).`,
+        data: {
+          studentId: Number(studentId),
+          packageCode,
+          packageName,
+          grantedPaidClassCount: visiblePaidClasses.length,
+        },
+      });
+    } catch (error) {
+      return res.status(500).json({
+        success: false,
+        message: "Could not grant paid membership.",
+        error: error.message,
+      });
     }
   },
 
@@ -920,6 +1291,12 @@ const adminController = {
         return res.status(422).json({
           success: false,
           message: "Subject, date, time, duration, and batch/group are required.",
+        });
+      }
+      if (durationMinutes < 5 || durationMinutes > 60) {
+        return res.status(422).json({
+          success: false,
+          message: "Duration must be between 5 and 60 minutes.",
         });
       }
 

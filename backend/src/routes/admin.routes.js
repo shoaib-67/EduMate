@@ -11,6 +11,12 @@ adminRouter.patch("/users/:role/:id/status", adminController.updateUserStatus);
 adminRouter.delete("/users/:role/:id", adminController.deleteUser);
 adminRouter.get("/students/:studentId/paid-content-access", adminController.listStudentPaidContentAccess);
 adminRouter.post("/students/:studentId/paid-content-access/:submissionId", adminController.updateStudentPaidContentAccess);
+adminRouter.get("/students/:studentId/paid-class-payments", adminController.listStudentPaidClassPayments);
+adminRouter.post(
+	"/students/:studentId/paid-class-payments/:paymentId/verify",
+	adminController.approveStudentPaidClassPayment
+);
+adminRouter.post("/students/:studentId/paid-membership", adminController.grantStudentPaidMembership);
 
 adminRouter.get("/content", adminController.listContent);
 adminRouter.post("/content/:id/approve", adminController.approveContent);

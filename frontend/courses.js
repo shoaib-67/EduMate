@@ -242,10 +242,6 @@ async function initPage() {
     const rawNotice = localStorage.getItem("edumatePaidPurchaseNotice");
     if (rawNotice) {
       localStorage.removeItem("edumatePaidPurchaseNotice");
-      const notice = JSON.parse(rawNotice);
-      if (notice?.message) {
-        window.alert(String(notice.message));
-      }
     }
   } catch {
     // ignore localStorage/JSON errors

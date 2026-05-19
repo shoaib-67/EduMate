@@ -1,6 +1,6 @@
 const { API_BASE_URL, getStudentId, escapeHTML, requireRole, setupLogoutHandlers } = window.EduMateShared;
 let allDiscussions = [];
-const discussionFilter = { query: "", subject: "all" };
+const discussionFilter = { query: "" };
 let activeDiscussionId = null;
 
 function getDiscussionUser() {
@@ -17,13 +17,6 @@ function showDiscussionStatus(message, type = "info") {
   if (!status) return;
   status.textContent = message;
   status.className = `discussion-status is-visible is-${type}`;
-}
-
-function getTagChipClass(tag) {
-  const cleanTag = String(tag || "").toLowerCase();
-  if (cleanTag === "trending") return "blue";
-  if (cleanTag === "hot") return "amber";
-  return "";
 }
 
 function getTimeAgo(createdAt) {
@@ -53,10 +46,15 @@ function formatPostedDateTime(value) {
   });
 }
 
-async function showDiscussionDetail(discussionId) {
-  const detail = document.getElementById("discussionDetail");
-  if (!detail) return;
+async function showDiscussionDetail(discussionId, triggerThread = null) {
+  const discussionList = document.getElementById("discussionList");
+  if (!discussionList) return;
   activeDiscussionId = discussionId;
+
+  const existingDetail = discussionList.querySelector('.thread-detail[data-inline-detail="true"]');
+  if (existingDetail && Number(existingDetail.dataset.discussionId) !== Number(discussionId)) {
+    existingDetail.remove();
+  }
 
   try {
     const response = await fetch(`${API_BASE_URL}/discussions/${discussionId}`);
@@ -75,6 +73,13 @@ async function showDiscussionDetail(discussionId) {
         `).join("")
       : '<div class="thread empty-state"><h4>No replies yet</h4><span>Be the first to respond to this discussion post.</span></div>';
 
+    let detail = discussionList.querySelector('.thread-detail[data-inline-detail="true"]');
+    if (!detail) {
+      detail = document.createElement("div");
+      detail.className = "thread-detail";
+      detail.dataset.inlineDetail = "true";
+    }
+    detail.dataset.discussionId = String(discussionId);
     detail.innerHTML = `
       <h4>${escapeHTML(data.title)}</h4>
       <p>${escapeHTML(data.content || "No details available.")}</p>
@@ -85,9 +90,16 @@ async function showDiscussionDetail(discussionId) {
         <button class="btn btn-primary" type="button" id="postReplyBtn">${currentUser ? "Post reply" : "Login to reply"}</button>
       </div>
     `;
+    const anchorThread =
+      triggerThread || discussionList.querySelector(`.thread.clickable[data-discussion-id="${String(discussionId)}"]`);
+    if (anchorThread) {
+      anchorThread.insertAdjacentElement("afterend", detail);
+    } else {
+      discussionList.appendChild(detail);
+    }
     detail.querySelector("#postReplyBtn")?.addEventListener("click", handlePostReply);
   } catch {
-    detail.innerHTML = "<h4>Unable to load discussion post details</h4>";
+    showDiscussionStatus("Unable to load discussion post details.", "error");
   }
 }
 
@@ -101,10 +113,7 @@ function renderDiscussions() {
       !query ||
       String(discussion.title || "").toLowerCase().includes(query) ||
       String(discussion.content || "").toLowerCase().includes(query);
-    const matchSubject =
-      discussionFilter.subject === "all" ||
-      String(discussion.subject || "").toLowerCase() === discussionFilter.subject;
-    return matchQuery && matchSubject;
+    return matchQuery;
   });
 
   discussionList.innerHTML = "";
@@ -116,16 +125,26 @@ function renderDiscussions() {
   filtered.forEach((discussion) => {
     const thread = document.createElement("div");
     thread.className = "thread clickable";
+    thread.dataset.discussionId = String(discussion.discussion_id);
     thread.innerHTML = `
       <div class="u-flex u-space-between u-gap-8">
         <h4>${escapeHTML(discussion.title)}</h4>
-        <span class="chip ${getTagChipClass(discussion.tag)}">${escapeHTML(discussion.tag || discussion.subject || "new")}</span>
+        <span class="chip">${escapeHTML("general")}</span>
       </div>
       <span>${escapeHTML(String(discussion.reply_count || 0))} replies - Last by ${escapeHTML(discussion.author_name || "Unknown")} - ${escapeHTML(getTimeAgo(discussion.created_at))}</span>
     `;
-    thread.addEventListener("click", () => showDiscussionDetail(discussion.discussion_id));
+    thread.addEventListener("click", () => showDiscussionDetail(discussion.discussion_id, thread));
     discussionList.appendChild(thread);
   });
+
+  if (activeDiscussionId) {
+    const activeThread = discussionList.querySelector(
+      `.thread.clickable[data-discussion-id="${String(activeDiscussionId)}"]`
+    );
+    if (activeThread) {
+      showDiscussionDetail(activeDiscussionId, activeThread);
+    }
+  }
 }
 
 async function loadDiscussions() {
@@ -311,11 +330,6 @@ document.addEventListener("DOMContentLoaded", () => {
 
   document.getElementById("discussionSearch")?.addEventListener("input", (event) => {
     discussionFilter.query = event.target.value || "";
-    renderDiscussions();
-  });
-
-  document.getElementById("discussionSubjectFilter")?.addEventListener("change", (event) => {
-    discussionFilter.subject = event.target.value || "all";
     renderDiscussions();
   });
 });

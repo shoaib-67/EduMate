@@ -1,4 +1,4 @@
-import { API_BASE_URL, escapeHTML } from "../shared.js";
+﻿import { API_BASE_URL, escapeHTML } from "../shared.js";
 import { state } from "../state.js";
 import { showToast } from "../ui/toast.js";
 import { openReportNoteModal } from "../ui/modals.js";
@@ -7,14 +7,14 @@ export const REPORT_ACTIONS = {
   resolve: {
     label: "Resolve report",
     actionLabel: "Resolve",
-    busyLabel: "…",
+    busyLabel: "â€¦",
     endpoint: "resolve",
     successMessage: "Report resolved.",
   },
   deny: {
     label: "Dismiss report",
     actionLabel: "Close",
-    busyLabel: "…",
+    busyLabel: "â€¦",
     endpoint: "deny",
     successMessage: "Report dismissed.",
   },
@@ -27,9 +27,13 @@ export async function loadReports() {
   state.reports = payload.data || [];
   const reportCount = document.getElementById("reportCount");
   const reportBadge = document.getElementById("reportBadge");
-  const openCount = state.reports.filter((r) => String(r.status || "").toLowerCase() === "open").length;
-  if (reportCount) reportCount.textContent = String(openCount);
-  if (reportBadge) reportBadge.textContent = `${openCount} open`;
+  const isPendingStatus = (value) => {
+    const clean = String(value || "").toLowerCase();
+    return clean === "pending" || clean === "open";
+  };
+  const pendingCount = state.reports.filter((r) => isPendingStatus(r.status)).length;
+  if (reportCount) reportCount.textContent = String(pendingCount);
+  if (reportBadge) reportBadge.textContent = `${pendingCount} pending`;
   return state.reports;
 }
 
@@ -40,14 +44,18 @@ export function renderReports() {
   const q = state.filters.reports.query.trim().toLowerCase();
   const status = state.filters.reports.status;
   const priority = state.filters.reports.priority;
-  const category = state.filters.reports.category;
+  const isPendingStatus = (value) => {
+    const clean = String(value || "").toLowerCase();
+    return clean === "pending" || clean === "open";
+  };
 
   const filtered = state.reports.filter((report) => {
     const matchesQuery = !q || `${report.title} ${report.description}`.toLowerCase().includes(q);
-    const matchesStatus = status === "all" || String(report.status || "").toLowerCase() === status;
+    const reportStatus = String(report.status || "").toLowerCase();
+    const matchesStatus =
+      status === "all" || (status === "pending" ? isPendingStatus(reportStatus) : reportStatus === status);
     const matchesPriority = priority === "all" || String(report.priority || "").toLowerCase() === priority;
-    const matchesCategory = category === "all" || String(report.category || "").toLowerCase() === category;
-    return matchesQuery && matchesStatus && matchesPriority && matchesCategory;
+    return matchesQuery && matchesStatus && matchesPriority;
   });
 
   const statusColor = (value) => {
@@ -69,7 +77,7 @@ export function renderReports() {
           </div>
           <p>${escapeHTML(report.description)}</p>
           <div class="report-meta">
-            <span>${escapeHTML(report.category)} · ${escapeHTML(report.priority)}</span>
+            <span>${escapeHTML(report.priority)}</span>
             <span>${escapeHTML(report.reporterName || "Anonymous")}${report.reporterRole ? ` (${escapeHTML(report.reporterRole)})` : ""}</span>
           </div>
           <div class="report-actions">
@@ -114,4 +122,5 @@ export async function submitReport(payload) {
   showToast(json.message || "Report submitted.", "success");
   return json;
 }
+
 

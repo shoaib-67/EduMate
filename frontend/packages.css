@@ -69,6 +69,13 @@
   gap: 6px;
 }
 
+.form-group.is-helper-spacer::after {
+  content: "";
+  display: block;
+  min-height: 18px;
+  margin-top: 0.25rem;
+}
+
 .form-group-full {
   grid-column: 1 / -1;
 }

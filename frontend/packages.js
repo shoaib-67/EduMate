@@ -82,7 +82,7 @@ async function handleSubmit(event) {
   }
 
   try {
-    showStatus("Submitting payment and activating paid class access...", "info");
+    showStatus("Submitting payment for admin approval...", "info");
     const response = await fetch(`${API_BASE_URL}/student/${studentId}/paid-class-purchase`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -112,7 +112,7 @@ async function handleSubmit(event) {
         "edumatePaidPurchaseNotice",
         JSON.stringify({
           type: "success",
-          message: `Payment received (${escapeHTML(transactionId)}). Access granted for "${state.title}".`,
+          message: `Payment received (${escapeHTML(transactionId)}). Await admin approval to unlock "${state.title}".`,
           at: Date.now(),
         })
       );
@@ -120,7 +120,7 @@ async function handleSubmit(event) {
       // ignore localStorage write errors
     }
 
-    showStatus("Payment successful. Redirecting to course content...", "success");
+    showStatus("Payment submitted. Redirecting to course content...", "success");
     window.setTimeout(() => {
       window.location.href = state.returnPage || "courses.html";
     }, 600);

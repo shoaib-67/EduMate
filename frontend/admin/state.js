@@ -6,7 +6,7 @@ export const state = {
   filters: {
     users: { query: "", role: "all", status: "all" },
     content: { query: "", type: "all" },
-    reports: { query: "", status: "open", priority: "all", category: "all" },
+    reports: { query: "", status: "pending", priority: "all" },
   },
   manageableRoles: new Set(["Student", "Instructor"]),
 };
@@ -22,5 +22,9 @@ export const toSafeAdminUser = (user = {}) => ({
   accountStatus: String(user.accountStatus || "").trim(),
   status: String(user.status || "").trim(),
   createdAt: user.createdAt || null,
+  pendingPaymentCount: Number(user.pendingPaymentCount || 0),
+  pendingTransactionIds: String(user.pendingTransactionIds || "").trim(),
+  recentPaymentCount: Number(user.recentPaymentCount || 0),
+  recentTransactionIds: String(user.recentTransactionIds || "").trim(),
 });
 

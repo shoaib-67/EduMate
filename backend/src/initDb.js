@@ -180,6 +180,12 @@ async function ensureStudentPerformanceTable(pool) {
   `);
 
   await ensureColumn(pool, "student_performance", "exam_id", "exam_id INT UNSIGNED NULL");
+  await ensureColumn(
+    pool,
+    "student_performance",
+    "include_in_performance",
+    "include_in_performance BOOLEAN NOT NULL DEFAULT TRUE"
+  );
 }
 
 async function ensureDiscussionsTable(pool) {
@@ -406,7 +412,7 @@ async function ensurePaidClassPaymentsTable(pool) {
       \`amount_bdt\` DECIMAL(10,2) NOT NULL DEFAULT 0,
       \`payment_method\` VARCHAR(40) NOT NULL DEFAULT 'bkash',
       \`transaction_id\` VARCHAR(120) NOT NULL,
-      \`status\` VARCHAR(30) NOT NULL DEFAULT 'verified',
+      \`status\` VARCHAR(30) NOT NULL DEFAULT 'pending',
       \`created_at\` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
       UNIQUE KEY \`uniq_paid_class_txn\` (\`transaction_id\`),
       INDEX \`idx_paid_class_student\` (\`student_id\`, \`created_at\`),
@@ -415,6 +421,10 @@ async function ensurePaidClassPaymentsTable(pool) {
       FOREIGN KEY (\`submission_id\`) REFERENCES \`content_submissions\`(\`submission_id\`) ON DELETE CASCADE
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await pool.query(
+    "ALTER TABLE `paid_class_payments` MODIFY COLUMN `status` VARCHAR(30) NOT NULL DEFAULT 'pending'"
+  );
 }
 
 async function ensureInstructorQuestionBankTable(pool) {

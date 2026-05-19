@@ -392,30 +392,31 @@ const studentController = {
       const pool = getPool();
 
       const [allPerformance] = await pool.query(
-        `SELECT score FROM student_performance WHERE student_id = ? ORDER BY created_at DESC`,
+        `SELECT score FROM student_performance WHERE student_id = ? AND include_in_performance = TRUE ORDER BY created_at DESC`,
         [studentId]
       );
-      const [avgResult] = await pool.query(`SELECT AVG(score) as average_score FROM student_performance WHERE student_id = ?`, [
+      const [avgResult] = await pool.query(`SELECT AVG(score) as average_score FROM student_performance WHERE student_id = ? AND include_in_performance = TRUE`, [
         studentId,
       ]);
-      const [bestResult] = await pool.query(`SELECT MAX(score) as best_score FROM student_performance WHERE student_id = ?`, [
+      const [bestResult] = await pool.query(`SELECT MAX(score) as best_score FROM student_performance WHERE student_id = ? AND include_in_performance = TRUE`, [
         studentId,
       ]);
       const [mockTests] = await pool.query(
         `SELECT COUNT(*) as count
          FROM student_performance
          WHERE student_id = ?
+           AND include_in_performance = TRUE
            AND LOWER(COALESCE(test_type, '')) LIKE 'mock%'`,
         [studentId]
       );
       const [accuracyResult] = await pool.query(
         `SELECT ROUND((SUM(correct_answers) / SUM(total_questions)) * 100, 2) as accuracy 
-         FROM student_performance WHERE student_id = ? AND total_questions > 0`,
+         FROM student_performance WHERE student_id = ? AND include_in_performance = TRUE AND total_questions > 0`,
         [studentId]
       );
       const [studyDays] = await pool.query(
         `SELECT COUNT(DISTINCT DATE(created_at)) as study_days 
-         FROM student_performance WHERE student_id = ? AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`,
+         FROM student_performance WHERE student_id = ? AND include_in_performance = TRUE AND created_at >= DATE_SUB(NOW(), INTERVAL 30 DAY)`,
         [studentId]
       );
       const [lastTestRows] = await pool.query(
@@ -423,6 +424,7 @@ const studentController = {
         SELECT subject, test_name, created_at
         FROM student_performance
         WHERE student_id = ?
+          AND include_in_performance = TRUE
         ORDER BY created_at DESC, performance_id DESC
         LIMIT 1
         `,
@@ -472,6 +474,7 @@ const studentController = {
         SELECT performance_id, subject, test_type, score, total_questions, correct_answers, test_name, rank, total_participants, created_at
         FROM student_performance
         WHERE student_id = ?
+          AND include_in_performance = TRUE
         ORDER BY created_at DESC
         LIMIT 30
         `,
@@ -493,6 +496,7 @@ const studentController = {
         SELECT subject, ROUND(AVG(score), 1) AS averageScore, COUNT(*) AS attempts
         FROM student_performance
         WHERE student_id = ?
+          AND include_in_performance = TRUE
         GROUP BY subject
         ORDER BY averageScore DESC
         `,
@@ -513,6 +517,7 @@ const studentController = {
         SELECT test_name, subject, score, created_at
         FROM student_performance
         WHERE student_id = ?
+          AND include_in_performance = TRUE
         ORDER BY created_at DESC
         `,
         [studentId]
@@ -550,10 +555,7 @@ const studentController = {
           LOWER(TRIM(COALESCE(cs.type, ''))) AS normalizedType,
           CASE
             WHEN LOWER(TRIM(COALESCE(cs.type, ''))) = 'paid class'
-              AND (
-                MAX(CASE WHEN spp.is_active = TRUE THEN 1 ELSE 0 END) = 1
-                OR MAX(CASE WHEN spm.is_active = TRUE THEN 1 ELSE 0 END) = 1
-              )
+              AND MAX(CASE WHEN spp.is_active = TRUE THEN 1 ELSE 0 END) = 1
             THEN 1
             WHEN LOWER(TRIM(COALESCE(cs.type, ''))) <> 'paid class'
             THEN 1
@@ -563,8 +565,6 @@ const studentController = {
         LEFT JOIN student_paid_content_permissions spp
           ON spp.submission_id = cs.submission_id
           AND spp.student_id = ?
-        LEFT JOIN student_paid_memberships spm
-          ON spm.student_id = ?
         WHERE cs.status = 'approved'
           AND LOWER(COALESCE(cs.type, '')) <> 'exam'
           AND LOWER(COALESCE(cs.type, '')) <> 'announcement'
@@ -573,7 +573,7 @@ const studentController = {
         ORDER BY cs.created_at DESC
         LIMIT 200
         `,
-        [studentId, studentId]
+        [studentId]
       );
 
       const hasAudienceInfo = Boolean(student.batch_name || student.course_track || studentProgramGroup);
@@ -662,7 +662,7 @@ const studentController = {
           `
           INSERT INTO paid_class_payments
             (student_id, submission_id, package_code, package_name, amount_bdt, payment_method, transaction_id, status)
-          VALUES (?, ?, ?, ?, ?, ?, ?, 'verified')
+          VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
           `,
           [
             studentId,
@@ -681,40 +681,16 @@ const studentController = {
         throw error;
       }
 
-      await pool.query(
-        `
-        INSERT INTO student_paid_content_permissions
-          (student_id, submission_id, granted_by_admin_id, is_active)
-        VALUES (?, ?, NULL, TRUE)
-        ON DUPLICATE KEY UPDATE
-          is_active = TRUE,
-          granted_by_admin_id = NULL
-        `,
-        [studentId, submissionId]
-      );
-
-      await pool.query(
-        `
-        INSERT INTO student_paid_memberships
-          (student_id, package_code, package_name, is_active)
-        VALUES (?, ?, ?, TRUE)
-        ON DUPLICATE KEY UPDATE
-          package_code = VALUES(package_code),
-          package_name = VALUES(package_name),
-          is_active = TRUE
-        `,
-        [studentId, selectedPackage.code, selectedPackage.name]
-      );
-
       return sendSuccess(res, {
         status: 201,
-        message: "Payment submitted and paid class access granted for all paid classes.",
+        message: "Payment submitted. Awaiting admin approval.",
         data: {
           submissionId,
           packageCode: selectedPackage.code,
           packageName: selectedPackage.name,
           paymentMethod,
           transactionId,
+          status: "pending",
         },
       });
     } catch (error) {
@@ -749,13 +725,42 @@ const studentController = {
         examId = examRows.length ? requestedExamId : null;
       }
 
+      let includeInPerformance = true;
+      if (String(testType || "").toLowerCase().startsWith("mock")) {
+        if (examId) {
+          const [existingRows] = await pool.query(
+            `
+            SELECT COUNT(*) AS count
+            FROM student_performance
+            WHERE student_id = ?
+              AND exam_id = ?
+              AND LOWER(COALESCE(test_type, '')) LIKE 'mock%'
+            `,
+            [studentId, examId]
+          );
+          includeInPerformance = Number(existingRows[0]?.count || 0) === 0;
+        } else {
+          const [existingRows] = await pool.query(
+            `
+            SELECT COUNT(*) AS count
+            FROM student_performance
+            WHERE student_id = ?
+              AND LOWER(COALESCE(test_type, '')) LIKE 'mock%'
+              AND LOWER(COALESCE(test_name, '')) = LOWER(?)
+            `,
+            [studentId, testName]
+          );
+          includeInPerformance = Number(existingRows[0]?.count || 0) === 0;
+        }
+      }
+
       await pool.query(
         `
         INSERT INTO student_performance
-          (student_id, exam_id, subject, test_type, score, total_questions, correct_answers, test_name, rank, total_participants)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+          (student_id, exam_id, subject, test_type, score, total_questions, correct_answers, test_name, rank, total_participants, include_in_performance)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         `,
-        [studentId, examId, subject, testType, score, totalQuestions, correctAnswers, testName, rank, totalParticipants]
+        [studentId, examId, subject, testType, score, totalQuestions, correctAnswers, testName, rank, totalParticipants, includeInPerformance]
       );
 
       return sendSuccess(res, { status: 201, message: "Performance recorded." });

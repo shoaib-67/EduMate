@@ -39,6 +39,10 @@ function sanitizeAdminUserPayload(user = {}) {
     accountStatus: user.accountStatus || "active",
     createdAt: user.createdAt || null,
     status: formatAccountStatus(user.accountStatus),
+    pendingPaymentCount: Number(user.pendingPaymentCount || 0),
+    pendingTransactionIds: String(user.pendingTransactionIds || "").trim(),
+    recentPaymentCount: Number(user.recentPaymentCount || 0),
+    recentTransactionIds: String(user.recentTransactionIds || "").trim(),
   };
 }
 

@@ -867,6 +867,23 @@ tbody tr:hover {
   word-break: break-all;
 }
 
+.user-payment-note {
+  display: inline-flex;
+  align-items: center;
+  max-width: 100%;
+  margin-top: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border: 1px solid #f0dcac;
+  border-radius: 999px;
+  background: #fff5df;
+  color: #8a5c00;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .role-pill,
 .status-badge {
   display: inline-flex;

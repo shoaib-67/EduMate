@@ -1,4 +1,4 @@
-import { API_BASE_URL } from "../shared.js";
+import { API_BASE_URL, escapeHTML } from "../shared.js";
 import { state, roleToApiParam, toSafeAdminUser } from "../state.js";
 import { showToast } from "../ui/toast.js";
 import { showUserDetail } from "../ui/modals.js";
@@ -18,6 +18,26 @@ const getInitials = (name) =>
     .map((part) => part[0]?.toUpperCase() || "")
     .join("") || "U";
 
+const summarizePendingTransactions = (transactionIdsText, maxVisible = 2) => {
+  const ids = String(transactionIdsText || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!ids.length) return "";
+  const latest = ids[0] || "";
+  return latest.replace(/\s*\[[^\]]*]\s*/g, "").trim();
+};
+
+const summarizeRecentTransactions = (transactionIdsText, maxVisible = 1) => {
+  const items = String(transactionIdsText || "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (!items.length) return "";
+  const latest = items[0] || "";
+  return latest.replace(/\s*\[[^\]]*]\s*/g, "").trim();
+};
+
 export async function loadUsers() {
   const response = await fetch(`${API_BASE_URL}/admin/users`);
   const payload = await response.json();
@@ -34,16 +54,25 @@ export function renderUsers() {
   if (!tableBody) return;
 
   const query = state.filters.users.query.trim().toLowerCase();
-  const roleFilter = state.filters.users.role;
-  const statusFilter = state.filters.users.status;
+  const roleFilter = String(state.filters.users.role || "all").toLowerCase();
+  const statusFilter = String(state.filters.users.status || "all").toLowerCase();
 
   const filteredUsers = state.users.filter((user) => {
+    const nameTokens = String(user.name || "")
+      .toLowerCase()
+      .split(/\s+/)
+      .filter(Boolean);
+    const email = String(user.email || "").toLowerCase();
+    const [emailLocal] = email.split("@");
+    const emailTokens = emailLocal.split(/[._-]+/).filter(Boolean);
+    const queryTokens = query.split(/\s+/).filter(Boolean);
+    const allTokens = [...nameTokens, ...emailTokens];
     const matchesQuery =
-      !query ||
-      `${user.name} ${user.email} ${user.role}`.toLowerCase().includes(query);
-    const matchesRole = roleFilter === "all" || String(user.role).toLowerCase() === roleFilter;
-    const matchesStatus =
-      statusFilter === "all" || String(user.accountStatus || "").toLowerCase() === statusFilter;
+      !queryTokens.length ||
+      queryTokens.every((token) => allTokens.some((value) => value.startsWith(token)));
+    const matchesRole = roleFilter === "all" || String(user.role || "").toLowerCase() === roleFilter;
+    const userStatus = String(user.accountStatus || user.status || "").toLowerCase();
+    const matchesStatus = statusFilter === "all" || userStatus === statusFilter;
     return matchesQuery && matchesRole && matchesStatus;
   });
 
@@ -55,42 +84,61 @@ export function renderUsers() {
   if (emptyState) emptyState.classList.add("is-hidden");
 
   tableBody.innerHTML = filteredUsers
-    .map(
-      (user) => `
+    .map((user) => {
+      const isStudent = String(user.role || "").toLowerCase() === "student";
+      const pendingPaymentCount = Number(user.pendingPaymentCount || 0);
+      const pendingTransactionSummary = summarizePendingTransactions(user.pendingTransactionIds);
+      const recentPaymentCount = Number(user.recentPaymentCount || 0);
+      const recentTransactionSummary = summarizeRecentTransactions(user.recentTransactionIds);
+      const paidActionLabel =
+        pendingPaymentCount > 0
+          ? `Approve Payment${pendingPaymentCount > 1 ? ` (${pendingPaymentCount})` : ""}`
+          : "Grant Access";
+      const statusKey = String(user.accountStatus || user.status || "").toLowerCase();
+      const statusClass = statusKey === "frozen" ? "status-frozen" : "status-active";
+
+      return `
       <tr data-user-id="${user.id}" data-user-role="${String(user.role || "")}">
         <td>
           <div class="user-cell">
-            <div class="avatar-circle">${getInitials(user.name)}</div>
-            <div>
-              <strong>${user.name}</strong>
-              <span>${user.email}</span>
-            </div>
+            <span class="user-avatar-sm">${escapeHTML(getInitials(user.name))}</span>
+            <span class="user-meta">
+              <strong>${escapeHTML(user.name)}</strong>
+              <span class="user-email">${escapeHTML(user.email)}</span>
+              ${
+                isStudent && pendingPaymentCount > 0 && pendingTransactionSummary
+                  ? `<span class="user-payment-note">Pending TXN: ${escapeHTML(pendingTransactionSummary)}</span>`
+                  : isStudent && recentPaymentCount > 0 && recentTransactionSummary
+                    ? `<span class="user-payment-note">Last TXN: ${escapeHTML(recentTransactionSummary)}</span>`
+                  : ""
+              }
+            </span>
           </div>
         </td>
-        <td>${user.role}</td>
-        <td><span class="status-chip status-${String(user.accountStatus || "").toLowerCase()}">${user.status || user.accountStatus}</span></td>
-        <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "—"}</td>
+        <td><span class="role-pill role-${escapeHTML(String(user.role || "").toLowerCase())}">${escapeHTML(user.role)}</span></td>
+        <td><span class="status-badge ${statusClass}">${escapeHTML(user.status || user.accountStatus)}</span></td>
+        <td>${user.createdAt ? new Date(user.createdAt).toLocaleDateString() : "-"}</td>
         <td>
-          <div class="row-actions">
-            <button class="btn btn-small btn-light" data-action="details">Details</button>
+          <div class="user-action-group">
+            <button class="btn btn-small btn-quiet" data-action="details">Details</button>
             ${
               state.manageableRoles.has(user.role)
-                ? `<button class="btn btn-small" data-action="toggle-freeze">${
+                ? `<button class="btn btn-small btn-quiet" data-action="toggle-freeze">${
                     String(user.accountStatus || "").toLowerCase() === "frozen" ? "Unfreeze" : "Freeze"
                   }</button>
                    ${
-                     String(user.role || "").toLowerCase() === "student"
-                       ? `<button class="btn btn-small btn-light" data-action="manage-paid-access">Grant Paid Access</button>`
+                     isStudent
+                       ? `<button class="btn btn-small btn-quiet" data-action="manage-paid-access">${escapeHTML(paidActionLabel)}</button>`
                        : ""
                    }
-                   <button class="btn btn-small btn-danger" data-action="delete">Delete</button>`
+                   <button class="btn btn-small btn-quiet btn-text-danger" data-action="delete">Delete</button>`
                 : `<span class="chip blue">Protected</span>`
             }
           </div>
         </td>
       </tr>
-    `
-    )
+    `;
+    })
     .join("");
 
   tableBody.querySelectorAll("tr").forEach((row) => {
@@ -157,52 +205,79 @@ export function renderUsers() {
       button.disabled = true;
       button.textContent = "Loading...";
       try {
-        const response = await fetch(`${API_BASE_URL}/admin/students/${user.id}/paid-content-access`);
-        const payload = await response.json();
-        if (!response.ok || !payload.success) throw new Error(payload.message || "Could not load paid class list.");
-        const paidItems = Array.isArray(payload.data) ? payload.data : [];
-        const studentProgram = String(payload.meta?.studentProgram || "").trim();
-        const studentBatch = String(payload.meta?.studentBatch || "").trim();
-
-        if (!paidItems.length) {
-          showToast("No paid class found for this student's program/batch.", "info");
-          return;
-        }
-
-        const optionsText = paidItems
-          .map(
-            (item, index) =>
-              `${index + 1}. ${item.title || "Untitled"}${item.courseTitle ? ` (${item.courseTitle})` : ""} - ${
-                item.granted ? "Granted" : "Not granted"
-              }`
-          )
-          .join("\n");
-
-        const selectedText = window.prompt(
-          `Select a paid class number for ${user.name}.\nProgram: ${studentProgram || "N/A"} | Batch: ${studentBatch || "N/A"}\n\n${optionsText}\n\nEnter number:`
-        );
-        if (selectedText == null) return;
-        const selectedIndex = Number(selectedText) - 1;
-        if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= paidItems.length) {
-          showToast("Invalid selection.", "error");
-          return;
-        }
-
-        const selectedItem = paidItems[selectedIndex];
-        const nextGranted = !Boolean(selectedItem.granted);
-        const updateResponse = await fetch(
-          `${API_BASE_URL}/admin/students/${user.id}/paid-content-access/${selectedItem.submissionId}`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ granted: nextGranted }),
+        let pendingPayments = [];
+        let hasPendingEndpoint = false;
+        try {
+          const paymentResponse = await fetch(
+            `${API_BASE_URL}/admin/students/${user.id}/paid-class-payments?status=pending`
+          );
+          const paymentPayload = await paymentResponse.json().catch(() => null);
+          if (paymentResponse.ok && paymentPayload?.success) {
+            pendingPayments = Array.isArray(paymentPayload.data) ? paymentPayload.data : [];
+            hasPendingEndpoint = true;
           }
-        );
-        const updatePayload = await updateResponse.json();
-        if (!updateResponse.ok || !updatePayload.success) {
-          throw new Error(updatePayload.message || "Could not update paid class access.");
+        } catch {
+          hasPendingEndpoint = false;
         }
-        showToast(updatePayload.message || "Paid class access updated.", "success");
+
+        if (hasPendingEndpoint && pendingPayments.length) {
+          const optionsText = pendingPayments
+            .map((payment, index) => {
+              const programLabel = payment.batchName || payment.courseTitle || "Student Program";
+              const txn = payment.transactionId || "N/A";
+              const packageName = payment.packageName || payment.packageCode || "Package";
+              const amount = Number(payment.amountBdt || 0);
+              const createdAt = payment.createdAt ? new Date(payment.createdAt).toLocaleString() : "Unknown";
+              return `${index + 1}. ${programLabel} | TXN ${txn} | ${packageName} (BDT ${amount}) | ${createdAt}`;
+            })
+            .join("\n");
+
+          const selectedText = window.prompt(
+            `Select a pending payment to approve for ${user.name}.\n\n${optionsText}\n\nEnter number:`
+          );
+          if (selectedText == null) return;
+          const selectedIndex = Number(selectedText) - 1;
+          if (!Number.isInteger(selectedIndex) || selectedIndex < 0 || selectedIndex >= pendingPayments.length) {
+            showToast("Invalid selection.", "error");
+            return;
+          }
+
+          const selectedPayment = pendingPayments[selectedIndex];
+          const selectedProgramLabel =
+            selectedPayment.batchName || selectedPayment.courseTitle || "Student Program";
+          const confirmApprove = window.confirm(
+            `Approve payment ${selectedPayment.transactionId || ""} for "${selectedProgramLabel}"?`
+          );
+          if (!confirmApprove) return;
+
+          const approveResponse = await fetch(
+            `${API_BASE_URL}/admin/students/${user.id}/paid-class-payments/${selectedPayment.paymentId}/verify`,
+            { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({}) }
+          );
+          const approvePayload = await approveResponse.json();
+          if (!approveResponse.ok || !approvePayload.success) {
+            throw new Error(approvePayload.message || "Could not approve payment.");
+          }
+
+          await loadUsers();
+          renderUsers();
+          showToast(approvePayload.message || "Payment approved.", "success");
+          return;
+        }
+
+        const grantResponse = await fetch(`${API_BASE_URL}/admin/students/${user.id}/paid-membership`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ packageCode: "manual", packageName: "Admin Grant Access" }),
+        });
+        const grantPayload = await grantResponse.json().catch(() => null);
+        if (!grantResponse.ok || !grantPayload?.success) {
+          throw new Error(grantPayload?.message || "Could not grant paid class access.");
+        }
+
+        await loadUsers();
+        renderUsers();
+        showToast(grantPayload.message || "Access granted.", "success");
       } catch (error) {
         showToast(error.message, "error");
       } finally {
@@ -259,4 +334,3 @@ export function bindUserCreateForm({ onCreated }) {
     }
   });
 }
-

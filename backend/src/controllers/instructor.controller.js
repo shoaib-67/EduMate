@@ -348,6 +348,9 @@ const instructorController = {
       }
 
       if (!duration) return sendError(res, { status: 422, message: "Duration is required." });
+      if (duration < 5 || duration > 60) {
+        return sendError(res, { status: 422, message: "Duration must be between 5 and 60 minutes." });
+      }
 
       const startTimeValue = new Date();
       const examDateLabel = startTimeValue.toISOString().slice(0, 10);

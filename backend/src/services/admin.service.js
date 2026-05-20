@@ -52,6 +52,8 @@ function validateAccountPayload(body) {
   const cleanPhone = String(body?.phone || body?.phoneNumber || "").trim();
   const cleanPassword = String(body?.password || "");
   const cleanRole = String(body?.role || "").trim().toLowerCase();
+  const cleanProgram = String(body?.program || "").trim();
+  const allowedPrograms = ["Engineering", "Varsity", "Medical"];
 
   if (!cleanFullName || !cleanEmail || !cleanPassword || !cleanRole) {
     return { error: "Name, email, password, and role are required." };
@@ -69,6 +71,10 @@ function validateAccountPayload(body) {
     return { error: "Password must be at least 8 characters long." };
   }
 
+  if (cleanRole === "student" && !allowedPrograms.includes(cleanProgram)) {
+    return { error: "Please choose a valid student program." };
+  }
+
   return {
     value: {
       fullName: cleanFullName,
@@ -76,6 +82,7 @@ function validateAccountPayload(body) {
       phone: cleanPhone || null,
       password: cleanPassword,
       role: cleanRole,
+      program: cleanProgram || null,
     },
   };
 }

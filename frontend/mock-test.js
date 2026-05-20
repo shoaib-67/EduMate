@@ -1,4 +1,4 @@
-const $ = (selector, root = document) => root.querySelector(selector);
+﻿const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => root.querySelectorAll(selector);
 const { API_BASE_URL, getStudentId } = window.EduMateShared || {};
 
@@ -84,7 +84,6 @@ function showDisqualifiedResult(reason) {
   $("#r-skipped").textContent = "0";
   $("#r-marks").textContent = "Disqualified";
   $("#resultFeedback").textContent = `You were disqualified: ${reason}`;
-  $("#reviewList").innerHTML = '<div class="review-item"><p class="review-question">Result locked due to proctoring violation.</p></div>';
   showView("resultView");
   savePerformanceRecord({ correct: 0, scorePercent: 0, disqualified: true }).catch(() => null);
 }
@@ -236,6 +235,18 @@ function resolvePerMcqMark(test) {
   return 1;
 }
 
+function resolveNegativeMarking(test) {
+  const directNegative = Number(test?.negativeMarking ?? test?.negative_marking ?? 0);
+  if (Number.isFinite(directNegative) && directNegative > 0) return directNegative;
+
+  const sourceText = String(test?.description || "");
+  const match = sourceText.match(/negative\s*mark(?:ing)?\s*:\s*([0-9]*\.?[0-9]+)/i);
+  const parsed = Number(match?.[1] || 0);
+  if (Number.isFinite(parsed) && parsed > 0) return parsed;
+
+  return 0;
+}
+
 function buildTestsFromExamRoutine(exams = []) {
   const mapped = exams
     .map((exam) => {
@@ -266,6 +277,7 @@ function buildTestsFromExamRoutine(exams = []) {
         joinWindowMinutes: Number(exam.joinWindowMinutes || 15),
         backendStatus: String(exam.status || "").toLowerCase(),
         joinAvailableFromApi: Boolean(exam.joinAvailable),
+        negativeMarking: Number(exam.negativeMarking || 0),
         perMcqMark: resolvePerMcqMark({
           perMcqMark: exam.perMcqMark,
           description: exam.instructions || "",
@@ -636,9 +648,10 @@ function submitExam() {
   });
 
   const perMcqMark = resolvePerMcqMark(currentTest);
-  const marks = correct * perMcqMark;
+  const negativeMarking = resolveNegativeMarking(currentTest);
+  const marks = correct * perMcqMark - wrong * negativeMarking;
   const total = questions.length * perMcqMark;
-  const pct = Math.round((correct / questions.length) * 100);
+  const pct = total > 0 ? Math.max(0, Math.round((marks / total) * 100)) : 0;
   const feedback =
     pct >= 80
       ? "Excellent! Keep it up."
@@ -654,37 +667,6 @@ function submitExam() {
   const formatMark = (value) => (Number.isInteger(value) ? String(value) : value.toFixed(2).replace(/\.?0+$/, ""));
   $("#r-marks").textContent = `${formatMark(marks)}/${formatMark(total)}`;
   $("#resultFeedback").textContent = feedback;
-
-  const reviewList = $("#reviewList");
-  reviewList.innerHTML = "";
-  questions.forEach((question, index) => {
-    const userAnswer = answers[index];
-    const isCorrect = userAnswer === question.ans;
-    const isSkipped = userAnswer === null || userAnswer === -1;
-    const stateClass = isSkipped
-      ? "review-state-skipped"
-      : isCorrect
-        ? "review-state-correct"
-        : "review-state-wrong";
-
-    const reviewItem = document.createElement("div");
-    reviewItem.className = "review-item";
-    reviewItem.innerHTML = `
-      <div class="review-item-top">
-        <p class="review-question">Q${index + 1}. ${question.text}</p>
-        <span class="review-state ${stateClass}">${isSkipped ? "Skipped" : isCorrect ? "Correct" : "Wrong"}</span>
-      </div>
-      <p class="review-line">
-        Correct: <strong class="review-correct">${OPTION_LABELS[question.ans]}. ${question.opts[question.ans]}</strong>
-        ${
-          !isSkipped && !isCorrect
-            ? ` &nbsp;·&nbsp; Your answer: <strong class="review-wrong">${OPTION_LABELS[userAnswer]}. ${question.opts[userAnswer]}</strong>`
-            : ""
-        }
-      </p>
-    `;
-    reviewList.appendChild(reviewItem);
-  });
 
   showView("resultView");
   savePerformanceRecord({ correct, scorePercent: pct }).catch(() => null);

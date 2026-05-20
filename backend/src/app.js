@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const { healthRouter } = require("./routes/health.routes");
 const { authRouter } = require("./routes/auth.routes");
@@ -12,6 +13,7 @@ const { studyCirclesRouter } = require("./routes/studyCircles.routes");
 
 function createApp() {
   const app = express();
+  const frontendPath = path.resolve(__dirname, "../../frontend");
   app.set("etag", false);
   app.use(cors());
   app.use(express.json());
@@ -30,6 +32,10 @@ function createApp() {
   app.use("/api/student", studentRouter);
   app.use("/api/discussions", discussionsRouter);
   app.use("/api/study-circles", studyCirclesRouter);
+  app.use(express.static(frontendPath));
+  app.get("/", (req, res) => {
+    res.sendFile(path.join(frontendPath, "index.html"));
+  });
 
   return app;
 }

@@ -481,6 +481,11 @@ function renderMockTestResults() {
   const rows = state.workspace.mockTestResults || [];
   const tbody = $("#mockTestResultsBody");
   if (!tbody) return;
+  const managedCount = Number(state.workspace?.stats?.managedStudentCount || 0);
+  const emptyMessage =
+    managedCount > 0
+      ? "When assigned students submit mocks, each attempt appears here with score and timing."
+      : `No students are assigned to this instructor account (ID: ${state.instructorId || "N/A"}).`;
 
   tbody.innerHTML = rows.length
     ? rows
@@ -511,7 +516,7 @@ function renderMockTestResults() {
       `;
         })
         .join("")
-    : `<tr><td colspan="7">${renderEmptyCard("No mock test results yet", "When assigned students submit mocks, each attempt appears here with score and timing.")}</td></tr>`;
+    : `<tr><td colspan="7">${renderEmptyCard("No mock test results yet", emptyMessage)}</td></tr>`;
 }
 
 function renderCommunications() {

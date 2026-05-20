@@ -4,6 +4,8 @@ const state = {
   items: [],
   activeFilter: "all",
   searchTerm: "",
+  studentProgramGroup: "",
+  studentBatchName: "",
 };
 
 const categoryMeta = {
@@ -14,6 +16,18 @@ const categoryMeta = {
 };
 
 const normalize = (value) => String(value || "").trim().toLowerCase();
+const deriveProgramGroup = (rawValue) => {
+  const value = normalize(rawValue);
+  if (!value) return "";
+  if (value.includes("engineering")) return "engineering";
+  if (value.includes("varsity") || value.includes("versity")) return "varsity";
+  if (value.includes("medical")) return "medical";
+  return "";
+};
+const isAllBatchesLabel = (rawValue) => {
+  const value = normalize(rawValue);
+  return value === "all batches" || value === "all_batches" || value === "all-batches" || value === "all";
+};
 const escapeHtml = (value) =>
   String(value || "")
     .replace(/&/g, "&amp;")
@@ -100,7 +114,14 @@ function filteredItems() {
     const filterMatch = state.activeFilter === "all" || item.category === state.activeFilter;
     const searchBase = normalize(`${item.title} ${item.courseTitle} ${item.description} ${item.batchName} ${item.type}`);
     const searchMatch = !state.searchTerm || searchBase.includes(state.searchTerm);
-    return filterMatch && searchMatch;
+    const batchName = String(item.batchName || "").trim();
+    const itemProgramGroup = deriveProgramGroup(batchName || item.courseTitle || item.title || "");
+    const isProgramMatch =
+      !batchName ||
+      isAllBatchesLabel(batchName) ||
+      (itemProgramGroup && itemProgramGroup === state.studentProgramGroup) ||
+      normalize(batchName) === normalize(state.studentBatchName);
+    return filterMatch && searchMatch && isProgramMatch;
   });
 }
 
@@ -233,6 +254,21 @@ async function loadMergedContent() {
   });
 }
 
+async function resolveStudentAudience() {
+  const studentId = getStudentId();
+  if (!studentId) return;
+  try {
+    const response = await fetch(`${API_BASE_URL}/student/${studentId}/profile`);
+    const payload = await response.json();
+    if (!response.ok || !payload?.success) return;
+    const profile = payload.data || {};
+    state.studentBatchName = String(profile.batch || "").trim();
+    state.studentProgramGroup = deriveProgramGroup(profile.program || profile.batch || "");
+  } catch {
+    // Ignore; backend message already handled by content loading.
+  }
+}
+
 async function initPage() {
   if (!requireRole("student")) return;
   setupLogoutHandlers();
@@ -248,6 +284,7 @@ async function initPage() {
   }
 
   try {
+    await resolveStudentAudience();
     state.items = await loadMergedContent();
     updateStats(state.items);
     renderCards();

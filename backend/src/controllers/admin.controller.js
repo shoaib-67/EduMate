@@ -3,7 +3,7 @@ const bcrypt = require("bcryptjs");
 const { getPool } = require("../db");
 const { sendSuccess, sendError } = require("../lib/http");
 const { parseRequiredId, parsePositiveInteger, parseQuestionIds } = require("../lib/parsers");
-const { normalizeAudienceType, resolveStudentProgramGroup, isAudienceVisibleToStudent } = require("../lib/audience");
+const { normalizeAudienceType, resolveStudentProgramGroup, isAudienceVisibleToStudent, deriveBatchFromProgram } = require("../lib/audience");
 const { toDateTimeValue, formatSqlDateTime, parseSqlDateTime, normalizeExamRecord } = require("../lib/examUtils");
 const {
   getManageableUserConfig,
@@ -647,7 +647,7 @@ const adminController = {
         });
       }
 
-      const { fullName, email, phone, password, role } = validation.value;
+      const { fullName, email, phone, password, role, program } = validation.value;
       const config = getManageableUserConfig(role);
       const pool = getPool();
 
@@ -665,18 +665,28 @@ const adminController = {
 
       const passwordHash = await bcrypt.hash(password, 10);
 
-      const [result] = await pool.query(
-        `INSERT INTO ${config.table} (name, email, phone_number, password_hash, account_status)
-         VALUES (?, ?, ?, ?, 'active')`,
-        [fullName, email, phone, passwordHash]
-      );
+      let result;
+      if (role === "student") {
+        const batchName = deriveBatchFromProgram(program) || program;
+        [result] = await pool.query(
+          `INSERT INTO ${config.table} (name, email, phone_number, password_hash, batch_name, course_track, account_status)
+           VALUES (?, ?, ?, ?, ?, ?, 'active')`,
+          [fullName, email, phone, passwordHash, batchName, program]
+        );
+      } else {
+        [result] = await pool.query(
+          `INSERT INTO ${config.table} (name, email, phone_number, password_hash, account_status)
+           VALUES (?, ?, ?, ?, 'active')`,
+          [fullName, email, phone, passwordHash]
+        );
+      }
 
       await logAdminActivity(pool, {
         action: "created_account",
         targetType: role,
         targetId: result.insertId,
         targetLabel: fullName,
-        details: { role: config.displayRole, email },
+        details: { role: config.displayRole, email, program: role === "student" ? program : null },
       });
 
       return res.status(201).json({

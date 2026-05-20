@@ -291,6 +291,23 @@ export function renderUsers() {
 export function bindUserCreateForm({ onCreated }) {
   const form = document.getElementById("addUserForm");
   if (!form) return;
+  const roleField = form.querySelector('select[name="role"]');
+  const programFieldWrapper = document.getElementById("studentProgramField");
+  const programField = form.querySelector('select[name="program"]');
+
+  const syncProgramField = () => {
+    const isStudentRole = String(roleField?.value || "").trim().toLowerCase() === "student";
+    if (programFieldWrapper) {
+      programFieldWrapper.classList.toggle("is-hidden", !isStudentRole);
+    }
+    if (programField) {
+      programField.required = isStudentRole;
+      if (!isStudentRole) programField.value = "";
+    }
+  };
+
+  roleField?.addEventListener("change", syncProgramField);
+  syncProgramField();
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
@@ -313,6 +330,7 @@ export function bindUserCreateForm({ onCreated }) {
           email: String(formData.get("email") || "").trim(),
           phone: String(formData.get("phone") || "").trim(),
           role: String(formData.get("role") || "").trim(),
+          program: String(formData.get("program") || "").trim(),
           password: String(formData.get("password") || "").trim(),
         }),
       });
@@ -322,6 +340,7 @@ export function bindUserCreateForm({ onCreated }) {
       setUserFormMessage(payload.message || "Account created.", "success");
       showToast(payload.message || "Account created.", "success");
       form.reset();
+      syncProgramField();
       onCreated?.();
     } catch (error) {
       setUserFormMessage(error.message, "error");

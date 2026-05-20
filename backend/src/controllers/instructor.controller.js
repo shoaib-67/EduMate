@@ -326,7 +326,13 @@ const instructorController = {
       const batchName = audienceType === "all" ? ALL_BATCHES_LABEL : rawBatchName;
       const accessMode = "open_anytime";
       let duration = parsePositiveInteger(req.body?.duration);
-      const negativeMarking = String(req.body?.negativeMarking || "").trim();
+      const negativeMarkingRaw = String(req.body?.negativeMarking || "").trim();
+      const negativeMatch = negativeMarkingRaw.match(/-?\d*\.?\d+/);
+      const parsedNegativeMarking = Number(negativeMatch?.[0] || 0);
+      const normalizedNegativeMarking =
+        Number.isFinite(parsedNegativeMarking) && parsedNegativeMarking !== 0
+          ? Math.abs(parsedNegativeMarking)
+          : 0;
       const perMcqMark = Number(req.body?.perMcqMark || 0);
       const shuffleMode = String(req.body?.shuffleMode || "").trim();
       const examType = String(req.body?.examType || "").trim();
@@ -362,6 +368,7 @@ const instructorController = {
       const compiledRules = [
         `Subject: ${subject}`,
         `Per MCQ Mark: ${perMcqMark}`,
+        `Negative Marking: ${normalizedNegativeMarking}`,
         rules || null,
       ]
         .filter(Boolean)
@@ -456,7 +463,7 @@ const instructorController = {
           examDateLabel,
           startTime,
           duration,
-          negativeMarking || null,
+          normalizedNegativeMarking,
           shuffleMode || null,
           examType,
           "Published",
@@ -475,8 +482,8 @@ const instructorController = {
         const [examInsertResult] = await connection.query(
           `
           INSERT INTO exam_schedules
-            (subject, exam_date, start_time, end_time, duration_minutes, batch_name, instructions, audience_type, join_window_minutes, created_by_admin_id)
-          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            (subject, exam_date, start_time, end_time, duration_minutes, negative_marking, batch_name, instructions, audience_type, join_window_minutes, created_by_admin_id)
+          VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
           `,
           [
             title,
@@ -484,6 +491,7 @@ const instructorController = {
             startTime,
             endTime,
             Number(duration || 0),
+            normalizedNegativeMarking,
             examBatchName,
             compiledRules || null,
             audienceType,

@@ -84,6 +84,14 @@ function normalizeExamRecord(exam, now = new Date()) {
   const { start, end } = resolveExamWindow(exam.start_time, exam.end_time, exam.duration_minutes);
   const status = deriveExamStatus(start, end, now, exam.duration_minutes);
   const audienceType = normalizeAudienceType(exam.audience_type);
+  const negativeMarkRaw = String(exam.negative_marking ?? "").trim();
+  const negativeParsedByNumber = Number(negativeMarkRaw);
+  const negativeParsedByRegex = Number(negativeMarkRaw.match(/-?\d*\.?\d+/)?.[0] || 0);
+  const negativeMarking = Number.isFinite(negativeParsedByNumber)
+    ? Math.abs(negativeParsedByNumber)
+    : Number.isFinite(negativeParsedByRegex)
+      ? Math.abs(negativeParsedByRegex)
+      : 0;
   return {
     id: exam.exam_id,
     subject: exam.subject,
@@ -102,6 +110,7 @@ function normalizeExamRecord(exam, now = new Date()) {
     assignedStudentCount: Number(exam.assigned_student_count || 0),
     questionCount: Number(exam.question_count || 0),
     attemptCount: Number(exam.attempt_count || 0),
+    negativeMarking,
   };
 }
 

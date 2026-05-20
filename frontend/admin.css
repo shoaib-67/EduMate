@@ -770,12 +770,13 @@ tbody tr:hover {
 
 .form-grid {
   display: grid;
-  grid-template-columns: repeat(6, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
   gap: 0.75rem;
 }
 
 .form-grid label {
   display: grid;
+  min-width: 0;
   gap: 0.35rem;
   color: var(--text);
   font-size: 0.82rem;
@@ -784,6 +785,7 @@ tbody tr:hover {
 
 .form-grid input,
 .form-grid select {
+  width: 100%;
   border: 1px solid rgba(207, 225, 240, 0.95);
   border-radius: 10px;
   background: #fff;
@@ -796,13 +798,20 @@ tbody tr:hover {
 
 .form-grid label:nth-child(1),
 .form-grid label:nth-child(2) {
-  grid-column: span 2;
+  grid-column: span 1;
 }
 
 .form-grid label:nth-child(3),
-.form-grid label:nth-child(4),
+.form-grid label:nth-child(4) {
+  grid-column: span 1;
+}
+
 .form-grid label:nth-child(5) {
   grid-column: span 1;
+}
+
+.form-grid label:nth-child(6) {
+  grid-column: 1 / -1;
 }
 
 .form-actions {

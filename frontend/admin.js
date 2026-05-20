@@ -925,9 +925,25 @@ const setupUserForm = () => {
   const addUserForm = document.getElementById("addUserForm");
   const addUserButton = document.getElementById("addUserButton");
   const toggleAddUserForm = document.getElementById("toggleAddUserForm");
+  const roleField = addUserForm?.querySelector("select[name='role']");
+  const programFieldWrapper = document.getElementById("studentProgramField");
+  const programField = addUserForm?.querySelector("select[name='program']");
 
   if (!addUserForm || addUserForm.dataset.ready === "true") return;
   addUserForm.dataset.ready = "true";
+
+  const syncProgramField = () => {
+    const isStudentRole = String(roleField?.value || "").trim().toLowerCase() === "student";
+    if (programFieldWrapper) {
+      programFieldWrapper.classList.toggle("is-hidden", !isStudentRole);
+    }
+    if (programField) {
+      programField.required = isStudentRole;
+      if (!isStudentRole) programField.value = "";
+    }
+  };
+  roleField?.addEventListener("change", syncProgramField);
+  syncProgramField();
 
   if (toggleAddUserForm) {
     toggleAddUserForm.addEventListener("click", () => {
@@ -949,6 +965,7 @@ const setupUserForm = () => {
       email: formData.get("email"),
       phone: formData.get("phone"),
       role: formData.get("role"),
+      program: formData.get("program"),
       password: formData.get("password"),
     };
 
@@ -971,6 +988,7 @@ const setupUserForm = () => {
       }
 
       addUserForm.reset();
+      syncProgramField();
       setUserFormMessage(result.message || "Account added.", "success");
       await loadUsers();
       await updateStats();

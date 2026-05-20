@@ -302,6 +302,13 @@ async function ensureExamSchedulesTable(pool) {
       FOREIGN KEY (\`created_by_admin_id\`) REFERENCES \`admins\`(\`admin_id\`) ON DELETE SET NULL
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
   `);
+
+  await ensureColumn(
+    pool,
+    "exam_schedules",
+    "negative_marking",
+    "negative_marking VARCHAR(60) NULL"
+  );
 }
 
 async function ensureExamAssignmentsTable(pool) {

@@ -368,17 +368,14 @@ const studentController = {
         `
       );
 
-      const hasAudienceInfo = Boolean(student.batch_name || student.course_track || studentProgramGroup);
-      const visible = hasAudienceInfo
-        ? rows.filter((item) =>
-            isAudienceVisibleToStudent({
-              audienceType: "batch",
-              batchName: item.batchName || item.courseTitle || "",
-              studentBatchName: student.batch_name,
-              studentProgramGroup,
-            })
-          )
-        : rows;
+      const visible = rows.filter((item) =>
+        isAudienceVisibleToStudent({
+          audienceType: "batch",
+          batchName: item.batchName || item.courseTitle || "",
+          studentBatchName: student.batch_name,
+          studentProgramGroup,
+        })
+      );
 
       return sendSuccess(res, { data: visible });
     } catch (error) {
@@ -576,17 +573,14 @@ const studentController = {
         [studentId]
       );
 
-      const hasAudienceInfo = Boolean(student.batch_name || student.course_track || studentProgramGroup);
-      const visible = hasAudienceInfo
-        ? rows.filter((item) =>
-            isAudienceVisibleToStudent({
-              audienceType: "batch",
-              batchName: item.batchName || item.courseTitle || "",
-              studentBatchName: student.batch_name,
-              studentProgramGroup,
-            })
-          )
-        : rows;
+      const visible = rows.filter((item) =>
+        isAudienceVisibleToStudent({
+          audienceType: "batch",
+          batchName: item.batchName || item.courseTitle || "",
+          studentBatchName: student.batch_name,
+          studentProgramGroup,
+        })
+      );
       return res.status(200).json({ success: true, data: visible });
     } catch (error) {
       return res.status(500).json({ success: false, message: "Could not fetch courses.", error: error.message });

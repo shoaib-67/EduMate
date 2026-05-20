@@ -1,20 +1,6 @@
 const { formatAudienceLabel, normalizeAudienceType } = require("../lib/audience");
 const { normalizeInstructorExamRecord, formatSqlDateTime } = require("../lib/examUtils");
 
-function buildInstructorPerformanceExamMatchClause(examAlias = "ies") {
-  return `
-    ${examAlias}.instructor_id = isa.instructor_id
-    AND (
-      LOWER(COALESCE(${examAlias}.approval_status, '')) = 'approved'
-      OR LOWER(COALESCE(${examAlias}.publish_state, '')) = 'published'
-    )
-    AND (
-      ${examAlias}.published_exam_id = sp.exam_id
-      OR (sp.exam_id IS NULL AND LOWER(TRIM(${examAlias}.title)) = LOWER(TRIM(sp.test_name)))
-    )
-  `;
-}
-
 async function findInstructorExamConflict(pool, { instructorId, batchName, audienceType, startTime, durationMinutes }) {
   const endTime = new Date(new Date(startTime).getTime() + Number(durationMinutes || 0) * 60000);
   const cleanAudienceType = normalizeAudienceType(audienceType);
@@ -255,8 +241,6 @@ async function syncPendingInstructorExamSubmissions(pool) {
 }
 
 async function buildInstructorWorkspace(pool, instructorId) {
-  const examPerformanceMatch = buildInstructorPerformanceExamMatchClause();
-
   const [courseItems] = await pool.query(
     `
     SELECT item_id, course_title, batch_name, audience_type, content_type, title, summary, deadline, source_ref AS link
@@ -321,11 +305,7 @@ async function buildInstructorWorkspace(pool, instructorId) {
     LEFT JOIN student_performance sp
       ON sp.student_id = isa.student_id
       AND LOWER(sp.test_type) = 'mock'
-      AND EXISTS (
-        SELECT 1
-        FROM instructor_exam_schedules ies
-        WHERE ${examPerformanceMatch}
-      )
+      AND COALESCE(sp.include_in_performance, TRUE) = TRUE
     WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     GROUP BY s.student_id, s.name, isa.assigned_batch, isn.progress_label, isn.note
     ORDER BY s.name ASC
@@ -378,11 +358,7 @@ async function buildInstructorWorkspace(pool, instructorId) {
     JOIN student_performance sp
       ON sp.student_id = isa.student_id
       AND LOWER(sp.test_type) = 'mock'
-      AND EXISTS (
-        SELECT 1
-        FROM instructor_exam_schedules ies
-        WHERE ${examPerformanceMatch}
-      )
+      AND COALESCE(sp.include_in_performance, TRUE) = TRUE
     WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     GROUP BY sp.subject
     ORDER BY averageScore DESC, passRate DESC
@@ -396,27 +372,37 @@ async function buildInstructorWorkspace(pool, instructorId) {
       sp.performance_id AS id,
       s.student_id AS studentId,
       s.name AS studentName,
-      isa.assigned_batch AS batch,
+      COALESCE(isa.assigned_batch, s.batch_name, s.course_track) AS batch,
       sp.subject AS subject,
       sp.score AS score,
       sp.total_questions AS totalQuestions,
       sp.correct_answers AS correctAnswers,
       sp.test_name AS testName,
       sp.created_at AS createdAt
-    FROM instructor_student_assignments isa
-    JOIN students s ON s.student_id = isa.student_id
-    JOIN student_performance sp
-      ON sp.student_id = isa.student_id
-      AND LOWER(sp.test_type) = 'mock'
+    FROM student_performance sp
+    JOIN students s ON s.student_id = sp.student_id
+    LEFT JOIN instructor_student_assignments isa
+      ON isa.student_id = s.student_id
+      AND isa.instructor_id = ?
+      AND isa.is_active = TRUE
+    WHERE LOWER(sp.test_type) = 'mock'
+      AND COALESCE(sp.include_in_performance, TRUE) = TRUE
       AND EXISTS (
         SELECT 1
         FROM instructor_exam_schedules ies
-        WHERE ${examPerformanceMatch}
+        WHERE ies.instructor_id = ?
+          AND (
+            LOWER(COALESCE(ies.approval_status, '')) = 'approved'
+            OR LOWER(COALESCE(ies.publish_state, '')) = 'published'
+          )
+          AND (
+            ies.published_exam_id = sp.exam_id
+            OR (sp.exam_id IS NULL AND LOWER(TRIM(COALESCE(ies.title, ''))) = LOWER(TRIM(COALESCE(sp.test_name, ''))))
+          )
       )
-    WHERE isa.instructor_id = ? AND isa.is_active = TRUE
     ORDER BY sp.created_at DESC
     `,
-    [instructorId]
+    [instructorId, instructorId]
   );
 
   const mockTestResults = mockTestResultRows.map((row) => ({
